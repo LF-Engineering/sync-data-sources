@@ -23,7 +23,6 @@ cd "$cwd" || exit 9
 if [ -z "$SKIP_BUILD" ]
 then
   echo "Building"
-  # make etc
   docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" . || exit 10
 fi
 
