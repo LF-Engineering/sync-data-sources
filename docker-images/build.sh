@@ -1,5 +1,5 @@
 #!/bin/bash
-# DOCKER_USER=lukaszgryglicki BRANCH=test|prod [SKIP_BUILD=1] [SKIP_PUSH=1] [API_REPO_PATH='~/dev/LF/dev-analytics-api'] ./docker-images/build.sh
+# DOCKER_USER=lukaszgryglicki BRANCH=test|prod [SKIP_BUILD=1] [SKIP_PUSH=1] [API_REPO_PATH="$HOME/dev/LF/dev-analytics-api"] ./docker-images/build.sh
 # DOCKER_USER=lukaszgryglicki BRANCH=test|prod [PRUNE=1] ./docker-images/remove.sh
 if [ -z "${DOCKER_USER}" ]
 then
@@ -14,11 +14,11 @@ fi
 
 if [ -z "${API_REPO_PATH}" ]
 then
-  API_REPO_PATH="~/dev/LF-Engineering/dev-analytics-api"
+  API_REPO_PATH="$HOME/dev/LF-Engineering/dev-analytics-api"
 fi
 
 cwd="`pwd`"
-cd "${API_REPO_PATH}" || exit 4
+cd $API_REPO_PATH || exit 4
 git checkout "$BRANCH" || exit 5
 git pull || exit 6
 rm -rf "$cwd/sources/data" || exit 7
