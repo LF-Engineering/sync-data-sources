@@ -1,8 +1,8 @@
-GO_LIB_FILES=lib.go
-GO_BIN_FILES=cmd/sync-data-sources/sync-data-sources.go
-GO_TEST_FILES=lib_test.go
+GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go
+GO_BIN_FILES=cmd/syncdatasources/syncdatasources.go
+GO_TEST_FILES=context_test.go time_test.go
 GO_LIBTEST_FILES=test/time.go
-GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/sources/cmd/sync-data-sources
+GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/sources/cmd/syncdatasources
 GO_ENV=CGO_ENABLED=0
 GO_BUILD=go build -ldflags '-s -w'
 GO_INSTALL=go install -ldflags '-s'
@@ -14,13 +14,13 @@ GO_IMPORTS=goimports -w
 GO_USEDEXPORTS=usedexports
 GO_ERRCHECK=errcheck -asserts -ignore '[FS]?[Pp]rint*'
 GO_TEST=go test
-BINARIES=sync-data-sources
+BINARIES=syncdatasources
 STRIP=strip
 
 all: check ${BINARIES}
 
-sync-data-sources: cmd/sync-data-sources/sync-data-sources.go ${GO_LIB_FILES}
-	 ${GO_ENV} ${GO_BUILD} -o sync-data-sources cmd/sync-data-sources/sync-data-sources.go
+syncdatasources: cmd/syncdatasources/syncdatasources.go ${GO_LIB_FILES}
+	 ${GO_ENV} ${GO_BUILD} -o syncdatasources cmd/syncdatasources/syncdatasources.go
 
 fmt: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 	./for_each_go_file.sh "${GO_FMT}"
@@ -29,7 +29,7 @@ lint: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 	./for_each_go_file.sh "${GO_LINT}"
 
 vet: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
-	./for_each_go_file.sh "${GO_VET}"
+	./vet_files.sh "${GO_VET}"
 
 imports: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 	./for_each_go_file.sh "${GO_IMPORTS}"
