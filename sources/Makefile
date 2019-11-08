@@ -51,6 +51,9 @@ check: fmt lint imports vet const usedexports errcheck
 install: check ${BINARIES}
 	${GO_INSTALL} ${GO_BIN_CMDS}
 
+dockerinstall: ${BINARIES}
+	${GO_INSTALL} ${GO_BIN_CMDS}
+
 strip: ${BINARIES}
 	${STRIP} ${BINARIES}
 
