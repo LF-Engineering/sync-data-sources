@@ -2,11 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strings"
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
+	yaml "gopkg.in/yaml.v2"
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
@@ -94,21 +96,27 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 	return processFixtureFiles(ctx, fixtures)
 }
 
-func processFixtureFile(ch chan bool, ctx *lib.Ctx, fixtureFile string) bool {
+func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
 	lib.Printf("Processing: %s\n", fixtureFile)
+	// Read defined projects
+	data, err := ioutil.ReadFile(fixtureFile)
+	lib.FatalOnError(err)
+	lib.FatalOnError(yaml.Unmarshal(data, &fixture))
+
 	// Synchronize go routine
 	if ch != nil {
-		ch <- true
+		ch <- fixture
 	}
-	return true
+	return
 }
 
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
+	fixtures := []lib.Fixture{}
 	if thrN > 1 {
 		lib.Printf("Now processing %d fixture files using MT%d version\n", len(fixtureFiles), thrN)
-		ch := make(chan bool)
+		ch := make(chan lib.Fixture)
 		nThreads := 0
 		for _, fixtureFile := range fixtureFiles {
 			if fixtureFile == "" {
@@ -117,14 +125,16 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			go processFixtureFile(ch, ctx, fixtureFile)
 			nThreads++
 			if nThreads == thrN {
-				<-ch
+				fixture := <-ch
 				nThreads--
+				fixtures = append(fixtures, fixture)
 			}
 		}
 		lib.Printf("Final threads join\n")
 		for nThreads > 0 {
-			<-ch
+			fixture := <-ch
 			nThreads--
+			fixtures = append(fixtures, fixture)
 		}
 	} else {
 		lib.Printf("Now processing %d fixture files using ST version\n", len(fixtureFiles))
@@ -132,9 +142,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			if fixtureFile == "" {
 				continue
 			}
-			processFixtureFile(nil, ctx, fixtureFile)
+			fixtures = append(fixtures, processFixtureFile(nil, ctx, fixtureFile))
 		}
 	}
+	lib.Printf("Fixtures: %+v\n", fixtures)
 	return nil
 }
 
