@@ -12,7 +12,9 @@ import (
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
-	lib.Printf("Checking grimoire stack availability\n")
+	if ctx.Debug > 0 {
+		lib.Printf("Checking grimoire stack availability\n")
+	}
 	dtStart := time.Now()
 	ctx.ExecOutput = true
 	info := ""
@@ -63,7 +65,9 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 		return err
 	}
 	info += "sortinghat: " + res
-	lib.Printf("Grimoire stack available\n%s\n", info)
+	if ctx.Debug > 0 {
+		lib.Printf("Grimoire stack available\n%s\n", info)
+	}
 	return nil
 }
 
@@ -116,6 +120,18 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
+	// TODO: check if there is Native map defined, then check its 'slug' key - must be non-empty
+	// Then for all fixtures defined, all slugs must be unique - check this also
+	if len(fixture.Native) == 0 {
+		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
+	}
+	slug, ok := fixture.Native["slug"]
+	if !ok {
+		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
+	}
+	if slug == "" {
+		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
+	}
 
 	// Synchronize go routine
 	if ch != nil {
@@ -129,7 +145,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	thrN := lib.GetThreadsNum(ctx)
 	fixtures := []lib.Fixture{}
 	if thrN > 1 {
-		lib.Printf("Now processing %d fixture files using MT%d version\n", len(fixtureFiles), thrN)
+		if ctx.Debug > 0 {
+			lib.Printf("Now processing %d fixture files using MT%d version\n", len(fixtureFiles), thrN)
+		}
 		ch := make(chan lib.Fixture)
 		nThreads := 0
 		for _, fixtureFile := range fixtureFiles {
@@ -144,14 +162,18 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				fixtures = append(fixtures, fixture)
 			}
 		}
-		lib.Printf("Final threads join\n")
+		if ctx.Debug > 0 {
+			lib.Printf("Final threads join\n")
+		}
 		for nThreads > 0 {
 			fixture := <-ch
 			nThreads--
 			fixtures = append(fixtures, fixture)
 		}
 	} else {
-		lib.Printf("Now processing %d fixture files using ST version\n", len(fixtureFiles))
+		if ctx.Debug > 0 {
+			lib.Printf("Now processing %d fixture files using ST version\n", len(fixtureFiles))
+		}
 		for _, fixtureFile := range fixtureFiles {
 			if fixtureFile == "" {
 				continue
@@ -178,5 +200,5 @@ func main() {
 		lib.Fatalf("Grimoire stack sync error: %+v\n", err)
 	}
 	dtEnd := time.Now()
-	fmt.Printf("Time: %v\n", dtEnd.Sub(dtStart))
+	fmt.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 }
