@@ -102,13 +102,28 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 	return processFixtureFiles(ctx, fixtures)
 }
 
-func validateDataSource(fixture *lib.Fixture, dataSource *lib.DataSource) {
-	if dataSource.Slug == "" {
-		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
+func validateConfig(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource, cfg *lib.Config) {
+	if cfg.Name == "" {
+		lib.Fatalf("Config %+v name in data source %+v in fixture %+v is empty or undefined\n", cfg, dataSource, fixture)
+	}
+	if cfg.Value == "" {
+		lib.Fatalf("Config %+v value in data source %+v in fixture %+v is empty or undefined\n", cfg, dataSource, fixture)
 	}
 }
 
-func validateFixture(fixture *lib.Fixture, fixtureFile string) {
+func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource) {
+	if dataSource.Slug == "" {
+		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
+	}
+	if ctx.Debug > 2 {
+		lib.Printf("Config for %s/%s: %+v\n", fixture.Fn, dataSource.Slug, dataSource.Config)
+	}
+	for _, cfg := range dataSource.Config {
+		validateConfig(ctx, fixture, dataSource, &cfg)
+	}
+}
+
+func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	if len(fixture.Native) == 0 {
 		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
 	}
@@ -124,7 +139,7 @@ func validateFixture(fixture *lib.Fixture, fixtureFile string) {
 	}
 	fixture.Fn = fixtureFile
 	for _, dataSource := range fixture.DataSources {
-		validateDataSource(fixture, &dataSource)
+		validateDataSource(ctx, fixture, &dataSource)
 	}
 }
 
@@ -146,7 +161,7 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	validateFixture(&fixture, fixtureFile)
+	validateFixture(ctx, &fixture, fixtureFile)
 
 	// Synchronize go routine
 	if ch != nil {
