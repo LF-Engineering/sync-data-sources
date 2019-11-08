@@ -2,7 +2,7 @@ GO_LIB_FILES=lib.go
 GO_BIN_FILES=cmd/sync-data-sources/sync-data-sources.go
 GO_TEST_FILES=lib_test.go
 GO_LIBTEST_FILES=test/time.go
-GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/cmd/sync-data-sources
+GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/sources/cmd/sync-data-sources
 GO_ENV=CGO_ENABLED=0
 GO_BUILD=go build -ldflags '-s -w'
 GO_INSTALL=go install -ldflags '-s'
