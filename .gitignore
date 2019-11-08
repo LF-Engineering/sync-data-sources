@@ -17,4 +17,6 @@
 # project specific
 /sources/data
 /sources/syncdatasources
+/sources/data.zip
 out
+*.secret
