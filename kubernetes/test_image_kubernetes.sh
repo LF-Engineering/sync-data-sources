@@ -9,10 +9,16 @@ then
   echo "$0: you need to set dev-analytics-branch via BRANCH=test|prod"
   exit 2
 fi
+pass=`cat zippass.secret`
+if [ -z "$pass" ]
+then
+  echo "$0: you need to specify ZIP password in gitignored file zippass.secret"
+  exit 3
+fi
 command="$1"
 if [ -z "${command}" ]
 then
   export command=/bin/bash
 fi
 ts=`date +'%s%N'`
-kubectl run -i --tty "sync-data-sources-${BRANCH}-test-${ts}" --restart=Never --rm --image="${DOCKER_USER}/sync-data-sources-${BRANCH}" --command "$command"
+kubectl run --env="ZIPPASS=$pass" -i --tty "sync-data-sources-${BRANCH}-test-${ts}" --restart=Never --rm --image="${DOCKER_USER}/sync-data-sources-${BRANCH}" --command "$command"

@@ -17,24 +17,33 @@ then
   API_REPO_PATH="$HOME/dev/LF-Engineering/dev-analytics-api"
 fi
 
+pass=`cat zippass.secret`
+if [ -z "$pass" ]
+then
+  echo "$0: you need to specify ZIP password in gitignored file zippass.secret"
+  exit 3
+fi
+
 cwd="`pwd`"
 cd $API_REPO_PATH || exit 4
 git checkout "$BRANCH" || exit 5
 git pull || exit 6
-rm -rf "$cwd/sources/data" || exit 7
+rm -rf "$cwd/sources/data" "$cwd/sources/data.zip" || exit 7
 cp -R app/services/lf/bootstrap/fixtures/ "$cwd/sources/data" || exit 8
-cd "$cwd" || exit 9
+cd "${cwd}/sources" || exit 9
+zip data.zip -P "$pass" -r data >/dev/null || exit 10
+cd .. || exit 11
 
 if [ -z "$SKIP_BUILD" ]
 then
   echo "Building"
-  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" . || exit 10
+  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" . || exit 12
 fi
 
 if [ -z "$SKIP_PUSH" ]
 then
   echo "Pushing"
-  docker push "${DOCKER_USER}/sync-data-sources-${BRANCH}" || exit 11
+  docker push "${DOCKER_USER}/sync-data-sources-${BRANCH}" || exit 13
 fi
 
 echo 'OK'
