@@ -127,8 +127,26 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.Data
 	for _, cfg := range dataSource.Config {
 		validateConfig(ctx, fixture, dataSource, &cfg)
 	}
+	st := make(map[string]lib.Config)
+	for _, cfg := range dataSource.Config {
+		name := cfg.Name
+		cfg2, ok := st[name]
+		if ok {
+			lib.Fatalf("Duplicate name %s in config: %+v and %+v, data source: %+v, fixture: %+v\n", name, cfg, cfg2, dataSource, fixture)
+		}
+		st[name] = cfg
+	}
 	for _, endpoint := range dataSource.Endpoints {
 		validateEndpoint(ctx, fixture, dataSource, &endpoint)
+	}
+	ste := make(map[string]lib.Endpoint)
+	for _, endpoint := range dataSource.Endpoints {
+		name := endpoint.Name
+		endpoint2, ok := ste[name]
+		if ok {
+			lib.Fatalf("Duplicate name %s in endpoints: %+v and %+v, data source: %+v, fixture: %+v\n", name, endpoint, endpoint2, dataSource, fixture)
+		}
+		ste[name] = endpoint
 	}
 }
 
@@ -149,6 +167,15 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	fixture.Fn = fixtureFile
 	for _, dataSource := range fixture.DataSources {
 		validateDataSource(ctx, fixture, &dataSource)
+	}
+	st := make(map[string]lib.DataSource)
+	for _, dataSource := range fixture.DataSources {
+		slug := dataSource.Slug
+		dataSource2, ok := st[slug]
+		if ok {
+			lib.Fatalf("Duplicate slug %s in data sources: %+v and %+v, fixture: %+v\n", slug, dataSource, dataSource2, fixture)
+		}
+		st[slug] = dataSource
 	}
 }
 
@@ -252,5 +279,5 @@ func main() {
 		lib.Fatalf("Grimoire stack sync error: %+v\n", err)
 	}
 	dtEnd := time.Now()
-	fmt.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
+	lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 }
