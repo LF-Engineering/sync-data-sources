@@ -92,16 +92,30 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 		return err
 	}
 	fixtures := strings.Split(res, "\n")
-	lib.Printf("Fixtures to process: %+v\n", fixtures)
+	if ctx.Debug > 0 {
+		lib.Printf("Fixtures to process: %+v\n", fixtures)
+	}
 	return processFixtureFiles(ctx, fixtures)
 }
 
 func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
-	lib.Printf("Processing: %s\n", fixtureFile)
+	if ctx.Debug > 0 {
+		lib.Printf("Processing: %s\n", fixtureFile)
+	}
 	// Read defined projects
 	data, err := ioutil.ReadFile(fixtureFile)
+	if err != nil {
+		lib.Printf("Error reading file: %s\n", fixtureFile)
+	}
 	lib.FatalOnError(err)
-	lib.FatalOnError(yaml.Unmarshal(data, &fixture))
+	err = yaml.Unmarshal(data, &fixture)
+	if err != nil {
+		lib.Printf("Error parsing YAML file: %s\n", fixtureFile)
+	}
+	lib.FatalOnError(err)
+	if ctx.Debug > 0 {
+		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
+	}
 
 	// Synchronize go routine
 	if ch != nil {
@@ -145,7 +159,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			fixtures = append(fixtures, processFixtureFile(nil, ctx, fixtureFile))
 		}
 	}
-	lib.Printf("Fixtures: %+v\n", fixtures)
+	if ctx.Debug > 0 {
+		lib.Printf("Fixtures: %+v\n", fixtures)
+	}
 	return nil
 }
 
