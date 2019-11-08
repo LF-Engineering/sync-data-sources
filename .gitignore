@@ -13,4 +13,7 @@
 
 # Vim
 *.swp
+
+# project specific
 /sources/data
+sync-data-sources
