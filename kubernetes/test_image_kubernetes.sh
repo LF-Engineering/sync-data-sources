@@ -15,4 +15,4 @@ then
   export command=/bin/bash
 fi
 ts=`date +'%s%N'`
-kubectl run -i --tty "sync-data-sources-${BRANCH}-test-${ts}" --restart=Never --rm --image="${DOCKER_USER}/sync-data-sources-${sync-data-sources}" --command "$command"
+kubectl run -i --tty "sync-data-sources-${BRANCH}-test-${ts}" --restart=Never --rm --image="${DOCKER_USER}/sync-data-sources-${BRANCH}" --command "$command"
