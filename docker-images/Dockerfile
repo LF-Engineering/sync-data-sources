@@ -3,7 +3,7 @@ RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificate
 RUN go get -u github.com/LF-Engineering/sync-data-sources/sources
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN make -f ./Makefile dockerinstall
-FROM alpine
-RUN apk add git bash
+FROM lukaszgryglicki/dev-analytics-grimoire-docker-minimal
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY sources/data /data
+CMD /bin/sh
