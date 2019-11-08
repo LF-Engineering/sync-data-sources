@@ -168,7 +168,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting debug level",
-			map[string]string{"GHA2DB_DEBUG": "2"},
+			map[string]string{"SDS_DEBUG": "2"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -177,7 +177,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting negative debug level",
-			map[string]string{"GHA2DB_DEBUG": "-1"},
+			map[string]string{"SDS_DEBUG": "-1"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -186,7 +186,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting command debug level",
-			map[string]string{"GHA2DB_CMDDEBUG": "3"},
+			map[string]string{"SDS_CMDDEBUG": "3"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -195,7 +195,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting ST (singlethreading) and NCPUs",
-			map[string]string{"GHA2DB_ST": "1", "GHA2DB_NCPUS": "1"},
+			map[string]string{"SDS_ST": "1", "SDS_NCPUS": "1"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -204,7 +204,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting NCPUs to 2",
-			map[string]string{"GHA2DB_NCPUS": "2"},
+			map[string]string{"SDS_NCPUS": "2"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -213,7 +213,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting NCPUs to 1 should also set ST mode",
-			map[string]string{"GHA2DB_NCPUS": "1"},
+			map[string]string{"SDS_NCPUS": "1"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -223,7 +223,7 @@ func TestInit(t *testing.T) {
 		{
 			"Setting skip log time",
 			map[string]string{
-				"GHA2DB_SKIPTIME": "Y",
+				"SDS_SKIPTIME": "Y",
 			},
 			dynamicSetFields(
 				t,
@@ -235,7 +235,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting context out",
-			map[string]string{"GHA2DB_CTXOUT": "1"},
+			map[string]string{"SDS_CTXOUT": "1"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -244,7 +244,7 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Set ES URL ",
-			map[string]string{"GHA2DB_ES_URL": "http://other.server:9222"},
+			map[string]string{"SDS_ES_URL": "http://other.server:9222"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
@@ -264,9 +264,9 @@ func TestInit(t *testing.T) {
 		// Because GitHubOAuth is depending on /etc/github/oauth* files
 		// We can't test this, because user test environment can have those files or not
 		// We're forcing skipping that test unless this is a special test for GitHubOAuth
-		_, ok := test.environment["GHA2DB_GITHUB_OAUTH"]
+		_, ok := test.environment["SDS_GITHUB_OAUTH"]
 		if !ok {
-			test.environment["GHA2DB_GITHUB_OAUTH"] = "not_use"
+			test.environment["SDS_GITHUB_OAUTH"] = "not_use"
 		}
 
 		// Remember initial environment
@@ -285,7 +285,7 @@ func TestInit(t *testing.T) {
 
 		// When CTXOUT is set, Ctx.Init() writes debug data to STDOUT
 		// We don't want to see it while running tests
-		if test.environment["GHA2DB_CTXOUT"] != "" {
+		if test.environment["SDS_CTXOUT"] != "" {
 			fd, err := os.Open(os.DevNull)
 			if err != nil {
 				t.Errorf(err.Error())
@@ -296,7 +296,7 @@ func TestInit(t *testing.T) {
 		// Initialize context while new environment is set
 		gotContext.Init()
 		gotContext.TestMode = true
-		if test.environment["GHA2DB_CTXOUT"] != "" {
+		if test.environment["SDS_CTXOUT"] != "" {
 			os.Stdout = stdout
 		}
 

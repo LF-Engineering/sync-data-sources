@@ -120,8 +120,6 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	// TODO: check if there is Native map defined, then check its 'slug' key - must be non-empty
-	// Then for all fixtures defined, all slugs must be unique - check this also
 	if len(fixture.Native) == 0 {
 		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
 	}
@@ -132,6 +130,7 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if slug == "" {
 		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
 	}
+	fixture.Fn = fixtureFile
 
 	// Synchronize go routine
 	if ch != nil {
@@ -183,6 +182,16 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
+	}
+	// Then for all fixtures defined, all slugs must be unique - check this also
+	st := make(map[string]lib.Fixture)
+	for _, fixture := range fixtures {
+		slug := fixture.Native["slug"]
+		fixture2, ok := st[slug]
+		if ok {
+			lib.Fatalf("Duplicate slug %s in fixtures: %+v and %+v\n", slug, fixture, fixture2)
+		}
+		st[slug] = fixture
 	}
 	return nil
 }
