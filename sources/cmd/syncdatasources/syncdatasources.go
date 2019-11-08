@@ -220,6 +220,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			fixtures = append(fixtures, processFixtureFile(nil, ctx, fixtureFile))
 		}
 	}
+	if len(fixtures) == 0 {
+		lib.Fatalf("No fixtures read, this is error, please define at least one\n")
+	}
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
 	}
