@@ -16,4 +16,5 @@
 
 # project specific
 /sources/data
-/sources/sync-data-sources
+/sources/syncdatasources
+out

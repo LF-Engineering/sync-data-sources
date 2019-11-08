@@ -5,4 +5,4 @@ WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN make -f ./Makefile dockerinstall
 FROM alpine
 RUN apk add git bash
-COPY --from=builder /go/bin/sync-data-sources /usr/bin/
+COPY --from=builder /go/bin/syncdatasources /usr/bin/
