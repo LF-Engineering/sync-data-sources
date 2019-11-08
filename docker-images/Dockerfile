@@ -6,3 +6,4 @@ RUN make -f ./Makefile dockerinstall
 FROM alpine
 RUN apk add git bash
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
+COPY sources/data /data

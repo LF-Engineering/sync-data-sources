@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
@@ -22,9 +23,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"perceval",
 			"--version",
 		},
-		map[string]string{
-			"EXAMPLE_PASS_ENV": "hello",
-		},
+		nil,
 	)
 	dtEnd := time.Now()
 	if err != nil {
@@ -39,9 +38,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"p2o.py",
 			"--help",
 		},
-		map[string]string{
-			"EXAMPLE_PASS_ENV": "hello",
-		},
+		nil,
 	)
 	dtEnd = time.Now()
 	if err != nil {
@@ -55,9 +52,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"sortinghat",
 			"--version",
 		},
-		map[string]string{
-			"EXAMPLE_PASS_ENV": "hello",
-		},
+		nil,
 	)
 	dtEnd = time.Now()
 	if err != nil {
@@ -70,6 +65,35 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	return nil
 }
 
+func syncGrimoireStack(ctx *lib.Ctx) error {
+	dtStart := time.Now()
+	ctx.ExecOutput = true
+	defer func() {
+		ctx.ExecOutput = false
+	}()
+	res, err := lib.ExecCommand(
+		ctx,
+		[]string{
+			"find",
+			"data/",
+			"-type",
+			"f",
+			"-iname",
+			"*.y*ml",
+		},
+		nil,
+	)
+	dtEnd := time.Now()
+	if err != nil {
+		lib.Printf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+		fmt.Fprintf(os.Stderr, "%v: Error finding fixtures (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+		return err
+	}
+	fixtures := strings.Split(res, "\n")
+	lib.Printf("Fixtures to process: %+v\n", fixtures)
+	return nil
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
@@ -77,6 +101,10 @@ func main() {
 	err := ensureGrimoireStackAvail(&ctx)
 	if err != nil {
 		lib.Fatalf("Grimoire stack not available: %+v\n", err)
+	}
+	err = syncGrimoireStack(&ctx)
+	if err != nil {
+		lib.Fatalf("Grimoire stack sync error: %+v\n", err)
 	}
 	dtEnd := time.Now()
 	fmt.Printf("Time: %v\n", dtEnd.Sub(dtStart))
