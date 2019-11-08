@@ -1,8 +1,15 @@
 package syncdatasources
 
+// Config holds data source config options
+type Config struct {
+	Name  string `yaml:"name"`
+	Value string `yaml:"value"`
+}
+
 // DataSource contains data source spec from dev-analytics-api
 type DataSource struct {
-	Slug string `yaml:"slug"`
+	Slug   string   `yaml:"slug"`
+	Config []Config `yaml:"config"`
 }
 
 // Fixture contains full YAML structure of dev-analytics-api fixture files
