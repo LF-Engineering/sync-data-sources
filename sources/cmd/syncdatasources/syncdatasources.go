@@ -111,6 +111,12 @@ func validateConfig(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSour
 	}
 }
 
+func validateEndpoint(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource, endpoint *lib.Endpoint) {
+	if endpoint.Name == "" {
+		lib.Fatalf("Endpoint %+v name in data source %+v in fixture %+v is empty or undefined\n", endpoint, dataSource, fixture)
+	}
+}
+
 func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource) {
 	if dataSource.Slug == "" {
 		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
@@ -120,6 +126,9 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.Data
 	}
 	for _, cfg := range dataSource.Config {
 		validateConfig(ctx, fixture, dataSource, &cfg)
+	}
+	for _, endpoint := range dataSource.Endpoints {
+		validateEndpoint(ctx, fixture, dataSource, &endpoint)
 	}
 }
 
