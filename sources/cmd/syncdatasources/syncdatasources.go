@@ -91,6 +91,50 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 	}
 	fixtures := strings.Split(res, "\n")
 	lib.Printf("Fixtures to process: %+v\n", fixtures)
+	return processFixtureFiles(ctx, fixtures)
+}
+
+func processFixtureFile(ch chan bool, ctx *lib.Ctx, fixtureFile string) bool {
+	lib.Printf("Processing: %s\n", fixtureFile)
+	// Synchronize go routine
+	if ch != nil {
+		ch <- true
+	}
+	return true
+}
+
+func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
+	// Get number of CPUs available
+	thrN := lib.GetThreadsNum(ctx)
+	if thrN > 1 {
+		lib.Printf("Now processing %d fixture files using MT%d version\n", len(fixtureFiles), thrN)
+		ch := make(chan bool)
+		nThreads := 0
+		for _, fixtureFile := range fixtureFiles {
+			if fixtureFile == "" {
+				continue
+			}
+			go processFixtureFile(ch, ctx, fixtureFile)
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
+			}
+		}
+		lib.Printf("Final threads join\n")
+		for nThreads > 0 {
+			<-ch
+			nThreads--
+		}
+	} else {
+		lib.Printf("Now processing %d fixture files using ST version\n", len(fixtureFiles))
+		for _, fixtureFile := range fixtureFiles {
+			if fixtureFile == "" {
+				continue
+			}
+			processFixtureFile(nil, ctx, fixtureFile)
+		}
+	}
 	return nil
 }
 
