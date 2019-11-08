@@ -102,6 +102,32 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 	return processFixtureFiles(ctx, fixtures)
 }
 
+func validateDataSource(fixture *lib.Fixture, dataSource *lib.DataSource) {
+	if dataSource.Slug == "" {
+		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
+	}
+}
+
+func validateFixture(fixture *lib.Fixture, fixtureFile string) {
+	if len(fixture.Native) == 0 {
+		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
+	}
+	slug, ok := fixture.Native["slug"]
+	if !ok {
+		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
+	}
+	if slug == "" {
+		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
+	}
+	if len(fixture.DataSources) == 0 {
+		lib.Fatalf("Fixture file %s must have at least one data source defined in 'data_sources' key\n", fixtureFile)
+	}
+	fixture.Fn = fixtureFile
+	for _, dataSource := range fixture.DataSources {
+		validateDataSource(fixture, &dataSource)
+	}
+}
+
 func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
 	if ctx.Debug > 0 {
 		lib.Printf("Processing: %s\n", fixtureFile)
@@ -120,17 +146,7 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	if len(fixture.Native) == 0 {
-		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
-	}
-	slug, ok := fixture.Native["slug"]
-	if !ok {
-		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
-	}
-	if slug == "" {
-		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
-	}
-	fixture.Fn = fixtureFile
+	validateFixture(&fixture, fixtureFile)
 
 	// Synchronize go routine
 	if ch != nil {
