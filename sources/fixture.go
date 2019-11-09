@@ -1,5 +1,7 @@
 package syncdatasources
 
+import "fmt"
+
 // Config holds data source config options
 type Config struct {
 	Name  string `yaml:"name"`
@@ -23,4 +25,18 @@ type Fixture struct {
 	Native      map[string]string `yaml:"native"`
 	DataSources []DataSource      `yaml:"data_sources"`
 	Fn          string
+	Slug        string
+}
+
+// Task holds single endpoint task and its context (required config, fixture filename etc.)
+type Task struct {
+	Endpoint Endpoint
+	Config   []Config
+	DsSlug   string
+	FxSlug   string
+	FxFn     string
+}
+
+func (t Task) String() string {
+	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s NConfigs:%d}", t.Endpoint.Name, t.DsSlug, t.FxSlug, t.FxFn, len(t.Config))
 }

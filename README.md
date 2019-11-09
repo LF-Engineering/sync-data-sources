@@ -14,3 +14,9 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 # Kubernetes
 
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod ./kubernetes/test_image_kubernetes.sh [command]` to test docker image on kubernetes (without Helm chart). Then inside the container run: `./run.sh`.
+
+
+# Helm
+
+- Go to `helm-charts/sds-helm` and follow instructions from `README.md` file in that derectory. helm chart contains everything needed to run entire stack.
+- Note that `zippass.secret` and `helm-charts/sds-helm/sds-helm/secrets/ZIPPASS.secret` files should have the same contents.

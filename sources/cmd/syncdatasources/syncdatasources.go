@@ -165,6 +165,7 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 		lib.Fatalf("Fixture file %s must have at least one data source defined in 'data_sources' key\n", fixtureFile)
 	}
 	fixture.Fn = fixtureFile
+	fixture.Slug = slug
 	for _, dataSource := range fixture.DataSources {
 		validateDataSource(ctx, fixture, &dataSource)
 	}
@@ -262,6 +263,27 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			lib.Fatalf("Duplicate slug %s in fixtures: %+v and %+v\n", slug, fixture, fixture2)
 		}
 		st[slug] = fixture
+	}
+	tasks := []lib.Task{}
+	for _, fixture := range fixtures {
+		for _, dataSource := range fixture.DataSources {
+			for _, endpoint := range dataSource.Endpoints {
+				tasks = append(
+					tasks,
+					lib.Task{
+						Endpoint: endpoint,
+						Config:   dataSource.Config,
+						DsSlug:   dataSource.Slug,
+						FxSlug:   fixture.Slug,
+						FxFn:     fixture.Fn,
+					},
+				)
+			}
+		}
+	}
+	lib.Printf("%d Tasks\n", len(tasks))
+	if ctx.Debug > 1 {
+		lib.Printf("Tasks: %+v\n", tasks)
 	}
 	return nil
 }
