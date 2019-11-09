@@ -1,4 +1,4 @@
-{{- $skipBackupsPV := .Values.skipPV -}}
+{{- $skipPV := .Values.skipPV -}}
 {{ if not $skipPV }}
 ---
 kind: PersistentVolumeClaim
