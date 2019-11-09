@@ -75,7 +75,6 @@ pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
 # pvSize: 2Ti
 pvSize: 100Gi
-pvMountName: sds-storage
 pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
 labels:
