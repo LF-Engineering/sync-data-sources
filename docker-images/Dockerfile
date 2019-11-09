@@ -8,4 +8,4 @@ FROM lukaszgryglicki/dev-analytics-grimoire-docker-minimal
 COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY sources/data.zip /data.zip
-CMD /bin/sh
+CMD /bin/bash

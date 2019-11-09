@@ -56,12 +56,12 @@ syncCommand: './run.sh'
 syncImage: 'lukaszgryglicki/sync-data-sources'
 syncPodName: sds
 syncRestartPolicy: Never
-limitsCPU: '48000m'
-limitsMemory: '256Gi'
-requestsCPU: '500m'
-requestsMemory: '2Gi'
+limitsCPU: 48000m
+limitsMemory: 256Gi
+requestsCPU: 500m
+requestsMemory: 2Gi
 name: sds
-namespace: 'sds'
+namespace: sds
 nameOverride: sds
 #schedule: '*/2 * * * *'
 #schedule: '0 3 2 * *'
@@ -70,6 +70,10 @@ secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
 zipSecret: zip-pass
+pvName: sds
+pvAccessMode: ReadWriteOnce
+pvStorageClass: openebs-hostpath
+pvSize: 1Ti
 useResourcesLimits: ''
 labels:
   name: sds
