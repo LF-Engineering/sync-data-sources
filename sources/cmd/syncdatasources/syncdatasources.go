@@ -340,6 +340,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	return nil
 }
 
+
+// massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -356,9 +358,56 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 	return
 }
 
-func massageConfig(config *[]lib.Config, ds string) (c []lib.Config) {
+// massageConfig - this function makes sure that given config options are valid for a given data source
+// it also ensures some essential options are enabled and eventually reformats config
+func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail bool) {
+	m := make(map[string]struct{})
 	if ds == lib.GitHub {
-		c = *config
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == "api-token" {
+				if strings.Contains(value, ",") {
+					ary := strings.Split(value, ",")
+					vals := []string{}
+					for _, key := range ary {
+						key = strings.Replace(key, "[", "", -1)
+						key = strings.Replace(key, "]", "", -1)
+						vals = append(vals, key)
+					}
+					c = append(c, lib.MultiConfig{Name: "-t", Value: vals})
+				} else {
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				}
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["fetch-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "fetch-archive", Value: []string{}})
+		}
+		_, ok = m["sleep-for-rate"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
+		}
+	} else if ds == lib.Git {
+		for _, cfg := range *config {
+			name := cfg.Name
+			if name == "api-token" {
+				continue
+			}
+			value := cfg.Value
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+		}
+		_, ok := m["latest-items"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}})
+		}
+	} else {
+		fail = true
 	}
 	return
 }
@@ -406,15 +455,23 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	}
 
 	// Handle DS config options
-	config := massageConfig(task.Config, ds)
-	if len(config) == 0 {
+	multiConfig, fail := massageConfig(task.Config, ds)
+	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
 		res[1] = 3
 		return
 	}
-	for _, cfg := range config {
-		commandLine = append(commandLine, "--"+cfg.Name)
-		commandLine = append(commandLine, cfg.Value)
+	for _, mcfg := range multiConfig {
+		if strings.HasPrefix(mcfg.Name, "-") {
+			commandLine = append(commandLine, mcfg.Name)
+		} else {
+			commandLine = append(commandLine, "--"+mcfg.Name)
+		}
+		for _, val := range mcfg.Value {
+			if val != "" {
+				commandLine = append(commandLine, val)
+			}
+		}
 	}
 	// FIXME: remove this
 	lib.Printf("%+v\n", commandLine)

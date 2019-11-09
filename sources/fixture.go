@@ -40,3 +40,10 @@ type Task struct {
 func (t Task) String() string {
 	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s NConfigs:%d}", t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, len(*(t.Config)))
 }
+
+// MultiConfig holds massaged config options, it can have >1 value for single option, for example
+// GitHub API tokens: -t token1 token2 token3 ... tokenN
+type MultiConfig struct {
+	Name  string
+	Value []string
+}
