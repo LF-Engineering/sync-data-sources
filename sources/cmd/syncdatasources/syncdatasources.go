@@ -291,7 +291,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	tasks := *ptasks
 	thrN := lib.GetThreadsNum(ctx)
-	failed := []int{}
+	failed := [][2]int{}
 	if thrN > 1 {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using MT%d version\n", len(tasks), thrN)
@@ -305,7 +305,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 				res := <-ch
 				nThreads--
 				if res[1] != 0 {
-					failed = append(failed, res[0])
+					failed = append(failed, res)
 				}
 			}
 		}
@@ -316,7 +316,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 			res := <-ch
 			nThreads--
 			if res[1] != 0 {
-				failed = append(failed, res[0])
+				failed = append(failed, res)
 			}
 		}
 	} else {
@@ -326,12 +326,32 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 		for idx, task := range tasks {
 			res := processTask(nil, ctx, idx, task)
 			if res[1] != 0 {
-				failed = append(failed, res[0])
+				failed = append(failed, res)
 			}
 		}
 	}
-	lib.Printf("Failed indexes: %+v\n", failed)
+	lFailed := len(failed)
+	if lFailed > 0 {
+		lib.Printf("Failed tasks: %+v\n", lFailed)
+		for _, res := range failed {
+			lib.Printf("Failed: %+v: %s\n", tasks[res[0]], lib.ErrorStrings[res[1]])
+		}
+	}
 	return nil
+}
+
+func massageEndpoint(endpoint string, ds string) (e []string) {
+	if ds == "github" {
+		if strings.Contains(endpoint, "/") {
+			ary := strings.Split(endpoint, "/")
+			lAry := len(ary)
+			e = append(e, ary[lAry-2])
+			e = append(e, ary[lAry-1])
+		} else {
+			e = append(e, endpoint)
+		}
+	}
+	return
 }
 
 func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
@@ -347,10 +367,11 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	}
 	res[0] = idx
 
-	// perceval git https://gerrit.onosproject.org/onos --category commit --git-path .opennetworkinglab_onos.git > .perceval_onos.git.log || exit 1
 	commandLine := []string{"perceval"}
-	if strings.Contains(task.DsSlug, "/") {
-		ary := strings.Split(task.DsSlug, "/")
+	// Handle DS slug
+	ds := task.DsSlug
+	if strings.Contains(ds, "/") {
+		ary := strings.Split(ds, "/")
 		if len(ary) != 2 {
 			lib.Printf("%+v: %s\n", task, lib.ErrorStrings[1])
 			res[1] = 1
@@ -359,10 +380,29 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		commandLine = append(commandLine, ary[0])
 		commandLine = append(commandLine, "--category")
 		commandLine = append(commandLine, ary[1])
+		ds = ary[0]
 	} else {
-		commandLine = append(commandLine, task.DsSlug)
+		commandLine = append(commandLine, ds)
 	}
-	commandLine = append(commandLine, task.Endpoint)
+
+	// Handle DS endpoint
+	eps := massageEndpoint(task.Endpoint, ds)
+	if len(eps) == 0 {
+		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[2])
+		res[1] = 2
+		return
+	}
+	for _, ep := range eps {
+		commandLine = append(commandLine, ep)
+	}
+
+	// Handle DS config options
+	// for _, cfg := range massageConfig(task.Config, ds) {
+	for _, cfg := range *(task.Config) {
+		commandLine = append(commandLine, "--"+cfg.Name)
+		commandLine = append(commandLine, cfg.Value)
+	}
+	// FIXME: remove this
 	lib.Printf("%+v\n", commandLine)
 	return
 }
