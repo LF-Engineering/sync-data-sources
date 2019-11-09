@@ -16,6 +16,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 	out := lib.Ctx{
 		Debug:      in.Debug,
 		CmdDebug:   in.CmdDebug,
+		MaxRetry:   in.MaxRetry,
 		ST:         in.ST,
 		NCPUs:      in.NCPUs,
 		CtxOut:     in.CtxOut,
@@ -144,6 +145,7 @@ func TestInit(t *testing.T) {
 	defaultContext := lib.Ctx{
 		Debug:      0,
 		CmdDebug:   0,
+		MaxRetry:   3,
 		ST:         false,
 		NCPUs:      0,
 		CtxOut:     false,
@@ -191,6 +193,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"CmdDebug": 3},
+			),
+		},
+		{
+			"Setting max retry parameter",
+			map[string]string{"SDS_MAXRETRY": "2"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"MaxRetry": 2},
 			),
 		},
 		{

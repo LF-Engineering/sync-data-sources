@@ -26,6 +26,7 @@
 #
 # sync-data-sources binary Environmental options (see README.md or NOTES.txt)
 #
+# sdsMaxRetry (Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3)
 # sdsDebug (Debug level: 0-no, 1-info, 2-verbose)
 # sdsCmdDebug (Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default)
 # sdsST (force using single-threaded version)
@@ -33,6 +34,7 @@
 # sdsCtxOut (output all context data (configuration struct))
 # sdsSkipTime (do not output time with log messages)
 #
+# sdsMaxRetry: 4
 # sdsDebug: '2'
 # sdsCmdDebug: '2'
 # sdsST: 1
