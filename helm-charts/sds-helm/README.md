@@ -44,4 +44,5 @@ Other environment parameters:
 # Deploy on LF infra
 
 - Install: `[DBG=1] ./setup.sh test|prod`.
+- Shell into debug pod (only when installed with `DBG=1`): `pod_shell.sh test sds sds-debug`.
 - Unnstall: `./delete.sh test|prod`.
