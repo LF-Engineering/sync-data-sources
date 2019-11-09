@@ -102,6 +102,13 @@ spec:
             image: '{{ .Values.syncImage }}-{{ .Values.deployEnv }}'
             imagePullPolicy: {{ .Values.imagePullPolicy }}
             name: '{{ .Values.syncPodName }}'
+            volumeMounts:
+            - name: '{{ .Values.pvMountName }}'
+              mountPath: '{{ .Values.pvMountPath }}'
+          volumes:
+          - name: '{{ .Values.pvName }}'
+            persistentVolumeClaim:
+              claimName: '{{ .Values.pvName }}'
           restartPolicy: {{ .Values.syncRestartPolicy }}
 {{ if .Values.useNodeSelector }}
           nodeSelector:

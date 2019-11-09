@@ -85,6 +85,13 @@ spec:
     image: '{{ .Values.debugImage }}-{{ .Values.deployEnv }}'
     imagePullPolicy: {{ .Values.imagePullPolicy }}
     name: {{ .Values.debugPodName }}
+    volumeMounts:
+    - name: '{{ .Values.pvMountName }}'
+      mountPath: '{{ .Values.pvMountPath }}'
+  volumes:
+  - name: '{{ .Values.pvName }}'
+    persistentVolumeClaim:
+      claimName: '{{ .Values.pvName }}'
   restartPolicy: {{ .Values.imageRestartPolicy }}
 {{ if .Values.useNodeSelector }}
   nodeSelector:
