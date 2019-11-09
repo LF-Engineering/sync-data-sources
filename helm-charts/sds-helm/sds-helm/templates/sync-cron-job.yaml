@@ -103,7 +103,7 @@ spec:
             imagePullPolicy: {{ .Values.imagePullPolicy }}
             name: '{{ .Values.syncPodName }}'
             volumeMounts:
-            - name: '{{ .Values.pvMountName }}'
+            - name: '{{ .Values.pvName }}'
               mountPath: '{{ .Values.pvMountPath }}'
           volumes:
           - name: '{{ .Values.pvName }}'
