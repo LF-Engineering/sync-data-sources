@@ -5,14 +5,14 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   namespace: '{{ .Values.namespace }}'
-  name: '{{ .Values.importPodName }}'
+  name: '{{ .Values.syncPodName }}'
   labels:
     type: 'cron'
 {{- with .Values.labels -}}
 {{ toYaml . | nindent 4 }}
 {{ end }}
-    app.kubernetes.io/name: {{ include "json2hat-helm.name" . }}
-    helm.sh/chart: {{ include "json2hat-helm.chart" . }}
+    app.kubernetes.io/name: {{ include "sds-helm.name" . }}
+    helm.sh/chart: {{ include "sds-helm.chart" . }}
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
@@ -22,23 +22,23 @@ spec:
     spec:
       template:
         metadata:
-          name: '{{ .Values.importPodName }}'
+          name: '{{ .Values.syncPodName }}'
           labels:
             type: 'sync'
 {{- with .Values.labels -}}
 {{ toYaml . | nindent 12 }}
 {{ end }}
-            app.kubernetes.io/name: {{ include "json2hat-helm.name" . }}
-            helm.sh/chart: {{ include "json2hat-helm.chart" . }}
+            app.kubernetes.io/name: {{ include "sds-helm.name" . }}
+            helm.sh/chart: {{ include "sds-helm.chart" . }}
             app.kubernetes.io/instance: {{ .Release.Name }}
             app.kubernetes.io/managed-by: {{ .Release.Service }}
         spec:
           containers:
           - command:
-            - {{ .Values.importCommand }}
-{{ if .Values.importCommandArgs }}
+            - {{ .Values.syncCommand }}
+{{ if .Values.syncCommandArgs }}
             args:
-{{- with .Values.importCommandArgs -}}
+{{- with .Values.syncCommandArgs -}}
 {{ toYaml . | nindent 14 }}
 {{ end }}
 {{ end }}
@@ -52,20 +52,18 @@ spec:
                 cpu: '{{ .Values.limitsCPU }}'
 {{ end }}
             env:
-            - name: SH_DSN
-              value: '{{ .Values.shDSN }}'
-            - name: SH_PROTO
-              value: '{{ .Values.shProto }}'
-            - name: SH_PARAMS
-              value: '{{ .Values.shParams }}'
-            - name: SH_CLEANUP
-              value: '{{ .Values.shCleanup }}'
-            - name: SH_TEST_CONNECT
-              value: '{{ .Values.shTestConnect }}'
-            - name: SH_REMOTE_JSON_PATH
-              value: '{{ .Values.shRemoteJSONPath }}'
-            - name: SH_REMOTE_YAML_PATH
-              value: '{{ .Values.shRemoteYAMLPath }}'
+            - name: SDS_DEBUG
+              value: '{{ .Values.sdsDebug }}'
+            - name: SDS_CMDDEBUG
+              value: '{{ .Values.sdsCmdDebug }}'
+            - name: SDS_ST
+              value: '{{ .Values.sdsST }}'
+            - name: SDS_NCPUS
+              value: '{{ .Values.sdsNCPUs }}'
+            - name: SDS_CTXOUT
+              value: '{{ .Values.sdsCtxOut }}'
+            - name: SDS_SKIPTIME
+              value: '{{ .Values.sdsSkipTime }}'
             - name: SH_USER
               valueFrom:
                 secretKeyRef:
@@ -91,12 +89,24 @@ spec:
                 secretKeyRef:
                   name: {{ .Values.shSecret }}
                   key: SH_DB.secret
-            image: {{ .Values.importImage }}
+            - name: SDS_ES_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.esSecret }}
+                  key: ES_URL.secret
+            - name: ZIPPASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.zipSecret }}
+                  key: ZIPPASS.secret
+            image: '{{ .Values.syncImage }}-{{ .Values.deployEnv }}'
             imagePullPolicy: {{ .Values.imagePullPolicy }}
-            name: '{{ .Values.importPodName }}'
-          restartPolicy: {{ .Values.importRestartPolicy }}
+            name: '{{ .Values.syncPodName }}'
+          restartPolicy: {{ .Values.syncRestartPolicy }}
+{{ if .Values.useNodeSelector }}
           nodeSelector:
 {{- with .Values.nodeSelector -}}
 {{ toYaml . | nindent 12 }}
+{{ end }}
 {{ end }}
 {{ end }}
