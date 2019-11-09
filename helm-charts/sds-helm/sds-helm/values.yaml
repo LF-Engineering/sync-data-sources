@@ -73,7 +73,10 @@ zipSecret: zip-pass
 pvName: sds
 pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
-pvSize: 1Ti
+# pvSize: 2Ti
+pvSize: 100Gi
+pvMountName: sds-storage
+pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
 labels:
   name: sds
