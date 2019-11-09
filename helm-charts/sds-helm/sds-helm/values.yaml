@@ -48,12 +48,12 @@
 
 # Standard values:
 deployEnv: 'set-me'
-esURL: 'http://127.0.0.1:9200'
+esURL: ''
 concurrencyPolicy: Forbid
 fullnameOverride: sds
 imagePullPolicy: Always
 syncCommand: './run.sh'
-syncImage: 'lukaszgryglicki/sync-data-sources-'
+syncImage: 'lukaszgryglicki/sync-data-sources'
 syncPodName: sds
 syncRestartPolicy: Never
 limitsCPU: '48000m'
