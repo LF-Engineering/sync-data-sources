@@ -26,7 +26,6 @@ To upgrade:
 
 You can install only selected templates, see `values.yaml` for detalis (refer to `skipXYZ` variables in comments), example:
 - `helm install --dry-run --debug --generate-name ./sds-helm --set deployEnv=test,skipSecrets=1,skipCron=1,skipNamespace=1,skipPV=1`.
-- `helm install --dry-run --debug sds-debug ./sds-helm --set debugPod=1`.
 
 Please note variables commented out in `./sds-helm/values.yaml`. You can either uncomment them or pass their values via `--set variable=name`.
 
@@ -40,9 +39,3 @@ Other environment parameters:
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
-
-To shell into a SortingHat database pod (when you deployed with `--set debugPod=1`):
-
-- `kubectl exec -it sds-debug -n sds -- /bin/bash`.
-- `mysql -h $SH_HOST -u $SH_USER -p$SH_PASS $SH_DB`.
-- `show tables;`.

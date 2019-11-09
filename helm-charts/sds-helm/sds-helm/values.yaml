@@ -41,18 +41,15 @@
 # sdsSkipTime: 'y'
 #
 # Other evrironment options:
+# esURL: 'http://127.0.0.1:9200'
 # schedule: '36 * * * *'
 # syncCommandArgs:
 #   - "bootarg"
 
 # Standard values:
 deployEnv: 'set-me'
+esURL: 'http://127.0.0.1:9200'
 concurrencyPolicy: Forbid
-debugPod: ''
-debugPodName: 'sds-debug'
-debugCommand: '/bin/sleep'
-debugCommandArgs: ['36525d']
-debugImage: 'lukaszgryglicki/sync-data-sources-'
 fullnameOverride: sds
 imagePullPolicy: Always
 syncCommand: 'sds'
