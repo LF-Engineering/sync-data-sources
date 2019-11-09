@@ -341,7 +341,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 }
 
 func massageEndpoint(endpoint string, ds string) (e []string) {
-	if ds == "github" {
+	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
 			ary := strings.Split(endpoint, "/")
 			lAry := len(ary)
@@ -350,6 +350,15 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
+	} else if ds == lib.Git {
+		e = append(e, endpoint)
+	}
+	return
+}
+
+func massageConfig(config *[]lib.Config, ds string) (c []lib.Config) {
+	if ds == lib.GitHub {
+		c = *config
 	}
 	return
 }
@@ -397,8 +406,13 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	}
 
 	// Handle DS config options
-	// for _, cfg := range massageConfig(task.Config, ds) {
-	for _, cfg := range *(task.Config) {
+	config := massageConfig(task.Config, ds)
+	if len(config) == 0 {
+		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
+		res[1] = 3
+		return
+	}
+	for _, cfg := range config {
 		commandLine = append(commandLine, "--"+cfg.Name)
 		commandLine = append(commandLine, cfg.Value)
 	}
