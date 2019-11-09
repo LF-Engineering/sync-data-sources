@@ -335,15 +335,35 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 }
 
 func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
+	// Ensure to unlock thread when finishing
+	defer func() {
+		// Synchronize go routine
+		if ch != nil {
+			ch <- res
+		}
+	}()
 	if ctx.Debug > 1 {
 		lib.Printf("Processing: %s\n", task)
 	}
 	res[0] = idx
 
-	// Synchronize go routine
-	if ch != nil {
-		ch <- res
+	// perceval git https://gerrit.onosproject.org/onos --category commit --git-path .opennetworkinglab_onos.git > .perceval_onos.git.log || exit 1
+	commandLine := []string{"perceval"}
+	if strings.Contains(task.DsSlug, "/") {
+		ary := strings.Split(task.DsSlug, "/")
+		if len(ary) != 2 {
+			lib.Printf("%+v: %s\n", task, lib.ErrorStrings[1])
+			res[1] = 1
+			return
+		}
+		commandLine = append(commandLine, ary[0])
+		commandLine = append(commandLine, "--category")
+		commandLine = append(commandLine, ary[1])
+	} else {
+		commandLine = append(commandLine, task.DsSlug)
 	}
+	commandLine = append(commandLine, task.Endpoint)
+	lib.Printf("%+v\n", commandLine)
 	return
 }
 
