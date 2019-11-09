@@ -40,3 +40,8 @@ Other environment parameters:
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
+
+# Deploy on LF infra
+
+- Install: `[DBG=1] ./setup.sh test|prod`.
+- Unnstall: `./delete.sh test|prod`.
