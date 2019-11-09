@@ -34,9 +34,8 @@ Import company affiliations from cncf/devstats into GrimoireLab Sorting Hat data
 
 Other environment parameters:
 
-- `SH_DSN`/`shDSN` - provides full database connect string, for example: `SH_DSN='shuser:shpassword@tcp(shhost:shport)/shdb?charset=utf8'`
 - `SDS_DEBUG`/`sdsDebug` - Debug level: 0-no, 1-info, 2-verbose.
-- `SDS_CMDDEBUG`/`sdsCmdDebug` - Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default .
+- `SDS_CMDDEBUG`/`sdsCmdDebug` - Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default.
 - `SDS_ST`/`sdsST` - force using single-threaded version.
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).

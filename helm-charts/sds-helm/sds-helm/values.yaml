@@ -1,61 +1,79 @@
-# Secrets that can be set via files in `./secrets/*.secret`, via coommandline by `--set 'shUser=xyz,shHost=host.com,...'` or even uncomment them in the lines below.
+# Secrets that can be set via files in `./secrets/*.secret`, via commandline by `--set 'shUser=xyz,shHost=host.com,...'` or even uncomment them in the lines below.
 # shUser: ''
 # shHost: ''
 # shPort: ''
 # shPass: ''
 # shDB: ''
+# esURL: ''
+# zipPass: ''
 #
 # You can skip some parts of the deployment (useful when deploying partailly again)
 # skipCron (will not create a new cron job, you should set it when cron job is already created, if you want to recreate a cron job, delete the existing one first and do not set this flag)
 # skipSecrets (will not attempt to create secrets, if you want to create new secrets delete current secrets first and do not set this flag)
 # skipSHSecret (will skip creating SH (sorting hat) secret)
-# skipNamespace (will skip json2hat namespace creation)
+# skipESSecret (will skip creating ES (ElasticSearch) secret)
+# skipZipSecret (will skip creating ZIP file password secret)
+# skipNamespace (will skip sds namespace creation)
+# skipPV (will skip persistent volume creation)
+#
 # skipCron: 1
 # skipSecrets: 1
 # skipSHSecret: 1
+# skipESSecret: 1
+# skipZipSecret: 1
 # skipNamespace: 1
+# skipPV: 1
 #
-# Other json2hat params (see NOTES.txt):
-# shDSN: 'shuser:shpassword@tcp(shhost:shport)/shdb?charset=utf8'
-# shProto: tcp
-# shParams: '?charset=utf8'
-# shCleanup: 1
-# shTestConnect: 1
-# shRemoteJSONPath: 'https://github.com/cncf/devstats/raw/master/github_users.json'
-# shRemoteYAMLPath: 'https://github.com/cncf/devstats/raw/master/companies.yaml'
+# sync-data-sources binary Environmental options (see README.md or NOTES.txt)
+#
+# sdsDebug (Debug level: 0-no, 1-info, 2-verbose)
+# sdsCmdDebug (Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default)
+# sdsST (force using single-threaded version)
+# sdsNCPUs (set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect))
+# sdsCtxOut (output all context data (configuration struct))
+# sdsSkipTime (do not output time with log messages)
+#
+# sdsDebug: '2'
+# sdsCmdDebug: '2'
+# sdsST: 1
+# sdsNCPUs: 16
+# sdsCtxOut: '1'
+# sdsSkipTime: 'y'
 #
 # Other evrironment options:
 # schedule: '36 * * * *'
-# importCommandArgs:
+# syncCommandArgs:
 #   - "bootarg"
 
 # Standard values:
 deployEnv: 'set-me'
 concurrencyPolicy: Forbid
 debugPod: ''
-debugPodName: 'json2hat-debug'
+debugPodName: 'sds-debug'
 debugCommand: '/bin/sleep'
 debugCommandArgs: ['36525d']
-debugImage: 'lukaszgryglicki/json2hat-debug'
-fullnameOverride: json2hat
+debugImage: 'lukaszgryglicki/sync-data-sources-'
+fullnameOverride: sds
 imagePullPolicy: Always
-importCommand: 'json2hat'
-importImage: 'lukaszgryglicki/json2hat'
-importPodName: json2hat
-importRestartPolicy: Never
-limitsCPU: '1000m'
-limitsMemory: '8Gi'
-name: json2hat
-namespace: 'json2hat'
-nameOverride: json2hat
-requestsCPU: '300m'
-requestsMemory: '1Gi'
+syncCommand: 'sds'
+syncImage: 'lukaszgryglicki/sync-data-sources-'
+syncPodName: sds
+syncRestartPolicy: Never
+limitsCPU: '48000m'
+limitsMemory: '256Gi'
+requestsCPU: '500m'
+requestsMemory: '2Gi'
+name: sds
+namespace: 'sds'
+nameOverride: sds
 #schedule: '*/2 * * * *'
-schedule: '0 3 2 * *'
+#schedule: '0 3 2 * *'
+schedule: '0 0 * * *'
 secretType: Opaque
 shSecret: sh-db
 useResourcesLimits: 1
 labels:
-  name: json2hat
+  name: sds
+useNodeSelector: '1'
 nodeSelector:
-  lfda: grimoire
+  lfda: devstats
