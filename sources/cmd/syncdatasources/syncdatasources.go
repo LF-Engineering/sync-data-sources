@@ -271,8 +271,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				tasks = append(
 					tasks,
 					lib.Task{
-						Endpoint: endpoint,
-						Config:   dataSource.Config,
+						Endpoint: endpoint.Name,
+						Config:   &(dataSource.Config),
 						DsSlug:   dataSource.Slug,
 						FxSlug:   fixture.Slug,
 						FxFn:     fixture.Fn,
@@ -285,7 +285,66 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	if ctx.Debug > 1 {
 		lib.Printf("Tasks: %+v\n", tasks)
 	}
+	return processTasks(ctx, &tasks)
+}
+
+func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
+	tasks := *ptasks
+	thrN := lib.GetThreadsNum(ctx)
+	failed := []int{}
+	if thrN > 1 {
+		if ctx.Debug >= 0 {
+			lib.Printf("Processing %d tasks using MT%d version\n", len(tasks), thrN)
+		}
+		ch := make(chan [2]int)
+		nThreads := 0
+		for idx, task := range tasks {
+			go processTask(ch, ctx, idx, task)
+			nThreads++
+			if nThreads == thrN {
+				res := <-ch
+				nThreads--
+				if res[1] != 0 {
+					failed = append(failed, res[0])
+				}
+			}
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Final threads join\n")
+		}
+		for nThreads > 0 {
+			res := <-ch
+			nThreads--
+			if res[1] != 0 {
+				failed = append(failed, res[0])
+			}
+		}
+	} else {
+		if ctx.Debug >= 0 {
+			lib.Printf("Processing %d tasks using ST version\n", len(tasks))
+		}
+		for idx, task := range tasks {
+			res := processTask(nil, ctx, idx, task)
+			if res[1] != 0 {
+				failed = append(failed, res[0])
+			}
+		}
+	}
+	lib.Printf("Failed indexes: %+v\n", failed)
 	return nil
+}
+
+func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
+	if ctx.Debug > 1 {
+		lib.Printf("Processing: %s\n", task)
+	}
+	res[0] = idx
+
+	// Synchronize go routine
+	if ch != nil {
+		ch <- res
+	}
+	return
 }
 
 func main() {
