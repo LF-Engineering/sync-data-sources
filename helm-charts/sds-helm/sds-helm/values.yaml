@@ -71,6 +71,8 @@ nameOverride: sds
 schedule: '0 0 * * *'
 secretType: Opaque
 shSecret: sh-db
+esSecret: es-db
+zipSecret: zip-pass
 useResourcesLimits: 1
 labels:
   name: sds
