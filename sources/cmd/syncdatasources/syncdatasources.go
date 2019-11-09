@@ -344,26 +344,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	return nil
 }
 
-// revertToFullFetch - some Grimoire data sources fail when we attmpt to fetch their data in 'continue' mode
-// when they don't have data yet, in this case this function removes command-line option
-// (data source specific) that enables 'continue' feature
-func revertToFullFetch(ds string, commandLine []string) ([]string, bool) {
-	if ds == lib.GitHub {
-		changed := false
-		cl := []string{}
-		for _, opt := range commandLine {
-			if opt == "--fetch-archive" {
-				changed = true
-				continue
-			}
-			cl = append(cl, opt)
-		}
-		lib.Printf("Adjusted commandline: %+v -> %+v\n", commandLine, cl)
-		return cl, changed
-	}
-	return commandLine, false
-}
-
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
 	if ds == lib.GitHub {
@@ -407,14 +387,7 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
 			}
 		}
-		// FIXME: This fails when running for the first time, we have this in 'revertToFullFetch'
-		// FIXME: it seems that fetch archive only gets archive data, so locally it always get nothing
-		// And on the newest version of Perceval it just fails when run on data-source for the first time
-		_, ok := m["fetch-archive"]
-		if !ok {
-			c = append(c, lib.MultiConfig{Name: "fetch-archive", Value: []string{}})
-		}
-		_, ok = m["sleep-for-rate"]
+		_, ok := m["sleep-for-rate"]
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
 		}
@@ -514,16 +487,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 			}
 			trials++
 			if trials < ctx.MaxRetry {
-				if trials == 1 {
-					// Special case when we tried to get data from archive/cache/whatever and failed, so fall back to full data fetch
-					var changed bool
-					commandLine, changed = revertToFullFetch(ds, commandLine)
-					if changed {
-						trials--
-					}
-				} else {
-					time.Sleep(time.Duration(trials) * time.Second)
-				}
+				time.Sleep(time.Duration(trials) * time.Second)
 				continue
 			}
 			dtEnd := time.Now()
