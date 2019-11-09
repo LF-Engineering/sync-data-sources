@@ -30,13 +30,13 @@ type Fixture struct {
 
 // Task holds single endpoint task and its context (required config, fixture filename etc.)
 type Task struct {
-	Endpoint Endpoint
-	Config   []Config
+	Endpoint string
+	Config   *[]Config
 	DsSlug   string
 	FxSlug   string
 	FxFn     string
 }
 
 func (t Task) String() string {
-	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s NConfigs:%d}", t.Endpoint.Name, t.DsSlug, t.FxSlug, t.FxFn, len(t.Config))
+	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s NConfigs:%d}", t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, len(*(t.Config)))
 }
