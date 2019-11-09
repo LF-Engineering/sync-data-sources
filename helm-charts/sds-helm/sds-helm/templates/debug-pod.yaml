@@ -72,6 +72,16 @@ spec:
         secretKeyRef:
           name: {{ .Values.shSecret }}
           key: SH_DB.secret
+    - name: SDS_ES_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.esSecret }}
+          key: ES_URL.secret
+    - name: ZIPPASS
+      valueFrom:
+        secretKeyRef:
+          name: {{ .Values.zipSecret }}
+          key: ZIPPASS.secret
     image: '{{ .Values.debugImage }}-{{ .Values.deployEnv }}'
     imagePullPolicy: {{ .Values.imagePullPolicy }}
     name: {{ .Values.debugPodName }}
