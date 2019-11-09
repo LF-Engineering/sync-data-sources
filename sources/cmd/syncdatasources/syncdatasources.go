@@ -285,6 +285,12 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	if ctx.Debug > 1 {
 		lib.Printf("Tasks: %+v\n", tasks)
 	}
+	ctx.ExecOutput = true
+	ctx.ExecFatal = false
+	defer func() {
+		ctx.ExecOutput = false
+		ctx.ExecFatal = true
+	}()
 	return processTasks(ctx, &tasks)
 }
 
@@ -340,7 +346,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	return nil
 }
 
-
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
 	if ds == lib.GitHub {
@@ -367,7 +372,7 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 			name := cfg.Name
 			value := cfg.Value
 			m[name] = struct{}{}
-			if name == "api-token" {
+			if name == lib.APIToken {
 				if strings.Contains(value, ",") {
 					ary := strings.Split(value, ",")
 					vals := []string{}
@@ -395,7 +400,7 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 	} else if ds == lib.Git {
 		for _, cfg := range *config {
 			name := cfg.Name
-			if name == "api-token" {
+			if name == lib.APIToken {
 				continue
 			}
 			value := cfg.Value
@@ -473,8 +478,25 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 			}
 		}
 	}
-	// FIXME: remove this
-	lib.Printf("%+v\n", commandLine)
+	// FIXME: remove this once all types of data sources are handled
+	if ds == "git" || ds == "github" {
+    trials := 0
+    for {
+		  str, err := lib.ExecCommand(ctx, commandLine, nil)
+      if err == nil {
+        break
+      }
+      trials ++
+      if trails < ctx.MaxRetry {
+        continue
+      }
+			lib.Printf("Error for perceval (took %v): %+v: %s\n", dtEnd.Sub(dtStart), err, str)
+			res[1] = 4
+			return
+    }
+	} else {
+		lib.Printf("%+v\n", commandLine)
+	}
 	return
 }
 

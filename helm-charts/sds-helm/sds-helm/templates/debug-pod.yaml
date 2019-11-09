@@ -35,6 +35,8 @@ spec:
         cpu: '{{ .Values.limitsCPU }}'
 {{ end }}
     env:
+    - name: SDS_MAXRETRY
+      value: '{{ .Values.sdsMaxRetry }}'
     - name: SDS_DEBUG
       value: '{{ .Values.sdsDebug }}'
     - name: SDS_CMDDEBUG

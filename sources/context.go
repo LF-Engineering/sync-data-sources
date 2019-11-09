@@ -10,6 +10,7 @@ import (
 type Ctx struct {
 	Debug      int    // From SDS_DEBUG Debug level: 0-no, 1-info, 2-verbose
 	CmdDebug   int    // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
+	MaxRetry   int    // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3
 	ST         bool   // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
 	NCPUs      int    // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
 	CtxOut     bool   // From SDS_CTXOUT output all context data (this struct), default false
@@ -44,6 +45,14 @@ func (ctx *Ctx) Init() {
 		debugLevel, err := strconv.Atoi(os.Getenv("SDS_CMDDEBUG"))
 		FatalNoLog(err)
 		ctx.CmdDebug = debugLevel
+	}
+	// MaxRetry
+	if os.Getenv("SDS_MAXRETRY") == "" {
+		ctx.MaxRetry = 3
+	} else {
+		maxRetry, err := strconv.Atoi(os.Getenv("SDS_MAXRETRY"))
+		FatalNoLog(err)
+		ctx.MaxRetry = maxRetry
 	}
 	ctx.CtxOut = os.Getenv("SDS_CTXOUT") != ""
 
