@@ -67,7 +67,7 @@ namespace: sds
 nameOverride: sds
 #schedule: '*/2 * * * *'
 #schedule: '0 3 2 * *'
-schedule: '0 0 * * *'
+schedule: '0 0 1 * *'
 secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
