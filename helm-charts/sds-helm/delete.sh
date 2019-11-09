@@ -5,8 +5,6 @@ then
   exit 1
 fi
 change_namespace.sh $1 sds
-"${1}h.sh" delete sds-cronjob
-"${1}h.sh" delete sds-secrets
-"${1}h.sh" delete sds-pv
+"${1}h.sh" delete sds
 change_namespace.sh $1 default
 "${1}h.sh" delete sds-namespace
