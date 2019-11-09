@@ -70,9 +70,14 @@ secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
 zipSecret: zip-pass
-useResourcesLimits: 1
+useResourcesLimits: ''
 labels:
   name: sds
-useNodeSelector: '1'
+useNodeSelector: ''
 nodeSelector:
   lfda: devstats
+debugPod: ''
+debugPodName: 'sds-debug'
+debugCommand: '/bin/sleep'
+debugCommandArgs: ['36525d']
+debugImage: 'lukaszgryglicki/sync-data-sources'
