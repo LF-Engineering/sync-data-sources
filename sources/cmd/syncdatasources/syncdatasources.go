@@ -443,7 +443,6 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 			e = append(e, endpoint)
 		}
 	}
-	//discourse\|jenkins\|dockerhub\|bugzilla\|meetup
 	return
 }
 
@@ -584,10 +583,110 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 				c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
 			}
 		}
+	} else if ds == lib.Discourse {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.APIToken {
+				// FIXME: it is possible that discourse doesn't support multiple GitHub keys (as github backend does)
+				if strings.Contains(value, ",") {
+					ary := strings.Split(value, ",")
+					vals := []string{}
+					for _, key := range ary {
+						key = strings.Replace(key, "[", "", -1)
+						key = strings.Replace(key, "]", "", -1)
+						vals = append(vals, key)
+					}
+					c = append(c, lib.MultiConfig{Name: "-t", Value: vals})
+				} else {
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				}
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.Jenkins {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.APIToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+			} else if name == lib.BackendUser {
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.DockerHub {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			_, ok := m["no-archive"]
+			if !ok {
+				c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			}
+		}
+	} else if ds == lib.Bugzilla {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.BackendUser {
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+			} else if name == lib.BackendPassword {
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+			} else if name == lib.APIToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.MeetUp {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.APIToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+		_, ok = m["sleep-for-rate"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
+		}
 	} else {
 		fail = true
 	}
 	return
+}
+
+func massageDataSource(ds string) string {
+	if ds == "bugzilla" {
+		return "bugzillarest"
+	}
+	return ds
 }
 
 func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]int) {
@@ -659,12 +758,12 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 			res[1] = 1
 			return
 		}
-		commandLine = append(commandLine, ary[0])
+		commandLine = append(commandLine, massageDataSource(ary[0]))
 		commandLine = append(commandLine, "--category")
 		commandLine = append(commandLine, ary[1])
 		ds = ary[0]
 	} else {
-		commandLine = append(commandLine, ds)
+		commandLine = append(commandLine, massageDataSource(ds))
 	}
 
 	// Handle DS endpoint
@@ -697,39 +796,31 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 			}
 		}
 	}
-	// FIXME: remove this once all types of data sources are handled
-	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO || ds == lib.Pipermail {
-		if false {
-			return
+	trials := 0
+	dtStart := time.Now()
+	for {
+		str, err := lib.ExecCommand(ctx, commandLine, nil)
+		// p2o.py do not return error even if its backend execution fails
+		// we need to capture STDERR and check if there was python exception there
+		if strings.Contains(str, lib.PyException) {
+			err = fmt.Errorf("%s", str)
 		}
-		trials := 0
-		dtStart := time.Now()
-		for {
-			str, err := lib.ExecCommand(ctx, commandLine, nil)
-			// p2o.py do not return error even if its backend execution fails
-			// we need to capture STDERR and check if there was python exception there
-			if strings.Contains(str, lib.PyException) {
-				err = fmt.Errorf("%s", str)
+		if err == nil {
+			if ctx.Debug > 0 {
+				dtEnd := time.Now()
+				lib.Printf("%+v: finished in %v, retries: %d\n", task, dtEnd.Sub(dtStart), trials)
 			}
-			if err == nil {
-				if ctx.Debug > 0 {
-					dtEnd := time.Now()
-					lib.Printf("%+v: finished in %v, retries: %d\n", task, dtEnd.Sub(dtStart), trials)
-				}
-				break
-			}
-			trials++
-			if trials < ctx.MaxRetry {
-				time.Sleep(time.Duration(trials) * time.Second)
-				continue
-			}
-			dtEnd := time.Now()
-			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), trials, err, str)
-			res[1] = 4
-			return
+			break
 		}
-	} else {
-		lib.Printf("%+v\n", commandLine)
+		trials++
+		if trials < ctx.MaxRetry {
+			time.Sleep(time.Duration(trials) * time.Second)
+			continue
+		}
+		dtEnd := time.Now()
+		lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), trials, err, str)
+		res[1] = 4
+		return
 	}
 	return
 }
