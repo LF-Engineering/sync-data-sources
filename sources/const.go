@@ -17,5 +17,5 @@ var ErrorStrings = map[int]string{
 	1: "datasource slug contains > 1 '/' separators",
 	2: "incorrect endpoint value for given data source",
 	3: "incorrect config option(s) for given data source",
-	4: "perceval error",
+	4: "p2o.py error",
 }

@@ -391,6 +391,10 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
 		}
+		_, ok = m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
 	} else if ds == lib.Git {
 		for _, cfg := range *config {
 			name := cfg.Name
@@ -432,7 +436,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	if ctx.CmdDebug > 0 {
 		commandLine = []string{
 			"p2o.py",
-			//"--fetch_cache",
+			"--fetch_cache",
 			"--enrich",
 			"--index",
 			idxSlug + "-raw",
