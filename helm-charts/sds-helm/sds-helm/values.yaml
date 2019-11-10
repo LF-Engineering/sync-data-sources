@@ -82,9 +82,9 @@ pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
 labels:
   name: sds
-useNodeSelector: ''
+useNodeSelector: '1'
 nodeSelector:
-  lfda: devstats
+  lfda: grimoire
 debugPod: ''
 debugPodName: 'sds-debug'
 debugCommand: '/bin/sleep'
