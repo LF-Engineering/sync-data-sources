@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -17,7 +18,10 @@ import (
 	yaml "gopkg.in/yaml.v2"
 )
 
-var sshKeyOnce sync.Once
+var (
+	sshKeyOnce   sync.Once
+	randInitOnce sync.Once
+)
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	if ctx.Debug > 0 {
@@ -589,16 +593,13 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 			value := cfg.Value
 			m[name] = struct{}{}
 			if name == lib.APIToken {
-				// FIXME: it is possible that discourse doesn't support multiple GitHub keys (as github backend does)
 				if strings.Contains(value, ",") {
 					ary := strings.Split(value, ",")
-					vals := []string{}
-					for _, key := range ary {
-						key = strings.Replace(key, "[", "", -1)
-						key = strings.Replace(key, "]", "", -1)
-						vals = append(vals, key)
-					}
-					c = append(c, lib.MultiConfig{Name: "-t", Value: vals})
+					randInitOnce.Do(func() {
+						rand.Seed(time.Now().UnixNano())
+					})
+					idx := rand.Intn(len(ary))
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{ary[idx]}})
 				} else {
 					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
 				}
@@ -613,6 +614,9 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	} else if ds == lib.Jenkins {
 		for _, cfg := range *config {
 			name := cfg.Name
+			if name == "from-date" {
+				continue
+			}
 			value := cfg.Value
 			m[name] = struct{}{}
 			if name == lib.APIToken {
