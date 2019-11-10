@@ -532,8 +532,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 			name := cfg.Name
 			value := cfg.Value
 			m[name] = struct{}{}
-			if name == lib.APIToken {
-				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+			if name == lib.Email {
+				c = append(c, lib.MultiConfig{Name: "-e", Value: []string{value}})
+			} else if name == lib.Password {
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
 			} else {
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
 			}

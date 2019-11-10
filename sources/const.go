@@ -36,6 +36,12 @@ const BackendUser string = "backend-user"
 // BackendPassword - backend-password
 const BackendPassword string = "backend-password"
 
+// Email - email
+const Email string = "email"
+
+// Password - password
+const Password string = "password"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	1: "datasource slug contains > 1 '/' separators",
