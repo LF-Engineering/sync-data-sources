@@ -20,6 +20,11 @@ type Ctx struct {
 	ExecOutput bool   // default false, set to true to capture commands STDOUT
 	ElasticURL string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
 	TestMode   bool   // True when running tests
+	ShUser     string //  SOrting Hat database parameters
+	ShHost     string
+	ShPort     string
+	ShPass     string
+	ShDB       string
 }
 
 // Init - get context from environment variables
@@ -71,6 +76,13 @@ func (ctx *Ctx) Init() {
 			}
 		}
 	}
+
+	// Sorting Hat DB parameters
+	ctx.ShUser = os.Getenv("SH_USER")
+	ctx.ShHost = os.Getenv("SH_HOST")
+	ctx.ShPort = os.Getenv("SH_PORT")
+	ctx.ShPass = os.Getenv("SH_PASS")
+	ctx.ShDB = os.Getenv("SH_DB")
 
 	// Log Time
 	ctx.LogTime = os.Getenv("SDS_SKIPTIME") == ""
