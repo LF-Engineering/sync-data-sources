@@ -489,7 +489,6 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	if ctx.CmdDebug > 0 {
 		commandLine = []string{
 			"p2o.py",
-			"--fetch_cache",
 			"--enrich",
 			"--index",
 			idxSlug + "-raw",

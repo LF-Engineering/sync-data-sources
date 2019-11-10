@@ -8,4 +8,5 @@ FROM lukaszgryglicki/dev-analytics-grimoire-docker-minimal
 COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY sources/data.zip /data.zip
+COPY sources/sds.yaml /data/sds.txt
 CMD /bin/bash
