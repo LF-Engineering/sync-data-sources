@@ -5,9 +5,12 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"os/signal"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
@@ -270,8 +273,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		st[slug] = fixture
 	}
 	tasks := []lib.Task{}
+	knownDsTypes := make(map[string]struct{})
 	for _, fixture := range fixtures {
 		for _, dataSource := range fixture.DataSources {
+			knownDsTypes[dataSource.Slug] = struct{}{}
 			for _, endpoint := range dataSource.Endpoints {
 				tasks = append(
 					tasks,
@@ -286,7 +291,13 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			}
 		}
 	}
-	lib.Printf("%d Tasks\n", len(tasks))
+	dss := []string{}
+	for k := range knownDsTypes {
+		dss = append(dss, k)
+	}
+	sort.Strings(dss)
+	dssStr := strings.Join(dss, ", ")
+	lib.Printf("%d Tasks, %d data source types: %+v\n", len(tasks), len(dss), dssStr)
 	if ctx.Debug > 1 {
 		lib.Printf("Tasks: %+v\n", tasks)
 	}
@@ -305,6 +316,20 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	tasks := *ptasks
 	thrN := lib.GetThreadsNum(ctx)
 	failed := [][2]int{}
+	processed := 0
+	all := len(tasks)
+	sigs := make(chan os.Signal, 1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGUSR1)
+	go func() {
+		for {
+			sig := <-sigs
+			fmt.Println(sig)
+			lib.Printf("Processed %d/%d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all))
+			if sig == syscall.SIGINT {
+				os.Exit(1)
+			}
+		}
+	}()
 	if thrN > 1 {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using MT%d version\n", len(tasks), thrN)
@@ -320,6 +345,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 				if res[1] != 0 {
 					failed = append(failed, res)
 				}
+				processed++
 			}
 		}
 		if ctx.Debug > 0 {
@@ -331,6 +357,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 			if res[1] != 0 {
 				failed = append(failed, res)
 			}
+			processed++
 		}
 	} else {
 		if ctx.Debug >= 0 {
@@ -341,6 +368,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 			if res[1] != 0 {
 				failed = append(failed, res)
 			}
+			processed++
 		}
 	}
 	lFailed := len(failed)
