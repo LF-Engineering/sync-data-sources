@@ -408,7 +408,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
-	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack {
+	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO {
 		e = append(e, endpoint)
 	}
 	return
@@ -527,6 +527,17 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
 		}
+	} else if ds == lib.GroupsIO {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.APIToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
 	} else {
 		fail = true
 	}
@@ -641,7 +652,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		}
 	}
 	// FIXME: remove this once all types of data sources are handled
-	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack {
+	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO {
 		if false {
 			return
 		}
