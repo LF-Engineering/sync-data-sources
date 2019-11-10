@@ -30,11 +30,12 @@ type Fixture struct {
 
 // Task holds single endpoint task and its context (required config, fixture filename etc.)
 type Task struct {
-	Endpoint string
-	Config   []Config
-	DsSlug   string
-	FxSlug   string
-	FxFn     string
+	Endpoint    string
+	Config      []Config
+	DsSlug      string
+	FxSlug      string
+	FxFn        string
+	CommandLine string
 }
 
 func (t Task) String() string {
@@ -43,7 +44,7 @@ func (t Task) String() string {
 		configStr += cfg.Name + " "
 	}
 	configStr += "]"
-	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s}", t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr)
+	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s CommandLine: %s}", t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine)
 }
 
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
