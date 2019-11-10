@@ -27,6 +27,9 @@ const Slack string = "slack"
 // GroupsIO - groupsio
 const GroupsIO string = "groupsio"
 
+// Pipermail - pipermail
+const Pipermail string = "pipermail"
+
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
