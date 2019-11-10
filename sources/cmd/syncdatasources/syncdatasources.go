@@ -407,7 +407,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
-	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit {
+	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira {
 		e = append(e, endpoint)
 	}
 	return
@@ -489,6 +489,27 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 		_, ok = m["no-archive"]
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.Jira {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.BackendUser {
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+			} else if name == lib.BackendPassword {
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+		_, ok = m["verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "verify", Value: []string{"False"}})
 		}
 	} else {
 		fail = true
@@ -604,7 +625,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		}
 	}
 	// FIXME: remove this once all types of data sources are handled
-	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit {
+	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira {
 		if false {
 			return
 		}
