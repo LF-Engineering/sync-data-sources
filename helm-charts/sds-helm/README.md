@@ -44,7 +44,7 @@ Other environment parameters:
 
 # Deploy on LF infra
 
-- Install: `[DBG=1] ./setup.sh test|prod`.
+- Install: `[DBG=1] [ES_BULK_SIZE=10000] ./setup.sh test|prod`.
 - Shell into debug pod (only when installed with `DBG=1`): `pod_shell.sh test sds sds-debug`.
 - Inside the pod you can for example run: `p2o.py --enrich --index sds_raw --index-enrich sds_enriched -e "http://$SDS_ES_URL" --debug --db-host "${SH_HOST}" --db-sortinghat "${SH_DB}" --db-user "${SH_USER}" --db-password "${SH_PASS}" github cncf devstats --category issue -t key1 key2 --sleep-for-rate`.
 - Unnstall: `./delete.sh test|prod`.
