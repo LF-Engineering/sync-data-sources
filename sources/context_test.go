@@ -25,6 +25,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		ExecQuiet:  in.ExecQuiet,
 		ExecOutput: in.ExecOutput,
 		ElasticURL: in.ElasticURL,
+		EsBulkSize: in.EsBulkSize,
 		TestMode:   in.TestMode,
 	}
 	return &out
@@ -154,6 +155,7 @@ func TestInit(t *testing.T) {
 		ExecQuiet:  false,
 		ExecOutput: false,
 		ElasticURL: "http://127.0.0.1:9200",
+		EsBulkSize: 0,
 		TestMode:   true,
 	}
 
@@ -193,6 +195,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"CmdDebug": 3},
+			),
+		},
+		{
+			"Setting elastic search bulk size",
+			map[string]string{"SDS_ES_BULKSIZE": "10000"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"EsBulkSize": 10000},
 			),
 		},
 		{
