@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
 	yaml "gopkg.in/yaml.v2"
 )
+
+var sshKeyOnce sync.Once
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	if ctx.Debug > 0 {
@@ -273,7 +277,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 					tasks,
 					lib.Task{
 						Endpoint: endpoint.Name,
-						Config:   &(dataSource.Config),
+						Config:   dataSource.Config,
 						DsSlug:   dataSource.Slug,
 						FxSlug:   fixture.Slug,
 						FxFn:     fixture.Fn,
@@ -349,6 +353,21 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	return nil
 }
 
+func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
+	home := os.Getenv("HOME")
+	dir := home + "/.ssh"
+	cmd := exec.Command("mkdir", dir)
+	_ = cmd.Run()
+	fn := dir + "/id_rsa"
+	lib.Printf("Adding SSH Key: %s\n", fn)
+	err := ioutil.WriteFile(fn, []byte(key), 0644)
+	if err != nil {
+		lib.Printf("Error adding SSH Key %s: %+v\n", fn, err)
+		return false
+	}
+	return true
+}
+
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
 	if ds == lib.GitHub {
@@ -360,7 +379,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
-	} else if ds == lib.Git {
+	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit {
 		e = append(e, endpoint)
 	}
 	return
@@ -368,7 +387,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 
 // massageConfig - this function makes sure that given config options are valid for a given data source
 // it also ensures some essential options are enabled and eventually reformats config
-func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail bool) {
+func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.MultiConfig, fail bool) {
 	m := make(map[string]struct{})
 	if ds == lib.GitHub {
 		for _, cfg := range *config {
@@ -403,9 +422,6 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 	} else if ds == lib.Git {
 		for _, cfg := range *config {
 			name := cfg.Name
-			if name == lib.APIToken {
-				continue
-			}
 			value := cfg.Value
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
@@ -413,6 +429,38 @@ func massageConfig(config *[]lib.Config, ds string) (c []lib.MultiConfig, fail b
 		_, ok := m["latest-items"]
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}})
+		}
+	} else if ds == lib.Confluence {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.Gerrit {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			if name == "ssh-key" {
+				sshKeyOnce.Do(func() {
+					fail = !addSSHPrivKey(ctx, value)
+				})
+				continue
+			}
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+		}
+		_, ok := m["disable-host-key-check"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "disable-host-key-check", Value: []string{}})
+		}
+		_, ok = m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
 		}
 	} else {
 		fail = true
@@ -510,7 +558,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	}
 
 	// Handle DS config options
-	multiConfig, fail := massageConfig(task.Config, ds)
+	multiConfig, fail := massageConfig(ctx, &task.Config, ds)
 	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
 		res[1] = 3
@@ -529,7 +577,10 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		}
 	}
 	// FIXME: remove this once all types of data sources are handled
-	if ds == lib.Git || ds == lib.GitHub {
+	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit {
+		if false {
+			return
+		}
 		trials := 0
 		dtStart := time.Now()
 		for {

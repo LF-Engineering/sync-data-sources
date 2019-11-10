@@ -12,6 +12,12 @@ const Git string = "git"
 // GitHub - github
 const GitHub string = "github"
 
+// Gerrit - gerrit
+const Gerrit string = "gerrit"
+
+// Confluence - confluence
+const Confluence string = "confluence"
+
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
