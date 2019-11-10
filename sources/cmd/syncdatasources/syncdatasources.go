@@ -399,6 +399,20 @@ func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
 
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
+	defaults := map[string]struct{}{
+		lib.Git:        {},
+		lib.Confluence: {},
+		lib.Gerrit:     {},
+		lib.Jira:       {},
+		lib.Slack:      {},
+		lib.GroupsIO:   {},
+		lib.Pipermail:  {},
+		lib.Discourse:  {},
+		lib.Jenkins:    {},
+		lib.DockerHub:  {},
+		lib.Bugzilla:   {},
+		lib.MeetUp:     {},
+	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
 			ary := strings.Split(endpoint, "/")
@@ -408,9 +422,28 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
-	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO || ds == lib.Pipermail {
-		e = append(e, endpoint)
+	} else if ds == lib.DockerHub {
+		if strings.Contains(endpoint, " ") {
+			ary := strings.Split(endpoint, " ")
+			nAry := []string{}
+			for _, e := range ary {
+				if e != "" {
+					nAry = append(nAry, e)
+				}
+			}
+			lAry := len(nAry)
+			e = append(e, nAry[lAry-2])
+			e = append(e, nAry[lAry-1])
+		} else {
+			e = append(e, endpoint)
+		}
+	} else {
+		_, ok := defaults[ds]
+		if ok {
+			e = append(e, endpoint)
+		}
 	}
+	//discourse\|jenkins\|dockerhub\|bugzilla\|meetup
 	return
 }
 
