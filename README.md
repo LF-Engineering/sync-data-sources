@@ -20,3 +20,8 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 - Go to `helm-charts/sds-helm` and follow instructions from `README.md` file in that derectory. helm chart contains everything needed to run entire stack.
 - Note that `zippass.secret` and `helm-charts/sds-helm/sds-helm/secrets/ZIPPASS.secret` files should have the same contents.
+
+In short:
+
+- Install: `./setup.sh test|prod`.
+- Unnstall: `./delete.sh test|prod`.
