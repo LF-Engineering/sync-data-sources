@@ -360,7 +360,7 @@ func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
 	_ = cmd.Run()
 	fn := dir + "/id_rsa"
 	lib.Printf("Adding SSH Key: %s\n", fn)
-	err := ioutil.WriteFile(fn, []byte(key), 0644)
+	err := ioutil.WriteFile(fn, []byte(key), 0600)
 	if err != nil {
 		lib.Printf("Error adding SSH Key %s: %+v\n", fn, err)
 		return false
@@ -602,7 +602,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 				continue
 			}
 			dtEnd := time.Now()
-			lib.Printf("Error for perceval (took %v, tired %d times): %+v: %s\n", dtEnd.Sub(dtStart), trials, err, str)
+			lib.Printf("Error for p2o.py (took %v, tired %d times): %+v: %s\n", dtEnd.Sub(dtStart), trials, err, str)
 			res[1] = 4
 			return
 		}
