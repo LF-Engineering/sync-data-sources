@@ -170,6 +170,9 @@ func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) (string, 
 		} else {
 			outStr = outputStr
 		}
+		if ctx.ExecOutputStderr {
+			outStr += stdErr.String()
+		}
 	}
 	return outStr, nil
 }

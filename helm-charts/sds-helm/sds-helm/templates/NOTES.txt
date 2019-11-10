@@ -33,3 +33,4 @@ Other environment parameters:
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
+- `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.

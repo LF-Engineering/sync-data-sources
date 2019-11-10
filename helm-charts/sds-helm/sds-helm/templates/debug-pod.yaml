@@ -49,6 +49,8 @@ spec:
       value: '{{ .Values.sdsCtxOut }}'
     - name: SDS_SKIPTIME
       value: '{{ .Values.sdsSkipTime }}'
+    - name: SDS_ES_BULKSIZE
+      value: '{{ .Values.esBulkSize }}'
     - name: SH_USER
       valueFrom:
         secretKeyRef:

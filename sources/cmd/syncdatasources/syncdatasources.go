@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -286,8 +287,12 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		lib.Printf("Tasks: %+v\n", tasks)
 	}
 	ctx.ExecFatal = false
+	ctx.ExecOutput = true
+	ctx.ExecOutputStderr = true
 	defer func() {
 		ctx.ExecFatal = true
+		ctx.ExecOutput = false
+		ctx.ExecOutputStderr = false
 	}()
 	return processTasks(ctx, &tasks)
 }
@@ -430,7 +435,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 
 	// Handle DS slug
 	ds := task.DsSlug
-	idxSlug := task.FxSlug + ds
+	idxSlug := task.FxSlug + "-" + ds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	var commandLine []string
 	if ctx.CmdDebug > 0 {
@@ -473,6 +478,10 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 			"--db-password",
 			ctx.ShPass,
 		}
+	}
+	if ctx.EsBulkSize > 0 {
+		commandLine = append(commandLine, "--bulk-size")
+		commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
 	}
 	if strings.Contains(ds, "/") {
 		ary := strings.Split(ds, "/")
@@ -525,6 +534,11 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		dtStart := time.Now()
 		for {
 			str, err := lib.ExecCommand(ctx, commandLine, nil)
+			// p2o.py do not return error even if its backend execution fails
+			// we need to capture STDERR and check if there was python exception there
+			if strings.Contains(str, lib.PyException) {
+				err = fmt.Errorf("%s", str)
+			}
 			if err == nil {
 				if ctx.Debug > 0 {
 					dtEnd := time.Now()

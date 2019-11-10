@@ -8,23 +8,25 @@ import (
 
 // Ctx - environment context packed in structure
 type Ctx struct {
-	Debug      int    // From SDS_DEBUG Debug level: 0-no, 1-info, 2-verbose
-	CmdDebug   int    // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
-	MaxRetry   int    // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3
-	ST         bool   // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
-	NCPUs      int    // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
-	CtxOut     bool   // From SDS_CTXOUT output all context data (this struct), default false
-	LogTime    bool   // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
-	ExecFatal  bool   // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
-	ExecQuiet  bool   // default false, set this manually to true to have quiet exec failures
-	ExecOutput bool   // default false, set to true to capture commands STDOUT
-	ElasticURL string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
-	TestMode   bool   // True when running tests
-	ShUser     string //  SOrting Hat database parameters
-	ShHost     string
-	ShPort     string
-	ShPass     string
-	ShDB       string
+	Debug            int    // From SDS_DEBUG Debug level: 0-no, 1-info, 2-verbose
+	CmdDebug         int    // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
+	MaxRetry         int    // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3
+	ST               bool   // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
+	NCPUs            int    // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
+	CtxOut           bool   // From SDS_CTXOUT output all context data (this struct), default false
+	LogTime          bool   // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
+	ExecFatal        bool   // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
+	ExecQuiet        bool   // default false, set this manually to true to have quiet exec failures
+	ExecOutput       bool   // default false, set to true to capture commands STDOUT
+	ExecOutputStderr bool   // default false, set to true to capture commands STDOUT
+	ElasticURL       string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
+	EsBulkSize       int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified"
+	TestMode         bool   // True when running tests
+	ShUser           string //  SOrting Hat database parameters
+	ShHost           string
+	ShPort           string
+	ShPass           string
+	ShDB             string
 }
 
 // Init - get context from environment variables
@@ -32,6 +34,7 @@ func (ctx *Ctx) Init() {
 	ctx.ExecFatal = true
 	ctx.ExecQuiet = false
 	ctx.ExecOutput = false
+	ctx.ExecOutputStderr = false
 
 	// Debug
 	if os.Getenv("SDS_DEBUG") == "" {
@@ -91,6 +94,16 @@ func (ctx *Ctx) Init() {
 	ctx.ElasticURL = os.Getenv("SDS_ES_URL")
 	if ctx.ElasticURL == "" {
 		ctx.ElasticURL = "http://127.0.0.1:9200"
+	}
+	// ES bulk size
+	if os.Getenv("SDS_ES_BULKSIZE") == "" {
+		ctx.EsBulkSize = 0
+	} else {
+		bulkSize, err := strconv.Atoi(os.Getenv("SDS_ES_BULKSIZE"))
+		FatalNoLog(err)
+		if bulkSize > 0 {
+			ctx.EsBulkSize = bulkSize
+		}
 	}
 
 	// Context out if requested

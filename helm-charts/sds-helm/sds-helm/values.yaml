@@ -44,6 +44,7 @@
 #
 # Other evrironment options:
 # esURL: 'http://127.0.0.1:9200'
+# esBulkSize: '10000'
 # schedule: '36 * * * *'
 # syncCommandArgs:
 #   - "bootarg"
@@ -51,6 +52,7 @@
 # Standard values:
 deployEnv: 'set-me'
 esURL: ''
+esBulkSize: ''
 concurrencyPolicy: Forbid
 fullnameOverride: sds
 imagePullPolicy: Always
