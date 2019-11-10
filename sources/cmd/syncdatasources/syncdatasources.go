@@ -387,11 +387,13 @@ func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
 	cmd := exec.Command("mkdir", dir)
 	_ = cmd.Run()
 	fn := dir + "/id_rsa"
-	lib.Printf("Adding SSH Key: %s\n", fn)
 	err := ioutil.WriteFile(fn, []byte(key), 0600)
 	if err != nil {
 		lib.Printf("Error adding SSH Key %s: %+v\n", fn, err)
 		return false
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Added SSH Key: %s\n", fn)
 	}
 	return true
 }
