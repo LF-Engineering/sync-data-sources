@@ -634,6 +634,9 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	} else if ds == lib.DockerHub {
 		for _, cfg := range *config {
 			name := cfg.Name
+			if name == "from-date" {
+				continue
+			}
 			value := cfg.Value
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
