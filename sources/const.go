@@ -24,6 +24,9 @@ const Confluence string = "confluence"
 // Slack - slack
 const Slack string = "slack"
 
+// GroupsIO - groupsio
+const GroupsIO string = "groupsio"
+
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
