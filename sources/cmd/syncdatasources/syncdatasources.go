@@ -408,7 +408,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		} else {
 			e = append(e, endpoint)
 		}
-	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO {
+	} else if ds == lib.Git || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO || ds == lib.Pipermail {
 		e = append(e, endpoint)
 	}
 	return
@@ -540,6 +540,17 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
 			}
 		}
+	} else if ds == lib.Pipermail {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			_, ok := m["no-verify"]
+			if !ok {
+				c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
+			}
+		}
 	} else {
 		fail = true
 	}
@@ -653,9 +664,8 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 			}
 		}
 	}
-	task.CommandLine = strings.Join(commandLine, " ")
 	// FIXME: remove this once all types of data sources are handled
-	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO {
+	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO || ds == lib.Pipermail {
 		if false {
 			return
 		}
