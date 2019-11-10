@@ -30,6 +30,21 @@ const GroupsIO string = "groupsio"
 // Pipermail - pipermail
 const Pipermail string = "pipermail"
 
+// Discourse - discourse
+const Discourse string = "discourse"
+
+// Jenkins - jenkins
+const Jenkins string = "jenkins"
+
+// DockerHub - dockerhub
+const DockerHub string = "dockerhub"
+
+// Bugzilla - bugzilla
+const Bugzilla string = "bugzilla"
+
+// MeetUp - meetup
+const MeetUp string = "meetup"
+
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
