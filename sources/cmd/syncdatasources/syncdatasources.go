@@ -336,7 +336,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 		ch := make(chan [2]int)
 		nThreads := 0
 		for idx, task := range tasks {
-			go processTask(ch, ctx, idx, task)
+			go processTask(ch, ctx, idx, &task)
 			nThreads++
 			if nThreads == thrN {
 				res := <-ch
@@ -363,7 +363,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 			lib.Printf("Processing %d tasks using ST version\n", len(tasks))
 		}
 		for idx, task := range tasks {
-			res := processTask(nil, ctx, idx, task)
+			res := processTask(nil, ctx, idx, &task)
 			if res[1] != 0 {
 				failed = append(failed, res)
 			}
@@ -546,7 +546,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	return
 }
 
-func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
+func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]int) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
@@ -653,6 +653,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 			}
 		}
 	}
+	task.CommandLine = strings.Join(commandLine, " ")
 	// FIXME: remove this once all types of data sources are handled
 	if ds == lib.Git || ds == lib.GitHub || ds == lib.Confluence || ds == lib.Gerrit || ds == lib.Jira || ds == lib.Slack || ds == lib.GroupsIO {
 		if false {
@@ -680,7 +681,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 				continue
 			}
 			dtEnd := time.Now()
-			lib.Printf("Error for p2o.py (took %v, tired %d times): %+v: %s\n", dtEnd.Sub(dtStart), trials, err, str)
+			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), trials, err, str)
 			res[1] = 4
 			return
 		}
