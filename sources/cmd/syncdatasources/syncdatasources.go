@@ -820,7 +820,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 			break
 		}
 		trials++
-		if trials < ctx.MaxRetry {
+		if trials <= ctx.MaxRetry {
 			time.Sleep(time.Duration(trials) * time.Second)
 			continue
 		}
