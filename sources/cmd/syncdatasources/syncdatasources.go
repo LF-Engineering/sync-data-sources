@@ -711,7 +711,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 
 	// Handle DS slug
 	ds := task.DsSlug
-	idxSlug := task.FxSlug + "-" + ds
+	idxSlug := "sds-" + task.FxSlug + "-" + ds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	var commandLine []string
 	if ctx.CmdDebug > 0 {
