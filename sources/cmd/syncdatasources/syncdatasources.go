@@ -327,7 +327,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 	go func() {
 		for {
 			sig := <-sigs
-			lib.Printf("Processed %d/%d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all))
+			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
 			if sig == syscall.SIGINT {
 				os.Exit(1)
 			}
@@ -614,7 +614,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	} else if ds == lib.Jenkins {
 		for _, cfg := range *config {
 			name := cfg.Name
-			if name == "from-date" {
+			if name == lib.FromDate {
 				continue
 			}
 			value := cfg.Value
@@ -634,7 +634,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	} else if ds == lib.DockerHub {
 		for _, cfg := range *config {
 			name := cfg.Name
-			if name == "from-date" {
+			if name == lib.FromDate {
 				continue
 			}
 			value := cfg.Value
