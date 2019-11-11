@@ -57,6 +57,9 @@ const BackendPassword string = "backend-password"
 // Email - email
 const Email string = "email"
 
+// FromDate - from-date
+const FromDate string = "from-date"
+
 // Password - password
 const Password string = "password"
 
