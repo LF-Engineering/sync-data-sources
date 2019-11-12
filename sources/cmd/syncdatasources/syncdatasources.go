@@ -423,9 +423,15 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
 			ary := strings.Split(endpoint, "/")
-			lAry := len(ary)
-			e = append(e, ary[lAry-2])
-			e = append(e, ary[lAry-1])
+			nAry := []string{}
+			for _, e := range ary {
+				if e != "" {
+					nAry = append(nAry, e)
+				}
+			}
+			lAry := len(nAry)
+			e = append(e, nAry[lAry-2])
+			e = append(e, nAry[lAry-1])
 		} else {
 			e = append(e, endpoint)
 		}
