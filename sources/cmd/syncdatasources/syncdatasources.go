@@ -305,6 +305,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	if ctx.Debug > 1 {
 		lib.Printf("Tasks: %+v\n", tasks)
 	}
+	randInitOnce.Do(func() {
+		rand.Seed(time.Now().UnixNano())
+	})
+	rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
 	ctx.ExecFatal = false
 	ctx.ExecOutput = true
 	ctx.ExecOutputStderr = true
