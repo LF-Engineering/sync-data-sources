@@ -1,5 +1,5 @@
 #!/bin/bash
-pid=`ps -a | grep syncdatasources | head -n 1 | awk '{print $1}'`
+pid=`ps -aux | grep syncdatasources | head -n 1 | awk '{print $2}'`
 if [ ! -z "$pid" ]
 then
   kill -SIGUSR1 "$pid"
