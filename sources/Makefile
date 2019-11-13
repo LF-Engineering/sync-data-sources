@@ -4,10 +4,10 @@ GO_TEST_FILES=context_test.go time_test.go threads_test.go
 GO_LIBTEST_FILES=test/time.go
 GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/sources/cmd/syncdatasources
 #for race CGO_ENABLED=1
-GO_ENV=CGO_ENABLED=1
-#GO_ENV=CGO_ENABLED=0
-#GO_BUILD=go build -ldflags '-s -w'
-GO_BUILD=go build -ldflags '-s -w' -race
+#GO_ENV=CGO_ENABLED=1
+GO_ENV=CGO_ENABLED=0
+GO_BUILD=go build -ldflags '-s -w'
+#GO_BUILD=go build -ldflags '-s -w' -race
 GO_INSTALL=go install -ldflags '-s'
 GO_FMT=gofmt -s -w
 GO_LINT=golint -set_exit_status
