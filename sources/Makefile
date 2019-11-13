@@ -1,6 +1,6 @@
-GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go
+GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go hash.go
 GO_BIN_FILES=cmd/syncdatasources/syncdatasources.go
-GO_TEST_FILES=context_test.go time_test.go threads_test.go
+GO_TEST_FILES=context_test.go time_test.go threads_test.go hash_test.go
 GO_LIBTEST_FILES=test/time.go
 GO_BIN_CMDS=github.com/LF-Engineering/sync-data-sources/sources/cmd/syncdatasources
 #for race CGO_ENABLED=1
