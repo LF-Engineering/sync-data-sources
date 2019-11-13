@@ -288,11 +288,20 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		st[slug] = fixture
 	}
 	tasks := []lib.Task{}
+	nodeIdx := ctx.NodeIdx
+	nodeNum := ctx.NodeNum
 	knownDsTypes := make(map[string]struct{})
 	for _, fixture := range fixtures {
 		for _, dataSource := range fixture.DataSources {
 			knownDsTypes[dataSource.Slug] = struct{}{}
 			for _, endpoint := range dataSource.Endpoints {
+				if ctx.NodeHash {
+					str := fixture.Slug + dataSource.Slug + endpoint.Name
+					_, run := lib.Hash(str, nodeIdx, nodeNum)
+					if !run {
+						continue
+					}
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
