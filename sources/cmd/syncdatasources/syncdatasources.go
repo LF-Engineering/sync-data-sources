@@ -193,6 +193,12 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 }
 
 func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
+	// Synchronize go routine
+	defer func() {
+		if ch != nil {
+			ch <- fixture
+		}
+	}()
 	if ctx.Debug > 0 {
 		lib.Printf("Processing: %s\n", fixtureFile)
 	}
@@ -210,12 +216,10 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	validateFixture(ctx, &fixture, fixtureFile)
-
-	// Synchronize go routine
-	if ch != nil {
-		ch <- fixture
+	if fixture.Disabled == true {
+		return
 	}
+	validateFixture(ctx, &fixture, fixtureFile)
 	return
 }
 
@@ -238,7 +242,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			if nThreads == thrN {
 				fixture := <-ch
 				nThreads--
-				fixtures = append(fixtures, fixture)
+				if fixture.Disabled != true {
+					fixtures = append(fixtures, fixture)
+				}
 			}
 		}
 		if ctx.Debug > 0 {
@@ -247,7 +253,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		for nThreads > 0 {
 			fixture := <-ch
 			nThreads--
-			fixtures = append(fixtures, fixture)
+			if fixture.Disabled != true {
+				fixtures = append(fixtures, fixture)
+			}
 		}
 	} else {
 		if ctx.Debug > 0 {
@@ -257,7 +265,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			if fixtureFile == "" {
 				continue
 			}
-			fixtures = append(fixtures, processFixtureFile(nil, ctx, fixtureFile))
+			fixture := processFixtureFile(nil, ctx, fixtureFile)
+			if fixture.Disabled != true {
+				fixtures = append(fixtures, fixture)
+			}
 		}
 	}
 	if len(fixtures) == 0 {

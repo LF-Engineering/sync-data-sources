@@ -22,6 +22,7 @@ type DataSource struct {
 
 // Fixture contains full YAML structure of dev-analytics-api fixture files
 type Fixture struct {
+	Disabled    bool              `yaml:"disabled"`
 	Native      map[string]string `yaml:"native"`
 	DataSources []DataSource      `yaml:"data_sources"`
 	Fn          string
