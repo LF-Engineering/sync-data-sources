@@ -20,6 +20,9 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		ST:         in.ST,
 		NCPUs:      in.NCPUs,
 		CtxOut:     in.CtxOut,
+		NodeHash:   in.NodeHash,
+		NodeIdx:    in.NodeIdx,
+		NodeNum:    in.NodeNum,
 		LogTime:    in.LogTime,
 		ExecFatal:  in.ExecFatal,
 		ExecQuiet:  in.ExecQuiet,
@@ -150,6 +153,9 @@ func TestInit(t *testing.T) {
 		ST:         false,
 		NCPUs:      0,
 		CtxOut:     false,
+		NodeHash:   false,
+		NodeIdx:    0,
+		NodeNum:    1,
 		LogTime:    true,
 		ExecFatal:  true,
 		ExecQuiet:  false,
@@ -271,6 +277,57 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"ElasticURL": "http://other.server:9222"},
+			),
+		},
+		{
+			"Setting node hash params",
+			map[string]string{
+				"SDS_NODE_HASH": "1",
+				"SDS_NODE_IDX":  "2",
+				"SDS_NODE_NUM":  "4",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"NodeHash": true,
+					"NodeIdx":  2,
+					"NodeNum":  4,
+				},
+			),
+		},
+		{
+			"Setting node hash params (incorrect)",
+			map[string]string{
+				"SDS_NODE_HASH": "",
+				"SDS_NODE_IDX":  "-1",
+				"SDS_NODE_NUM":  "-1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"NodeHash": false,
+					"NodeIdx":  0,
+					"NodeNum":  1,
+				},
+			),
+		},
+		{
+			"Setting node hash params (incorrect)",
+			map[string]string{
+				"SDS_NODE_HASH": "yes",
+				"SDS_NODE_IDX":  "3",
+				"SDS_NODE_NUM":  "3",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"NodeHash": true,
+					"NodeIdx":  0,
+					"NodeNum":  3,
+				},
 			),
 		},
 	}

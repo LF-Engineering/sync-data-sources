@@ -21,8 +21,11 @@ type Ctx struct {
 	ExecOutputStderr bool   // default false, set to true to capture commands STDOUT
 	ElasticURL       string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
 	EsBulkSize       int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified"
+	NodeHash         bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
+	NodeNum          int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
+	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hasesh matching this node will run
 	TestMode         bool   // True when running tests
-	ShUser           string //  SOrting Hat database parameters
+	ShUser           string // Sorting Hat database parameters
 	ShHost           string
 	ShPort           string
 	ShPass           string
@@ -103,6 +106,29 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if bulkSize > 0 {
 			ctx.EsBulkSize = bulkSize
+		}
+	}
+
+	// Node hash support
+	ctx.NodeHash = os.Getenv("SDS_NODE_HASH") != ""
+	if os.Getenv("SDS_NODE_NUM") == "" {
+		ctx.NodeNum = 1
+	} else {
+		nodeNum, err := strconv.Atoi(os.Getenv("SDS_NODE_NUM"))
+		FatalNoLog(err)
+		if nodeNum > 0 {
+			ctx.NodeNum = nodeNum
+		} else {
+			ctx.NodeNum = 1
+		}
+	}
+	if os.Getenv("SDS_NODE_IDX") == "" {
+		ctx.NodeIdx = 0
+	} else {
+		nodeIdx, err := strconv.Atoi(os.Getenv("SDS_NODE_IDX"))
+		FatalNoLog(err)
+		if nodeIdx >= 0 && nodeIdx < ctx.NodeNum {
+			ctx.NodeIdx = nodeIdx
 		}
 	}
 
