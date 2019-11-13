@@ -317,26 +317,84 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		ctx.ExecOutput = false
 		ctx.ExecOutputStderr = false
 	}()
-	return processTasks(ctx, &tasks)
+	return processTasks(ctx, &tasks, dss)
 }
 
-func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
+func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	tasks := *ptasks
 	thrN := lib.GetThreadsNum(ctx)
 	failed := [][2]int{}
 	processed := 0
 	all := len(tasks)
+	byDs := make(map[string][3]int)
+	byFx := make(map[string][3]int)
+	for _, task := range tasks {
+		dsSlug := task.DsSlug
+		dataDs, ok := byDs[dsSlug]
+		if ok {
+			dataDs[0]++
+			byDs[dsSlug] = dataDs
+		} else {
+			byDs[dsSlug] = [3]int{1, 0, 0}
+		}
+		fxSlug := task.FxSlug
+		dataFx, ok := byFx[fxSlug]
+		if ok {
+			dataFx[0]++
+			byFx[fxSlug] = dataFx
+		} else {
+			byFx[fxSlug] = [3]int{1, 0, 0}
+		}
+	}
+	fxs := []string{}
+	for k := range byFx {
+		fxs = append(fxs, k)
+	}
+	sort.Strings(fxs)
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGUSR1)
+	var mtx = &sync.RWMutex{}
+	info := func() {
+		mtx.RLock()
+		lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
+		for _, res := range failed {
+			lib.Printf("Failed: %+v: %s\n", tasks[res[0]], lib.ErrorStrings[res[1]])
+		}
+		if len(failed) > 0 {
+			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
+		}
+		out := false
+		for _, ds := range dss {
+			data := byDs[ds]
+			allDs := data[0]
+			failedDs := data[1]
+			processedDs := data[2]
+			if failedDs > 0 || processedDs != allDs {
+				lib.Printf("Data source: %s, Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", ds, processedDs, allDs, (float64(processedDs)*100.0)/float64(allDs), failedDs, (float64(failedDs)*100.0)/float64(allDs))
+				out = true
+			}
+		}
+		for _, fx := range fxs {
+			data := byFx[fx]
+			allFx := data[0]
+			failedFx := data[1]
+			processedFx := data[2]
+			if failedFx > 0 || processedFx != allFx {
+				lib.Printf("Fixture: %s, Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", fx, processedFx, allFx, (float64(processedFx)*100.0)/float64(allFx), failedFx, (float64(failedFx)*100.0)/float64(allFx))
+				out = true
+			}
+		}
+		if out {
+			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
+		}
+		mtx.RUnlock()
+	}
 	go func() {
 		for {
 			sig := <-sigs
-			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
-			for _, res := range failed {
-				lib.Printf("Failed: %+v: %s\n", tasks[res[0]], lib.ErrorStrings[res[1]])
-			}
-			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
+			info()
 			if sig == syscall.SIGINT {
+				lib.Printf("Exiting due to SIGINT\n")
 				os.Exit(1)
 			}
 		}
@@ -348,15 +406,27 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 		ch := make(chan [2]int)
 		nThreads := 0
 		for idx, task := range tasks {
-			go processTask(ch, ctx, idx, &task)
+			go processTask(ch, ctx, idx, task)
 			nThreads++
 			if nThreads == thrN {
 				res := <-ch
 				nThreads--
+				ds := tasks[res[0]].DsSlug
+				fx := tasks[res[0]].FxSlug
+				mtx.Lock()
+				dataDs := byDs[ds]
+				dataFx := byFx[fx]
 				if res[1] != 0 {
 					failed = append(failed, res)
+					dataDs[1]++
+					dataFx[1]++
 				}
+				dataDs[2]++
+				dataFx[2]++
+				byDs[ds] = dataDs
+				byFx[fx] = dataFx
 				processed++
+				mtx.Unlock()
 			}
 		}
 		if ctx.Debug > 0 {
@@ -365,30 +435,48 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task) error {
 		for nThreads > 0 {
 			res := <-ch
 			nThreads--
+			ds := tasks[res[0]].DsSlug
+			fx := tasks[res[0]].FxSlug
+			mtx.Lock()
+			dataDs := byDs[ds]
+			dataFx := byFx[fx]
 			if res[1] != 0 {
 				failed = append(failed, res)
+				dataDs[1]++
+				dataFx[1]++
 			}
+			dataDs[2]++
+			dataFx[2]++
+			byDs[ds] = dataDs
+			byFx[fx] = dataFx
 			processed++
+			mtx.Unlock()
 		}
 	} else {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using ST version\n", len(tasks))
 		}
 		for idx, task := range tasks {
-			res := processTask(nil, ctx, idx, &task)
+			res := processTask(nil, ctx, idx, task)
+			ds := tasks[res[0]].DsSlug
+			fx := tasks[res[0]].FxSlug
+			mtx.Lock()
+			dataDs := byDs[ds]
+			dataFx := byFx[fx]
 			if res[1] != 0 {
 				failed = append(failed, res)
+				dataDs[1]++
+				dataFx[1]++
 			}
+			dataDs[2]++
+			dataFx[2]++
+			byDs[ds] = dataDs
+			byFx[fx] = dataFx
 			processed++
+			mtx.Unlock()
 		}
 	}
-	lFailed := len(failed)
-	if lFailed > 0 {
-		lib.Printf("Failed tasks: %+v\n", lFailed)
-		for _, res := range failed {
-			lib.Printf("Failed: %+v: %s\n", tasks[res[0]], lib.ErrorStrings[res[1]])
-		}
-	}
+	info()
 	return nil
 }
 
@@ -710,7 +798,7 @@ func massageDataSource(ds string) string {
 	return ds
 }
 
-func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]int) {
+func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
@@ -775,7 +863,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 	if strings.Contains(ds, "/") {
 		ary := strings.Split(ds, "/")
 		if len(ary) != 2 {
-			lib.Printf("%+v: %s\n", task, lib.ErrorStrings[1])
+			lib.Printf("%s: %+v: %s\n", ds, task, lib.ErrorStrings[1])
 			res[1] = 1
 			return
 		}
@@ -790,7 +878,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 	// Handle DS endpoint
 	eps := massageEndpoint(task.Endpoint, ds)
 	if len(eps) == 0 {
-		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[2])
+		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
 		res[1] = 2
 		return
 	}
@@ -799,7 +887,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task *lib.Task) (res [2]
 	}
 
 	// Handle DS config options
-	multiConfig, fail := massageConfig(ctx, &task.Config, ds)
+	multiConfig, fail := massageConfig(ctx, &(task.Config), ds)
 	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
 		res[1] = 3
