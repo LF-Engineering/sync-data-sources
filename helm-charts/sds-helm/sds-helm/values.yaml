@@ -62,14 +62,12 @@ syncPodName: sds
 syncRestartPolicy: Never
 limitsCPU: 48000m
 limitsMemory: 256Gi
-requestsCPU: 500m
+requestsCPU: 1000m
 requestsMemory: 2Gi
 name: sds
 namespace: sds
 nameOverride: sds
-#schedule: '*/2 * * * *'
-#schedule: '0 3 2 * *'
-schedule: '0 0 1 * *'
+schedule: '0 0 * * *'
 secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
@@ -77,9 +75,12 @@ zipSecret: zip-pass
 pvName: sds
 pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
-pvSize: 200Gi
+pvSize: 100Gi
 pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
+nodeHash: ''
+nodeNum: ''
+nodeIdx: '0'
 labels:
   name: sds
 useNodeSelector: '1'
