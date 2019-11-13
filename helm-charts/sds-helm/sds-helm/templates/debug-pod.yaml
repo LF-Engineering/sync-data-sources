@@ -5,9 +5,9 @@ apiVersion: v1
 kind: Pod
 metadata:
   namespace: '{{ .Values.namespace }}'
-  name: {{ .Values.debugPodName }}
+  name: '{{ .Values.debugPodName }}- {{ .Values.nodeIdx }}'
   labels:
-    type: 'cron'
+    type: 'sds'
 {{- with .Values.labels -}}
 {{ toYaml . | nindent 4 }}
 {{ end }}
@@ -16,6 +16,16 @@ metadata:
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: type
+            operator: In
+            values:
+            - sds
+        topologyKey: kubernetes.io/hostname
   containers:
   - command:
     - {{ .Values.debugCommand }}
@@ -35,6 +45,12 @@ spec:
         cpu: '{{ .Values.limitsCPU }}'
 {{ end }}
     env:
+    - name: SDS_NODE_HASH
+      value: '{{ .Values.nodeHash }}'
+    - name: SDS_NODE_NUM
+      value: '{{ .Values.nodeNum }}'
+    - name: SDS_NODE_IDX
+      value: '{{ .Values.nodeIdx }}'
     - name: SDS_MAXRETRY
       value: '{{ .Values.sdsMaxRetry }}'
     - name: SDS_DEBUG
@@ -90,12 +106,12 @@ spec:
     imagePullPolicy: {{ .Values.imagePullPolicy }}
     name: {{ .Values.debugPodName }}
     volumeMounts:
-    - name: '{{ .Values.pvName }}'
+    - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
       mountPath: '{{ .Values.pvMountPath }}'
   volumes:
-  - name: '{{ .Values.pvName }}'
+  - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
     persistentVolumeClaim:
-      claimName: '{{ .Values.pvName }}'
+      claimName: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
   restartPolicy: {{ .Values.imageRestartPolicy }}
 {{ if .Values.useNodeSelector }}
   nodeSelector:

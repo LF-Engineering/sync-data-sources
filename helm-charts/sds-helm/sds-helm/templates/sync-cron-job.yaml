@@ -5,7 +5,7 @@ apiVersion: batch/v1beta1
 kind: CronJob
 metadata:
   namespace: '{{ .Values.namespace }}'
-  name: '{{ .Values.syncPodName }}'
+  name: '{{ .Values.syncPodName }}-{{ .Values.nodeIdx }}'
   labels:
     type: 'cron'
 {{- with .Values.labels -}}
@@ -22,9 +22,9 @@ spec:
     spec:
       template:
         metadata:
-          name: '{{ .Values.syncPodName }}'
+          name: '{{ .Values.syncPodName }}-{{ .Values.nodeIdx }}'
           labels:
-            type: 'sync'
+            type: 'sds'
 {{- with .Values.labels -}}
 {{ toYaml . | nindent 12 }}
 {{ end }}
@@ -33,6 +33,16 @@ spec:
             app.kubernetes.io/instance: {{ .Release.Name }}
             app.kubernetes.io/managed-by: {{ .Release.Service }}
         spec:
+          affinity:
+            podAntiAffinity:
+              requiredDuringSchedulingIgnoredDuringExecution:
+              - labelSelector:
+                  matchExpressions:
+                  - key: type
+                    operator: In
+                    values:
+                    - sds
+                topologyKey: kubernetes.io/hostname
           containers:
           - command:
             - {{ .Values.syncCommand }}
@@ -52,6 +62,12 @@ spec:
                 cpu: '{{ .Values.limitsCPU }}'
 {{ end }}
             env:
+            - name: SDS_NODE_HASH
+              value: '{{ .Values.nodeHash }}'
+            - name: SDS_NODE_NUM
+              value: '{{ .Values.nodeNum }}'
+            - name: SDS_NODE_IDX
+              value: '{{ .Values.nodeIdx }}'
             - name: SDS_MAXRETRY
               value: '{{ .Values.sdsMaxRetry }}'
             - name: SDS_DEBUG
@@ -107,12 +123,12 @@ spec:
             imagePullPolicy: {{ .Values.imagePullPolicy }}
             name: '{{ .Values.syncPodName }}'
             volumeMounts:
-            - name: '{{ .Values.pvName }}'
+            - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
               mountPath: '{{ .Values.pvMountPath }}'
           volumes:
-          - name: '{{ .Values.pvName }}'
+          - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
             persistentVolumeClaim:
-              claimName: '{{ .Values.pvName }}'
+              claimName: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
           restartPolicy: {{ .Values.syncRestartPolicy }}
 {{ if .Values.useNodeSelector }}
           nodeSelector:
