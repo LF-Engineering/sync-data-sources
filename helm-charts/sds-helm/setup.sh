@@ -22,5 +22,8 @@ then
   "${1}h.sh" install sds ./sds-helm --set "deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH"
   change_namespace.sh $1 default
 else
+  echo "Dry run mode"
+  change_namespace.sh $1 sds
   "${1}h.sh" install --debug --dry-run --generate-name ./sds-helm --set "deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH,dryRun=1"
+  change_namespace.sh $1 default
 fi
