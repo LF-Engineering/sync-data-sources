@@ -35,6 +35,7 @@ Other environment parameters:
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
 - `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.
 - `SDS_DRY_RUN`/`dryRun` - Run in dry-run mode, do not execute any grimoire stack command, report success instead.
+- `SDS_DRY_RUN_CODE`/`dryRunCode` - When in dry-run mode, set fake grimoire command result exit code.
 
 Multi node support:
 

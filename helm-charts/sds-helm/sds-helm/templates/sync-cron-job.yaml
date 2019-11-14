@@ -68,6 +68,8 @@ spec:
             env:
             - name: SDS_DRY_RUN
               value: '{{ $root.Values.dryRun }}'
+            - name: SDS_DRY_RUN_CODE
+              value: '{{ $root.Values.dryRunCode }}'
             - name: SDS_NODE_HASH
               value: '{{ $root.Values.nodeHash }}'
             - name: SDS_NODE_NUM
