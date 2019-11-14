@@ -74,7 +74,7 @@ requestsMemory: 2Gi
 name: sds
 namespace: sds
 nameOverride: sds
-schedule: '0 0 * * *'
+schedule: '0 12 * * *'
 secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
