@@ -928,6 +928,9 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	trials := 0
 	dtStart := time.Now()
 	for {
+		if ctx.DryRun {
+			return
+		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
