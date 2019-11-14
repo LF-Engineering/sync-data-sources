@@ -424,6 +424,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 		}
 	}()
+	lastTime := time.Now()
+	dtStart := lastTime
 	if thrN > 1 {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using MT%d version\n", len(tasks), thrN)
@@ -454,6 +456,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				byFx[fx] = dataFx
 				processed++
 				mtx.Unlock()
+				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
 			}
 		}
 		if ctx.Debug > 0 {
@@ -480,6 +483,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			byFx[fx] = dataFx
 			processed++
 			mtx.Unlock()
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
 		}
 	} else {
 		if ctx.Debug >= 0 {
@@ -505,6 +509,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			byFx[fx] = dataFx
 			processed++
 			mtx.Unlock()
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
 		}
 	}
 	info()
@@ -512,6 +517,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 }
 
 func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
+	if ctx.DryRun {
+		return true
+	}
 	home := os.Getenv("HOME")
 	dir := home + "/.ssh"
 	cmd := exec.Command("mkdir", dir)
@@ -951,6 +959,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
+			// time.Sleep(time.Duration(2) * time.Second)
 			result.Code[1] = ctx.DryRunCode
 			return
 		}
