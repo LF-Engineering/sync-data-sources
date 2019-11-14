@@ -11,13 +11,16 @@ fi
 if [ -z "$NODES" ]
 then
   export NODES=1
+  export HSH=''
+else
+  export HSH='1'
 fi
 if [ -z "$DRY" ]
 then
-  "${1}h.sh" install sds-namespace ./sds-helm --set "skipSecrets=1,skipCron=1,skipPV=1,nodeNum=$NODES"
+  "${1}h.sh" install sds-namespace ./sds-helm --set "skipSecrets=1,skipCron=1,skipPV=1,nodeNum=$NODES,nodeHash=$HSH"
   change_namespace.sh $1 sds
-  "${1}h.sh" install sds ./sds-helm --set "deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES"
+  "${1}h.sh" install sds ./sds-helm --set "deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH"
   change_namespace.sh $1 default
 else
-  "${1}h.sh" install --debug --dry-run --generate-name ./sds-helm --set "deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES"
+  "${1}h.sh" install --debug --dry-run --generate-name ./sds-helm --set "deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH"
 fi

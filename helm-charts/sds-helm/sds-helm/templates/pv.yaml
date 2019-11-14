@@ -1,25 +1,30 @@
 {{- $skipPV := .Values.skipPV -}}
 {{ if not $skipPV }}
+{{- $root := . -}}
+{{- $nodeIdx := .Values.nodeIdx -}}
+{{- range $nIdx := untilStep 0 (.Values.nodeNum|int) 1 -}}
+{{ if or (not $nodeIdx) (eq $nIdx ($nodeIdx|int)) }}
 ---
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
-  namespace: '{{ .Values.namespace }}'
-  name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
+  namespace: '{{ $root.Values.namespace }}'
+  name: '{{ $root.Values.pvName }}-{{ $nIdx }}'
   labels:
     type: pvc
-{{- with .Values.labels -}}
+{{- with $root.Values.labels -}}
 {{ toYaml . | nindent 4 }}
 {{ end }}
-    app.kubernetes.io/name: {{ include "sds-helm.name" . }}
-    helm.sh/chart: {{ include "sds-helm.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: sds
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: sds
 spec:
   accessModes:
-    - {{ .Values.pvAccessMode }}
-  storageClassName: {{ .Values.pvStorageClass }}
+    - {{ $root.Values.pvAccessMode }}
+  storageClassName: {{ $root.Values.pvStorageClass }}
   resources:
     requests:
-      storage: {{ .Values.pvSize }}
+      storage: {{ $root.Values.pvSize }}
+{{ end }}
+{{ end }}
 {{ end }}
