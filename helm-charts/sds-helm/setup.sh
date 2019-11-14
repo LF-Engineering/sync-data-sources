@@ -16,8 +16,8 @@ if [ -z "$DRY" ]
 then
   "${1}h.sh" install sds-namespace ./sds-helm --set "skipSecrets=1,skipCron=1,skipPV=1,nodeNum=$NODES"
   change_namespace.sh $1 sds
-  "${1}h.sh" install sds ./sds-helm --set "deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNUM=$Nodes"
+  "${1}h.sh" install sds ./sds-helm --set "deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES"
   change_namespace.sh $1 default
 else
-  "${1}h.sh" install --debug --dry-run ./sds-helm --set "deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNUM=$Nodes"
+  "${1}h.sh" install --debug --dry-run ./sds-helm --set "deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES"
 fi
