@@ -377,8 +377,13 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	info := func() {
 		mtx.RLock()
 		lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
+		strAry := []string{}
 		for _, res := range failed {
-			lib.Printf("Failed: %+v: %s\n", tasks[res[0]], lib.ErrorStrings[res[1]])
+			strAry = append(strAry, fmt.Sprintf("Failed: %+v: %s", tasks[res[0]], lib.ErrorStrings[res[1]]))
+		}
+		sort.Strings(strAry)
+		for _, str := range strAry {
+			lib.Printf("%s\n", str)
 		}
 		if len(failed) > 0 {
 			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
