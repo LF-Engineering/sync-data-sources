@@ -21,6 +21,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		NCPUs:      in.NCPUs,
 		CtxOut:     in.CtxOut,
 		NodeHash:   in.NodeHash,
+		DryRun:     in.DryRun,
 		NodeIdx:    in.NodeIdx,
 		NodeNum:    in.NodeNum,
 		LogTime:    in.LogTime,
@@ -154,6 +155,7 @@ func TestInit(t *testing.T) {
 		NCPUs:      0,
 		CtxOut:     false,
 		NodeHash:   false,
+		DryRun:     false,
 		NodeIdx:    0,
 		NodeNum:    1,
 		LogTime:    true,
@@ -271,12 +273,21 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set ES URL ",
+			"Set ES URL",
 			map[string]string{"SDS_ES_URL": "http://other.server:9222"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"ElasticURL": "http://other.server:9222"},
+			),
+		},
+		{
+			"Set dry run mode",
+			map[string]string{"SDS_DRY_RUN": "1"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"DryRun": true},
 			),
 		},
 		{
