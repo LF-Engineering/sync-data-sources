@@ -48,6 +48,11 @@ func (t Task) String() string {
 	return fmt.Sprintf("{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s}", t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine)
 }
 
+// ShortString - output quick endpoint info
+func (t Task) ShortString() string {
+	return fmt.Sprintf("%s: %s / %s", t.FxSlug, t.DsSlug, t.Endpoint)
+}
+
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
 // GitHub API tokens: -t token1 token2 token3 ... tokenN
 type MultiConfig struct {
