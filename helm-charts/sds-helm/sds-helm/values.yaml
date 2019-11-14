@@ -79,8 +79,7 @@ pvSize: 100Gi
 pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
 nodeHash: ''
-nodeNum: ''
-nodeIdx: '0'
+nodeNum: 1
 labels:
   name: sds
 useNodeSelector: '1'
