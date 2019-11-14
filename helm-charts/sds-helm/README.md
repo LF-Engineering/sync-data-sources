@@ -41,6 +41,7 @@ Other environment parameters:
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
 - `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.
+- `SDS_DRY_RUN`/`dryRun` - Run in dry-run mode, do not execute any grimoire stack command, report success instead.
 
 # Deploy on LF infra
 

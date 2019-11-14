@@ -66,6 +66,8 @@ spec:
                 cpu: '{{ $root.Values.limitsCPU }}'
 {{ end }}
             env:
+            - name: SDS_DRY_RUN
+              value: '{{ $root.Values.dryRun }}'
             - name: SDS_NODE_HASH
               value: '{{ $root.Values.nodeHash }}'
             - name: SDS_NODE_NUM
