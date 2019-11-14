@@ -22,6 +22,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		CtxOut:     in.CtxOut,
 		NodeHash:   in.NodeHash,
 		DryRun:     in.DryRun,
+		DryRunCode: in.DryRunCode,
 		NodeIdx:    in.NodeIdx,
 		NodeNum:    in.NodeNum,
 		LogTime:    in.LogTime,
@@ -156,6 +157,7 @@ func TestInit(t *testing.T) {
 		CtxOut:     false,
 		NodeHash:   false,
 		DryRun:     false,
+		DryRunCode: 0,
 		NodeIdx:    0,
 		NodeNum:    1,
 		LogTime:    true,
@@ -283,11 +285,17 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Set dry run mode",
-			map[string]string{"SDS_DRY_RUN": "1"},
+			map[string]string{
+				"SDS_DRY_RUN":      "1",
+				"SDS_DRY_RUN_CODE": "4",
+			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"DryRun": true},
+				map[string]interface{}{
+					"DryRun":     true,
+					"DryRunCode": 4,
+				},
 			),
 		},
 		{

@@ -423,13 +423,15 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using MT%d version\n", len(tasks), thrN)
 		}
-		ch := make(chan [2]int)
+		ch := make(chan lib.TaskResult)
 		nThreads := 0
 		for idx, task := range tasks {
 			go processTask(ch, ctx, idx, task)
 			nThreads++
 			if nThreads == thrN {
-				res := <-ch
+				result := <-ch
+				res := result.Code
+				tasks[res[0]].CommandLine = result.CommandLine
 				nThreads--
 				ds := tasks[res[0]].DsSlug
 				fx := tasks[res[0]].FxSlug
@@ -453,7 +455,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			lib.Printf("Final threads join\n")
 		}
 		for nThreads > 0 {
-			res := <-ch
+			result := <-ch
+			res := result.Code
+			tasks[res[0]].CommandLine = result.CommandLine
 			nThreads--
 			ds := tasks[res[0]].DsSlug
 			fx := tasks[res[0]].FxSlug
@@ -477,7 +481,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			lib.Printf("Processing %d tasks using ST version\n", len(tasks))
 		}
 		for idx, task := range tasks {
-			res := processTask(nil, ctx, idx, task)
+			result := processTask(nil, ctx, idx, task)
+			res := result.Code
+			tasks[res[0]].CommandLine = result.CommandLine
 			ds := tasks[res[0]].DsSlug
 			fx := tasks[res[0]].FxSlug
 			mtx.Lock()
@@ -818,18 +824,18 @@ func massageDataSource(ds string) string {
 	return ds
 }
 
-func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]int) {
+func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
 		if ch != nil {
-			ch <- res
+			ch <- result
 		}
 	}()
 	if ctx.Debug > 1 {
 		lib.Printf("Processing: %s\n", task)
 	}
-	res[0] = idx
+	result.Code[0] = idx
 
 	// Handle DS slug
 	ds := task.DsSlug
@@ -884,7 +890,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		ary := strings.Split(ds, "/")
 		if len(ary) != 2 {
 			lib.Printf("%s: %+v: %s\n", ds, task, lib.ErrorStrings[1])
-			res[1] = 1
+			result.Code[1] = 1
 			return
 		}
 		commandLine = append(commandLine, massageDataSource(ary[0]))
@@ -899,7 +905,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	eps := massageEndpoint(task.Endpoint, ds)
 	if len(eps) == 0 {
 		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
-		res[1] = 2
+		result.Code[1] = 2
 		return
 	}
 	for _, ep := range eps {
@@ -910,7 +916,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 	multiConfig, fail := massageConfig(ctx, &(task.Config), ds)
 	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
-		res[1] = 3
+		result.Code[1] = 3
 		return
 	}
 	for _, mcfg := range multiConfig {
@@ -925,10 +931,12 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 			}
 		}
 	}
+	result.CommandLine = strings.Join(commandLine, " ")
 	trials := 0
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
+			result.Code[1] = ctx.DryRunCode
 			return
 		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
@@ -951,7 +959,7 @@ func processTask(ch chan [2]int, ctx *lib.Ctx, idx int, task lib.Task) (res [2]i
 		}
 		dtEnd := time.Now()
 		lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), trials, err, str)
-		res[1] = 4
+		result.Code[1] = 4
 		return
 	}
 	return
