@@ -34,3 +34,6 @@ Other environment parameters:
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
 - `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.
+- `SDS_NODE_HASH`/`nodeHash` to set multi node deployment (it will use hash function to distribute work across nodes without duplicating).
+- `SDS_NODE_NUM`/`nodeNum` to specify number of nodes available. each will get about `1/N` of work.
+- `SDS_NODE_IDX`/`nodeIdx` to specify which node index you're now deploying - you need to make N deployments, each for different node.
