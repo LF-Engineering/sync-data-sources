@@ -1,7 +1,7 @@
 {{- $debugPod := .Values.debugPod -}}
 {{ if $debugPod }}
 {{- $root := . -}}
-{{- range $nodeNum := untilStep 0 .Values.nodeNum 1 }}
+{{- range $nodeNum := untilStep 0 .Values.nodeNum 1 -}}
 ---
 apiVersion: v1
 kind: Pod
@@ -119,6 +119,7 @@ spec:
   nodeSelector:
 {{- with .Values.nodeSelector -}}
 {{ toYaml . | nindent 4 }}
+{{ end }}
 {{ end }}
 {{ end }}
 {{ end }}
