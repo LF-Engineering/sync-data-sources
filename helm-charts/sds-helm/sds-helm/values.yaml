@@ -48,6 +48,9 @@
 # schedule: '36 * * * *'
 # syncCommandArgs:
 #   - "bootarg"
+# nodeNum: 3
+# nodeIdx: 0
+# nodeHash: '1'
 
 # Standard values:
 deployEnv: 'set-me'

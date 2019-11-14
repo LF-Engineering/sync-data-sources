@@ -1,23 +1,26 @@
 {{- $debugPod := .Values.debugPod -}}
 {{ if $debugPod }}
 {{- $root := . -}}
-{{- range $nodeNum := untilStep 0 .Values.nodeNum 1 -}}
+{{- $nodeIdx := .Values.nodeIdx -}}
+{{- range $nIdx := untilStep 0 (.Values.nodeNum|int) 1 -}}
+{{ if or (not $nodeIdx) (eq $nIdx ($nodeIdx|int)) }}
 ---
 apiVersion: v1
 kind: Pod
 metadata:
-  namespace: '{{ .Values.namespace }}'
-  name: '{{ .Values.debugPodName }}-{{ .Values.nodeIdx }}'
+  namespace: '{{ $root.Values.namespace }}'
+  name: '{{ $root.Values.debugPodName }}-{{ $nIdx }}'
   labels:
     type: 'sds'
-{{- with .Values.labels -}}
+{{- with $root.Values.labels -}}
 {{ toYaml . | nindent 4 }}
 {{ end }}
-    app.kubernetes.io/name: {{ include "sds-helm.name" . }}
-    helm.sh/chart: {{ include "sds-helm.chart" . }}
-    app.kubernetes.io/instance: {{ .Release.Name }}
-    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: sds
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: sds
+    helm.sh/chart: sds-helm-0.1.0
 spec:
+{{ if gt ($root.Values.nodeNum|int) 1 }}
   affinity:
     podAntiAffinity:
       requiredDuringSchedulingIgnoredDuringExecution:
@@ -28,97 +31,99 @@ spec:
             values:
             - sds
         topologyKey: kubernetes.io/hostname
+{{ end }}
   containers:
   - command:
-    - {{ .Values.debugCommand }}
-{{ if .Values.debugCommandArgs }}
+    - {{ $root.Values.debugCommand }}
+{{ if $root.Values.debugCommandArgs }}
     args:
-{{- with .Values.debugCommandArgs -}}
+{{- with $root.Values.debugCommandArgs -}}
 {{ toYaml . | nindent 6 }}
 {{ end }}
 {{ end }}
-{{ if .Values.useResourcesLimits }}
+{{ if $root.Values.useResourcesLimits }}
     resources:
       requests:
-        memory: '{{ .Values.requestsMemory }}'
-        cpu: '{{ .Values.requestsCPU }}'
+        memory: '{{ $root.Values.requestsMemory }}'
+        cpu: '{{ $root.Values.requestsCPU }}'
       limits:
-        memory: '{{ .Values.limitsMemory }}'
-        cpu: '{{ .Values.limitsCPU }}'
+        memory: '{{ $root.Values.limitsMemory }}'
+        cpu: '{{ $root.Values.limitsCPU }}'
 {{ end }}
     env:
     - name: SDS_NODE_HASH
-      value: '{{ .Values.nodeHash }}'
+      value: '{{ $root.Values.nodeHash }}'
     - name: SDS_NODE_NUM
-      value: '{{ .Values.nodeNum }}'
+      value: '{{ $root.Values.nodeNum }}'
     - name: SDS_NODE_IDX
-      value: '{{ .Values.nodeIdx }}'
+      value: '{{ $nIdx }}'
     - name: SDS_MAXRETRY
-      value: '{{ .Values.sdsMaxRetry }}'
+      value: '{{ $root.Values.sdsMaxRetry }}'
     - name: SDS_DEBUG
-      value: '{{ .Values.sdsDebug }}'
+      value: '{{ $root.Values.sdsDebug }}'
     - name: SDS_CMDDEBUG
-      value: '{{ .Values.sdsCmdDebug }}'
+      value: '{{ $root.Values.sdsCmdDebug }}'
     - name: SDS_ST
-      value: '{{ .Values.sdsST }}'
+      value: '{{ $root.Values.sdsST }}'
     - name: SDS_NCPUS
-      value: '{{ .Values.sdsNCPUs }}'
+      value: '{{ $root.Values.sdsNCPUs }}'
     - name: SDS_CTXOUT
-      value: '{{ .Values.sdsCtxOut }}'
+      value: '{{ $root.Values.sdsCtxOut }}'
     - name: SDS_SKIPTIME
-      value: '{{ .Values.sdsSkipTime }}'
+      value: '{{ $root.Values.sdsSkipTime }}'
     - name: SDS_ES_BULKSIZE
-      value: '{{ .Values.esBulkSize }}'
+      value: '{{ $root.Values.esBulkSize }}'
     - name: SH_USER
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.shSecret }}
+          name: {{ $root.Values.shSecret }}
           key: SH_USER.secret
     - name: SH_HOST
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.shSecret }}
+          name: {{ $root.Values.shSecret }}
           key: SH_HOST.secret
     - name: SH_PORT
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.shSecret }}
+          name: {{ $root.Values.shSecret }}
           key: SH_PORT.secret
     - name: SH_PASS
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.shSecret }}
+          name: {{ $root.Values.shSecret }}
           key: SH_PASS.secret
     - name: SH_DB
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.shSecret }}
+          name: {{ $root.Values.shSecret }}
           key: SH_DB.secret
     - name: SDS_ES_URL
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.esSecret }}
+          name: {{ $root.Values.esSecret }}
           key: ES_URL.secret
     - name: ZIPPASS
       valueFrom:
         secretKeyRef:
-          name: {{ .Values.zipSecret }}
+          name: {{ $root.Values.zipSecret }}
           key: ZIPPASS.secret
-    image: '{{ .Values.debugImage }}-{{ .Values.deployEnv }}'
-    imagePullPolicy: {{ .Values.imagePullPolicy }}
-    name: {{ .Values.debugPodName }}
+    image: '{{ $root.Values.debugImage }}-{{ $root.Values.deployEnv }}'
+    imagePullPolicy: {{ $root.Values.imagePullPolicy }}
+    name: '{{ $root.Values.debugPodName }}-{{ $nIdx }}'
     volumeMounts:
-    - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
-      mountPath: '{{ .Values.pvMountPath }}'
+    - name: '{{ $root.Values.pvName }}-{{ $nIdx }}'
+      mountPath: '{{ $root.Values.pvMountPath }}'
   volumes:
-  - name: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
+  - name: '{{ $root.Values.pvName }}-{{ $nIdx }}'
     persistentVolumeClaim:
-      claimName: '{{ .Values.pvName }}-{{ .Values.nodeIdx }}'
-  restartPolicy: {{ .Values.imageRestartPolicy }}
-{{ if .Values.useNodeSelector }}
+      claimName: '{{ $root.Values.pvName }}-{{ $nIdx }}'
+  restartPolicy: {{ $root.Values.imageRestartPolicy }}
+{{ if $root.Values.useNodeSelector }}
   nodeSelector:
-{{- with .Values.nodeSelector -}}
+{{- with $root.Values.nodeSelector -}}
 {{ toYaml . | nindent 4 }}
+{{ end }}
 {{ end }}
 {{ end }}
 {{ end }}
