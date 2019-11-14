@@ -517,7 +517,7 @@ func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
 		lib.Printf("Error adding SSH Key %s: %+v\n", fn, err)
 		return false
 	}
-	if ctx.Debug > 0 {
+	if ctx.Debug >= 0 {
 		lib.Printf("Added SSH Key: %s\n", fn)
 	}
 	return true
@@ -549,10 +549,20 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 				}
 			}
 			lAry := len(nAry)
+			repo := nAry[lAry-1]
+			if strings.HasSuffix(repo, ".git") {
+				lRepo := len(repo)
+				repo = repo[:lRepo-4]
+			}
 			e = append(e, nAry[lAry-2])
-			e = append(e, nAry[lAry-1])
+			e = append(e, repo)
 		} else {
-			e = append(e, endpoint)
+			ep := endpoint
+			if strings.HasSuffix(ep, ".git") {
+				lEp := len(ep)
+				ep = ep[:lEp-4]
+			}
+			e = append(e, ep)
 		}
 	} else if ds == lib.DockerHub {
 		if strings.Contains(endpoint, " ") {
