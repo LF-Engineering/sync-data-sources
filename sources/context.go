@@ -25,6 +25,7 @@ type Ctx struct {
 	NodeNum          int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
 	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hasesh matching this node will run
 	DryRun           bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
+	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -135,6 +136,15 @@ func (ctx *Ctx) Init() {
 
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
+	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
+		ctx.DryRunCode = 0
+	} else {
+		code, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_CODE"))
+		FatalNoLog(err)
+		if code >= 1 && code <= 4 {
+			ctx.DryRunCode = code
+		}
+	}
 
 	// Context out if requested
 	if ctx.CtxOut {
