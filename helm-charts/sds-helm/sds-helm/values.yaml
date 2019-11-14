@@ -52,10 +52,12 @@
 # nodeIdx: 0
 # nodeHash: '1'
 # dryRun: '1'
+# dryRunCode: '4'
 
 # Standard values:
 deployEnv: 'set-me'
 dryRun: ''
+dryRunCode: ''
 esURL: ''
 esBulkSize: ''
 concurrencyPolicy: Forbid
