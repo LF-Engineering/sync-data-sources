@@ -26,6 +26,8 @@ type Ctx struct {
 	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hasesh matching this node will run
 	DryRun           bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
 	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
+	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
+	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -143,6 +145,26 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if code >= 1 && code <= 4 {
 			ctx.DryRunCode = code
+		}
+	}
+	if os.Getenv("SDS_DRY_RUN_SECONDS") == "" {
+		ctx.DryRunSeconds = 0
+	} else {
+		secs, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_SECONDS"))
+		FatalNoLog(err)
+		if secs > 0 {
+			ctx.DryRunSeconds = secs
+		}
+	}
+
+	// Timeout
+	if os.Getenv("SDS_TIMEOUT_SECONDS") == "" {
+		ctx.TimeoutSeconds = 171900
+	} else {
+		secs, err := strconv.Atoi(os.Getenv("SDS_TIMEOUT_SECONDS"))
+		FatalNoLog(err)
+		if secs > 0 {
+			ctx.TimeoutSeconds = secs
 		}
 	}
 

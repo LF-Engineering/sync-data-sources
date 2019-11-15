@@ -372,7 +372,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	}
 	sort.Strings(fxs)
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGUSR1)
+	signal.Notify(sigs, syscall.SIGINT, syscall.SIGUSR1, syscall.SIGALRM)
 	var mtx = &sync.RWMutex{}
 	info := func() {
 		mtx.RLock()
@@ -421,6 +421,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			if sig == syscall.SIGINT {
 				lib.Printf("Exiting due to SIGINT\n")
 				os.Exit(1)
+			} else if sig == syscall.SIGALRM {
+				lib.Printf("Timeout after %d seconds\n", ctx.TimeoutSeconds)
+				os.Exit(2)
 			}
 		}
 	}()
@@ -959,7 +962,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
-			// time.Sleep(time.Duration(2) * time.Second)
+			if ctx.DryRunSeconds > 0 {
+				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+			}
 			result.Code[1] = ctx.DryRunCode
 			return
 		}
@@ -989,6 +994,14 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	return
 }
 
+func finishAfterTimeout(ctx lib.Ctx) {
+	time.Sleep(time.Duration(ctx.TimeoutSeconds) * time.Second)
+	err := syscall.Kill(syscall.Getpid(), syscall.SIGALRM)
+	if err != nil {
+		lib.Fatalf("Error: %+v sending timeout signal, exiting\n", err)
+	}
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
@@ -997,6 +1010,7 @@ func main() {
 	if err != nil {
 		lib.Fatalf("Grimoire stack not available: %+v\n", err)
 	}
+	go finishAfterTimeout(ctx)
 	err = syncGrimoireStack(&ctx)
 	if err != nil {
 		lib.Fatalf("Grimoire stack sync error: %+v\n", err)
