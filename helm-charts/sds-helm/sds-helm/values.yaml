@@ -53,11 +53,15 @@
 # nodeHash: '1'
 # dryRun: '1'
 # dryRunCode: '4'
+# dryRunSeconds: '1'
+# timeoutSeconds: '72000'
 
 # Standard values:
 deployEnv: 'set-me'
 dryRun: ''
 dryRunCode: ''
+dryRunSeconds: ''
+timeoutSeconds: ''
 esURL: ''
 esBulkSize: ''
 concurrencyPolicy: Forbid
