@@ -153,7 +153,7 @@ func TestInit(t *testing.T) {
 	defaultContext := lib.Ctx{
 		Debug:          0,
 		CmdDebug:       0,
-		MaxRetry:       3,
+		MaxRetry:       2,
 		ST:             false,
 		NCPUs:          0,
 		CtxOut:         false,
@@ -222,11 +222,11 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Setting max retry parameter",
-			map[string]string{"SDS_MAXRETRY": "2"},
+			map[string]string{"SDS_MAXRETRY": "5"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"MaxRetry": 2},
+				map[string]interface{}{"MaxRetry": 5},
 			),
 		},
 		{

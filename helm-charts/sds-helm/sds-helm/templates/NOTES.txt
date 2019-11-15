@@ -26,7 +26,7 @@ Import company affiliations from cncf/devstats into GrimoireLab Sorting Hat data
 
 Other environment parameters:
 
-- `SDS_MAXRETRY`/`sdsMaxRetry` - Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3
+- `SDS_MAXRETRY`/`sdsMaxRetry` - Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3 (1 original and 2 more attempts).
 - `SDS_DEBUG`/`sdsDebug` - Debug level: 0-no, 1-info, 2-verbose.
 - `SDS_CMDDEBUG`/`sdsCmdDebug` - Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default.
 - `SDS_ST`/`sdsST` - force using single-threaded version.
