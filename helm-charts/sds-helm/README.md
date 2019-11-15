@@ -43,6 +43,8 @@ Other environment parameters:
 - `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.
 - `SDS_DRY_RUN`/`dryRun` - Run in dry-run mode, do not execute any grimoire stack command, report success instead.
 - `SDS_DRY_RUN_CODE`/`dryRunCode` - When in dry-run mode, set fake grimoire command result exit code.
+- `SDS_DRY_RUN_SECONDS`/`dryRunSeconds` - When in dry-run mode, set fake grimoire command running time in seconds.
+- `SDS_TIMEOUT_SECONDS`/`timeoutSeconds` - if program didn't finished before this timeout (in seconds), finish it with exit code 2. Default 47h 45min (171900s).
 
 # Deploy on LF infra
 
