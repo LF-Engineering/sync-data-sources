@@ -373,9 +373,65 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	sort.Strings(fxs)
 	sigs := make(chan os.Signal, 1)
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGUSR1, syscall.SIGALRM)
+	processing := make(map[int]struct{})
+	startTimes := make(map[int]time.Time)
+	endTimes := make(map[int]time.Time)
+	durations := make(map[int]time.Duration)
 	var mtx = &sync.RWMutex{}
 	info := func() {
 		mtx.RLock()
+		if len(processing) > 0 {
+			lib.Printf("Processing:\n")
+			for idx := range processing {
+				since := startTimes[idx]
+				if ctx.Debug > 0 {
+					lib.Printf("%+v: %+v, since: %+v\n", tasks[idx].ShortString(), time.Now().Sub(since), since)
+				} else {
+					lib.Printf("%+v: %+v\n", time.Now().Sub(since), tasks[idx].ShortString())
+				}
+			}
+		}
+		if len(durations) > 0 {
+			lib.Printf("Longest running tasks (finished):\n")
+			durs := make(map[time.Duration]int)
+			dursAry := []time.Duration{}
+			for idx, dur := range durations {
+				durs[dur] = idx
+				dursAry = append(dursAry, dur)
+			}
+			sort.Slice(dursAry, func(i, j int) bool {
+				return dursAry[j] < dursAry[i]
+			})
+			n := 16
+			nDur := len(dursAry)
+			if nDur < 16 {
+				n = nDur
+			}
+			for i, dur := range dursAry[0:n] {
+				lib.Printf("#%d) %+v: %+v\n", i+1, dur, tasks[durs[dur]].ShortStringCmd())
+			}
+			if len(processing) > 0 {
+				lib.Printf("Longest running tasks (in progress):\n")
+				durs = make(map[time.Duration]int)
+				dursAry = []time.Duration{}
+				for idx := range processing {
+					dur := time.Now().Sub(startTimes[idx])
+					durs[dur] = idx
+					dursAry = append(dursAry, dur)
+				}
+				sort.Slice(dursAry, func(i, j int) bool {
+					return dursAry[j] < dursAry[i]
+				})
+				n := 16
+				nDur := len(dursAry)
+				if nDur < 16 {
+					n = nDur
+				}
+				for i, dur := range dursAry[0:n] {
+					lib.Printf("#%d) %+v: %+v\n", i+1, dur, tasks[durs[dur]].ShortString())
+				}
+			}
+		}
 		lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
 		strAry := []string{}
 		for _, res := range failed {
@@ -436,16 +492,24 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		ch := make(chan lib.TaskResult)
 		nThreads := 0
 		for idx, task := range tasks {
+			mtx.Lock()
+			processing[idx] = struct{}{}
+			startTimes[idx] = time.Now()
+			mtx.Unlock()
 			go processTask(ch, ctx, idx, task)
 			nThreads++
 			if nThreads == thrN {
 				result := <-ch
 				res := result.Code
-				tasks[res[0]].CommandLine = result.CommandLine
+				tIdx := res[0]
+				tasks[tIdx].CommandLine = result.CommandLine
 				nThreads--
-				ds := tasks[res[0]].DsSlug
-				fx := tasks[res[0]].FxSlug
+				ds := tasks[tIdx].DsSlug
+				fx := tasks[tIdx].FxSlug
 				mtx.Lock()
+				delete(processing, tIdx)
+				endTimes[tIdx] = time.Now()
+				durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
 				dataDs := byDs[ds]
 				dataFx := byFx[fx]
 				if res[1] != 0 {
@@ -459,7 +523,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				byFx[fx] = dataFx
 				processed++
 				mtx.Unlock()
-				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
+				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
 			}
 		}
 		if ctx.Debug > 0 {
@@ -468,11 +532,15 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		for nThreads > 0 {
 			result := <-ch
 			res := result.Code
-			tasks[res[0]].CommandLine = result.CommandLine
+			tIdx := res[0]
+			tasks[tIdx].CommandLine = result.CommandLine
 			nThreads--
-			ds := tasks[res[0]].DsSlug
-			fx := tasks[res[0]].FxSlug
+			ds := tasks[tIdx].DsSlug
+			fx := tasks[tIdx].FxSlug
 			mtx.Lock()
+			delete(processing, tIdx)
+			endTimes[tIdx] = time.Now()
+			durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
 			dataDs := byDs[ds]
 			dataFx := byFx[fx]
 			if res[1] != 0 {
@@ -486,19 +554,24 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			byFx[fx] = dataFx
 			processed++
 			mtx.Unlock()
-			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
 		}
 	} else {
 		if ctx.Debug >= 0 {
 			lib.Printf("Processing %d tasks using ST version\n", len(tasks))
 		}
 		for idx, task := range tasks {
+			processing[idx] = struct{}{}
 			result := processTask(nil, ctx, idx, task)
 			res := result.Code
-			tasks[res[0]].CommandLine = result.CommandLine
-			ds := tasks[res[0]].DsSlug
-			fx := tasks[res[0]].FxSlug
+			tIdx := res[0]
+			tasks[tIdx].CommandLine = result.CommandLine
+			ds := tasks[tIdx].DsSlug
+			fx := tasks[tIdx].FxSlug
 			mtx.Lock()
+			delete(processing, tIdx)
+			endTimes[tIdx] = time.Now()
+			durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
 			dataDs := byDs[ds]
 			dataFx := byFx[fx]
 			if res[1] != 0 {
@@ -512,7 +585,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			byFx[fx] = dataFx
 			processed++
 			mtx.Unlock()
-			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[res[0]].ShortString())
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
 		}
 	}
 	info()

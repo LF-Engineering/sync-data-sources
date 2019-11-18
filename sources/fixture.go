@@ -53,6 +53,11 @@ func (t Task) ShortString() string {
 	return fmt.Sprintf("%s: %s / %s", t.FxSlug, t.DsSlug, t.Endpoint)
 }
 
+// ShortStringCmd - output quick endpoint info (with command line)
+func (t Task) ShortStringCmd() string {
+	return fmt.Sprintf("%s: %s / %s [%s]", t.FxSlug, t.DsSlug, t.Endpoint, t.CommandLine)
+}
+
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
 // GitHub API tokens: -t token1 token2 token3 ... tokenN
 type MultiConfig struct {
