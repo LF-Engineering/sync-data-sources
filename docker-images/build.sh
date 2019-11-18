@@ -32,7 +32,7 @@ fi
 cwd="`pwd`"
 cd $API_REPO_PATH || exit 4
 git checkout "$BRANCH" || exit 5
-if [ ! -z "$SKIP_PULL" ]
+if [ -z "$SKIP_PULL" ]
 then
   git pull || exit 6
 fi
