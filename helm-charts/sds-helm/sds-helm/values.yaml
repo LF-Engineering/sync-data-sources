@@ -55,6 +55,7 @@
 # dryRunCode: '4'
 # dryRunSeconds: '1'
 # timeoutSeconds: '72000'
+# nLongest: '30'
 
 # Standard values:
 deployEnv: 'set-me'
@@ -62,6 +63,7 @@ dryRun: ''
 dryRunCode: ''
 dryRunSeconds: ''
 timeoutSeconds: ''
+nLongest: ''
 esURL: ''
 esBulkSize: ''
 concurrencyPolicy: Forbid

@@ -58,6 +58,8 @@ spec:
       value: '{{ $root.Values.dryRunSeconds }}'
     - name: SDS_TIMEOUT_SECONDS
       value: '{{ $root.Values.timeoutSeconds }}'
+    - name: SDS_N_LONGEST
+      value: '{{ $root.Values.nLongest }}'
     - name: SDS_NODE_HASH
       value: '{{ $root.Values.nodeHash }}'
     - name: SDS_NODE_NUM
