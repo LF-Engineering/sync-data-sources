@@ -1,5 +1,5 @@
 #!/bin/bash
-# DOCKER_USER=lukaszgryglicki BRANCH=test|prod [SKIP_BUILD=1] [SKIP_PUSH=1] [PRUNE=1] [API_REPO_PATH="$HOME/dev/LF/dev-analytics-api"] ./docker-images/build.sh
+# DOCKER_USER=lukaszgryglicki BRANCH=test|prod [SKIP_PULL=1] [SKIP_BUILD=1] [SKIP_PUSH=1] [PRUNE=1] [API_REPO_PATH="$HOME/dev/LF/dev-analytics-api"] ./docker-images/build.sh
 # DOCKER_USER=lukaszgryglicki BRANCH=test|prod [PRUNE=1] ./docker-images/remove.sh
 if [ -z "${DOCKER_USER}" ]
 then
@@ -32,7 +32,10 @@ fi
 cwd="`pwd`"
 cd $API_REPO_PATH || exit 4
 git checkout "$BRANCH" || exit 5
-git pull || exit 6
+if [ -z "$SKIP_PULL" ]
+then
+  git pull || exit 6
+fi
 rm -rf "$cwd/sources/data" "$cwd/sources/data.zip" || exit 7
 cp -R app/services/lf/bootstrap/fixtures/ "$cwd/sources/data" || exit 8
 cd "${cwd}/sources" || exit 9
