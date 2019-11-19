@@ -45,6 +45,7 @@ Other environment parameters:
 - `SDS_DRY_RUN_CODE`/`dryRunCode` - When in dry-run mode, set fake grimoire command result exit code.
 - `SDS_DRY_RUN_SECONDS`/`dryRunSeconds` - When in dry-run mode, set fake grimoire command running time in seconds.
 - `SDS_TIMEOUT_SECONDS`/`timeoutSeconds` - if program didn't finished before this timeout (in seconds), finish it with exit code 2. Default 47h 45min (171900s).
+- `SDS_N_LONGEST`/`nLongest` - number of longest running tasks to display in stats, default 10.
 
 # Deploy on LF infra
 
