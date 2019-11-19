@@ -33,7 +33,7 @@ func (t Task) ShortString() string {
 }
 
 // ShortStringCmd - output quick endpoint info (with command line)
-func (t Task) ShortStringCmd() string {
+func (t Task) ShortStringCmd(ctx *Ctx) string {
 	s := fmt.Sprintf("%s: %s / %s [%s]: ", t.FxSlug, t.DsSlug, t.Endpoint, t.CommandLine)
 	if t.Err == nil {
 		s += "succeeded"
@@ -44,6 +44,9 @@ func (t Task) ShortStringCmd() string {
 		s += "errored"
 		if t.Retries > 0 {
 			s += fmt.Sprintf(" retried %d times", t.Retries)
+		}
+		if ctx.Debug > 0 {
+			s += fmt.Sprintf(": %+v", t.Err)
 		}
 	}
 	return s

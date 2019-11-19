@@ -408,7 +408,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				n = nDur
 			}
 			for i, dur := range dursAry[0:n] {
-				lib.Printf("#%d) %+v: %+v\n", i+1, dur, tasks[durs[dur]].ShortStringCmd())
+				lib.Printf("#%d) %+v: %+v\n", i+1, dur, tasks[durs[dur]].ShortStringCmd(ctx))
 			}
 			if len(processing) > 0 {
 				lib.Printf("Longest running tasks (in progress):\n")
