@@ -28,6 +28,7 @@ type Ctx struct {
 	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
+	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -165,6 +166,17 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if secs > 0 {
 			ctx.TimeoutSeconds = secs
+		}
+	}
+
+	// Longest running tasks stats
+	if os.Getenv("SDS_N_LONGEST") == "" {
+		ctx.NLongest = 10
+	} else {
+		n, err := strconv.Atoi(os.Getenv("SDS_N_LONGEST"))
+		FatalNoLog(err)
+		if n > 0 {
+			ctx.NLongest = n
 		}
 	}
 
