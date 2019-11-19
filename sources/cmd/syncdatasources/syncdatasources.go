@@ -1031,7 +1031,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 		}
 	}
 	result.CommandLine = strings.Join(commandLine, " ")
-	trials := 0
+	retries := 0
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
@@ -1039,6 +1039,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
 			}
 			result.Code[1] = ctx.DryRunCode
+			if ctx.DryRunCode != 0 {
+				result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
+			}
 			return
 		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
@@ -1050,20 +1053,23 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 		if err == nil {
 			if ctx.Debug > 0 {
 				dtEnd := time.Now()
-				lib.Printf("%+v: finished in %v, retries: %d\n", task, dtEnd.Sub(dtStart), trials)
+				lib.Printf("%+v: finished in %v, retries: %d\n", task, dtEnd.Sub(dtStart), retries)
 			}
 			break
 		}
-		trials++
-		if trials <= ctx.MaxRetry {
-			time.Sleep(time.Duration(trials) * time.Second)
+		retries++
+		if retries <= ctx.MaxRetry {
+			time.Sleep(time.Duration(retries) * time.Second)
 			continue
 		}
 		dtEnd := time.Now()
-		lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), trials, err, str)
+		lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), retries, err, str)
 		result.Code[1] = 4
+		result.Err = err
+		result.Retries = retries
 		return
 	}
+	result.Retries = retries
 	return
 }
 
