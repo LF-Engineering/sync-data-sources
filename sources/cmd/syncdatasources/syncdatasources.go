@@ -503,6 +503,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				res := result.Code
 				tIdx := res[0]
 				tasks[tIdx].CommandLine = result.CommandLine
+				tasks[tIdx].Retries = result.Retries
+				tasks[tIdx].Err = result.Err
 				nThreads--
 				ds := tasks[tIdx].DsSlug
 				fx := tasks[tIdx].FxSlug
@@ -534,6 +536,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			res := result.Code
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
+			tasks[tIdx].Retries = result.Retries
+			tasks[tIdx].Err = result.Err
 			nThreads--
 			ds := tasks[tIdx].DsSlug
 			fx := tasks[tIdx].FxSlug
@@ -566,6 +570,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			res := result.Code
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
+			tasks[tIdx].Retries = result.Retries
+			tasks[tIdx].Err = result.Err
 			ds := tasks[tIdx].DsSlug
 			fx := tasks[tIdx].FxSlug
 			mtx.Lock()
@@ -1041,13 +1047,16 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 			result.Code[1] = ctx.DryRunCode
 			if ctx.DryRunCode != 0 {
 				result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
+				result.Retries = rand.Intn(ctx.MaxRetry)
 			}
 			return
 		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
+		pyE := false
 		if strings.Contains(str, lib.PyException) {
+			pyE = true
 			err = fmt.Errorf("%s", str)
 		}
 		if err == nil {
@@ -1063,9 +1072,18 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 			continue
 		}
 		dtEnd := time.Now()
-		lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), retries, err, str)
+		if pyE {
+			lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", commandLine, dtEnd.Sub(dtStart), retries, err)
+		} else {
+			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), retries, err, str)
+			str += fmt.Sprintf(": %+v", err)
+		}
 		result.Code[1] = 4
-		result.Err = err
+		strLen := len(str)
+		if strLen > 0x200 {
+			str = str[0:0x100] + "..." + str[strLen-0x100:strLen]
+		}
+		result.Err = fmt.Errorf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
 		result.Retries = retries
 		return
 	}
