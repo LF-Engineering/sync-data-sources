@@ -402,9 +402,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			sort.Slice(dursAry, func(i, j int) bool {
 				return dursAry[j] < dursAry[i]
 			})
-			n := 16
+			n := ctx.NLongest
 			nDur := len(dursAry)
-			if nDur < 16 {
+			if nDur < n {
 				n = nDur
 			}
 			for i, dur := range dursAry[0:n] {
@@ -422,9 +422,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				sort.Slice(dursAry, func(i, j int) bool {
 					return dursAry[j] < dursAry[i]
 				})
-				n := 16
+				n := ctx.NLongest
 				nDur := len(dursAry)
-				if nDur < 16 {
+				if nDur < n {
 					n = nDur
 				}
 				for i, dur := range dursAry[0:n] {

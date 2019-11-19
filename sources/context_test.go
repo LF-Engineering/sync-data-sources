@@ -27,6 +27,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		TimeoutSeconds: in.TimeoutSeconds,
 		NodeIdx:        in.NodeIdx,
 		NodeNum:        in.NodeNum,
+		NLongest:       in.NLongest,
 		LogTime:        in.LogTime,
 		ExecFatal:      in.ExecFatal,
 		ExecQuiet:      in.ExecQuiet,
@@ -164,6 +165,7 @@ func TestInit(t *testing.T) {
 		TimeoutSeconds: 171900,
 		NodeIdx:        0,
 		NodeNum:        1,
+		NLongest:       10,
 		LogTime:        true,
 		ExecFatal:      true,
 		ExecQuiet:      false,
@@ -294,6 +296,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"TimeoutSeconds": 7200},
+			),
+		},
+		{
+			"Set number of longest running tasks stats",
+			map[string]string{"SDS_N_LONGEST": "7"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"NLongest": 7},
 			),
 		},
 		{
