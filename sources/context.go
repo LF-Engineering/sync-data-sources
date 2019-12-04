@@ -31,6 +31,7 @@ type Ctx struct {
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	TestMode         bool   // True when running tests
+	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 2014 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
 	ShPort           string
@@ -167,6 +168,8 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if secs > 0 {
 			ctx.TimeoutSeconds = secs
+		} else {
+			ctx.TimeoutSeconds = 171900
 		}
 	}
 
@@ -178,11 +181,26 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if n > 0 {
 			ctx.NLongest = n
+		} else {
+			ctx.NLongest = 10
 		}
 	}
 
 	// Skip SortingHat mode
 	ctx.SkipSH = os.Getenv("SDS_SKIP_SH") != ""
+
+	// Strip error size (default 512)
+	if os.Getenv("SDS_STRIP_ERROR_SIZE") == "" {
+		ctx.StripErrorSize = 1024
+	} else {
+		n, err := strconv.Atoi(os.Getenv("SDS_STRIP_ERROR_SIZE"))
+		FatalNoLog(err)
+		if n > 1 {
+			ctx.StripErrorSize = n
+		} else {
+			ctx.StripErrorSize = 1024
+		}
+	}
 
 	// Context out if requested
 	if ctx.CtxOut {
