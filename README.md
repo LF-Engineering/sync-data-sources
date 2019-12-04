@@ -29,5 +29,5 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 # Debug
 
-- If not installed with the Helm chart (which is the default), for the `test` env do: `./debug test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment.
+- If not installed with the Helm chart (which is the default), for the `test` env do: `./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment.
 - When done, delete debug pod: `./debug_delete.sh test`.
