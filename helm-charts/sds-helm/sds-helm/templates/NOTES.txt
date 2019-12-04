@@ -19,6 +19,7 @@ To upgrade:
 
 You can install only selected templates, see `values.yaml` for detalis (refer to `skipXYZ` variables in comments), example:
 - `helm install --dry-run --debug --generate-name ./sds-helm --set deployEnv=test,skipSecrets=1,skipCron=1,skipNamespace=1,skipPV=1`.
+- Install debug pod: `helm install sds-debug ./sds-helm --set deployEnv=test,skipSecrets=1,skipCron=1,skipNamespace=1,skipPV=1,debugPod=1`.
 
 Please note variables commented out in `./sds-helm/values.yaml`. You can either uncomment them or pass their values via `--set variable=name`.
 
