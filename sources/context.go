@@ -29,6 +29,7 @@ type Ctx struct {
 	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
+	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -179,6 +180,9 @@ func (ctx *Ctx) Init() {
 			ctx.NLongest = n
 		}
 	}
+
+	// Skip SortingHat mode
+	ctx.SkipSH = os.Getenv("SDS_SKIP_SH") != ""
 
 	// Context out if requested
 	if ctx.CtxOut {
