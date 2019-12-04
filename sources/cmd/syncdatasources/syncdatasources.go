@@ -988,46 +988,33 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	ds := task.DsSlug
 	idxSlug := "sds-" + task.FxSlug + "-" + ds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
-	var commandLine []string
+	commandLine := []string{
+		"p2o.py",
+		"--enrich",
+		"--index",
+		idxSlug + "-raw",
+		"--index-enrich",
+		idxSlug,
+		"-e",
+		ctx.ElasticURL,
+	}
+	if !ctx.SkipSH {
+		commandLine = append(
+			commandLine,
+			[]string{
+				"--db-host",
+				ctx.ShHost,
+				"--db-sortinghat",
+				ctx.ShDB,
+				"--db-user",
+				ctx.ShUser,
+				"--db-password",
+				ctx.ShPass,
+			}...,
+		)
+	}
 	if ctx.CmdDebug > 0 {
-		commandLine = []string{
-			"p2o.py",
-			"--enrich",
-			"--index",
-			idxSlug + "-raw",
-			"--index-enrich",
-			idxSlug,
-			"-e",
-			ctx.ElasticURL,
-			"--debug",
-			"--db-host",
-			ctx.ShHost,
-			"--db-sortinghat",
-			ctx.ShDB,
-			"--db-user",
-			ctx.ShUser,
-			"--db-password",
-			ctx.ShPass,
-		}
-	} else {
-		commandLine = []string{
-			"p2o.py",
-			"--enrich",
-			"--index",
-			idxSlug + "-raw",
-			"--index-enrich",
-			idxSlug,
-			"-e",
-			ctx.ElasticURL,
-			"--db-host",
-			ctx.ShHost,
-			"--db-sortinghat",
-			ctx.ShDB,
-			"--db-user",
-			ctx.ShUser,
-			"--db-password",
-			ctx.ShPass,
-		}
+		commandLine = append(commandLine, "--debug")
 	}
 	if ctx.EsBulkSize > 0 {
 		commandLine = append(commandLine, "--bulk-size")

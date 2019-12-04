@@ -34,6 +34,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		ExecOutput:     in.ExecOutput,
 		ElasticURL:     in.ElasticURL,
 		EsBulkSize:     in.EsBulkSize,
+		SkipSH:         in.SkipSH,
 		TestMode:       in.TestMode,
 	}
 	return &out
@@ -172,6 +173,7 @@ func TestInit(t *testing.T) {
 		ExecOutput:     false,
 		ElasticURL:     "http://127.0.0.1:9200",
 		EsBulkSize:     0,
+		SkipSH:         false,
 		TestMode:       true,
 	}
 
@@ -372,6 +374,19 @@ func TestInit(t *testing.T) {
 					"NodeHash": true,
 					"NodeIdx":  0,
 					"NodeNum":  3,
+				},
+			),
+		},
+		{
+			"Set skip SortingHat mode",
+			map[string]string{
+				"SDS_SKIP_SH": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipSH": true,
 				},
 			),
 		},
