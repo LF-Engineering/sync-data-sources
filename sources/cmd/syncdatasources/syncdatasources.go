@@ -505,6 +505,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		if out {
 			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
 		}
+		saveCSV(ctx, tasks)
 		mtx.RUnlock()
 	}
 	go func() {
