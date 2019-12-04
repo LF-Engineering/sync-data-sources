@@ -1,6 +1,10 @@
 package syncdatasources
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+	"time"
+)
 
 // Task holds single endpoint task and its context (required config, fixture filename etc.)
 type Task struct {
@@ -12,6 +16,7 @@ type Task struct {
 	CommandLine string
 	Retries     int
 	Err         error
+	Duration    time.Duration
 }
 
 // String - default string output for a task (generic)
@@ -22,8 +27,8 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v}",
-		t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine, t.Retries, t.Err != nil,
+		"{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v}",
+		t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine, t.Retries, t.Err != nil, t.Duration,
 	)
 }
 
@@ -50,6 +55,30 @@ func (t Task) ShortStringCmd(ctx *Ctx) string {
 		}
 	}
 	return s
+}
+
+// ToCSV - outputs array of string for CSV output of this task
+func (t Task) ToCSV() []string {
+	confAry := []string{}
+	for _, config := range t.Config {
+		confAry = append(confAry, config.String())
+	}
+	err := ""
+	if t.Err != nil {
+		err = fmt.Sprintf("%+v", err)
+	}
+	return []string{
+		t.FxSlug,
+		t.FxFn,
+		t.DsSlug,
+		t.Endpoint,
+		"{" + strings.Join(confAry, ", ") + "}",
+		t.CommandLine,
+		t.Duration.String(),
+		fmt.Sprintf("%.3f", t.Duration.Seconds()),
+		fmt.Sprintf("%d", t.Retries),
+		err,
+	}
 }
 
 // TaskResult is a return type from task execution

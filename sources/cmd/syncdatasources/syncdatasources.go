@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/csv"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -340,6 +341,41 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	return processTasks(ctx, &tasks, dss)
 }
 
+func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
+	var writer *csv.Writer
+	csvFile := fmt.Sprintf("/root/.perceval/tasks_%d_%d.csv", ctx.NodeIdx, ctx.NodeNum)
+	oFile, err := os.Create(csvFile)
+	if err != nil {
+		lib.Printf("CSV create error: %+v\n", err)
+		return
+	}
+	defer func() { _ = oFile.Close() }()
+	writer = csv.NewWriter(oFile)
+	defer writer.Flush()
+	hdr := []string{"project", "filename", "datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
+	err = writer.Write(hdr)
+	if err != nil {
+		lib.Printf("CSV write header error: %+v\n", err)
+		return
+	}
+	sort.Slice(tasks, func(i, j int) bool {
+		if tasks[i].FxSlug == tasks[j].FxSlug {
+			if tasks[i].DsSlug == tasks[j].DsSlug {
+				return tasks[i].Endpoint < tasks[j].Endpoint
+			}
+			return tasks[i].DsSlug < tasks[j].DsSlug
+		}
+		return tasks[i].FxSlug < tasks[j].FxSlug
+	})
+	for _, task := range tasks {
+		err = writer.Write(task.ToCSV())
+		if err != nil {
+			lib.Printf("CSV write row (%+v) error: %+v\n", task, err)
+			return
+		}
+	}
+}
+
 func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	tasks := *ptasks
 	thrN := lib.GetThreadsNum(ctx)
@@ -512,6 +548,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				delete(processing, tIdx)
 				endTimes[tIdx] = time.Now()
 				durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
+				tasks[tIdx].Duration = durations[tIdx]
 				dataDs := byDs[ds]
 				dataFx := byFx[fx]
 				if res[1] != 0 {
@@ -545,6 +582,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			delete(processing, tIdx)
 			endTimes[tIdx] = time.Now()
 			durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
+			tasks[tIdx].Duration = durations[tIdx]
 			dataDs := byDs[ds]
 			dataFx := byFx[fx]
 			if res[1] != 0 {
@@ -578,6 +616,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			delete(processing, tIdx)
 			endTimes[tIdx] = time.Now()
 			durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
+			tasks[tIdx].Duration = durations[tIdx]
 			dataDs := byDs[ds]
 			dataFx := byFx[fx]
 			if res[1] != 0 {
@@ -595,6 +634,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 	}
 	info()
+	saveCSV(ctx, tasks)
 	return nil
 }
 
