@@ -1109,8 +1109,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 		}
 		result.Code[1] = 4
 		strLen := len(str)
-		if strLen > 0x200 {
-			str = str[0:0x100] + "..." + str[strLen-0x100:strLen]
+		if strLen > ctx.StripErrorSize {
+			sz := ctx.StripErrorSize / 2
+			str = str[0:sz] + "..." + str[strLen-sz:strLen]
 		}
 		result.Err = fmt.Errorf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
 		result.Retries = retries

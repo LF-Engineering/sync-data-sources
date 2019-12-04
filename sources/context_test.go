@@ -28,6 +28,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		NodeIdx:        in.NodeIdx,
 		NodeNum:        in.NodeNum,
 		NLongest:       in.NLongest,
+		StripErrorSize: in.StripErrorSize,
 		LogTime:        in.LogTime,
 		ExecFatal:      in.ExecFatal,
 		ExecQuiet:      in.ExecQuiet,
@@ -167,6 +168,7 @@ func TestInit(t *testing.T) {
 		NodeIdx:        0,
 		NodeNum:        1,
 		NLongest:       10,
+		StripErrorSize: 0x400,
 		LogTime:        true,
 		ExecFatal:      true,
 		ExecQuiet:      false,
@@ -307,6 +309,51 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"NLongest": 7},
+			),
+		},
+		{
+			"Set strip error size -1",
+			map[string]string{"SDS_STRIP_ERROR_SIZE": "-1"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"StripErrorSize": 1024},
+			),
+		},
+		{
+			"Set strip error size 0",
+			map[string]string{"SDS_STRIP_ERROR_SIZE": "0"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"StripErrorSize": 1024},
+			),
+		},
+		{
+			"Set strip error size 1",
+			map[string]string{"SDS_STRIP_ERROR_SIZE": "1"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"StripErrorSize": 1024},
+			),
+		},
+		{
+			"Set strip error size",
+			map[string]string{"SDS_STRIP_ERROR_SIZE": "2"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"StripErrorSize": 2},
+			),
+		},
+		{
+			"Set strip error size",
+			map[string]string{"SDS_STRIP_ERROR_SIZE": "2048"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"StripErrorSize": 2048},
 			),
 		},
 		{
