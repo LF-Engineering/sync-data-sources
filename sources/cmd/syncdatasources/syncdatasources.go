@@ -378,6 +378,7 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 
 func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	tasks := *ptasks
+	saveCSV(ctx, tasks)
 	thrN := lib.GetThreadsNum(ctx)
 	failed := [][2]int{}
 	processed := 0
