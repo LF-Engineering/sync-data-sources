@@ -31,7 +31,7 @@ type Ctx struct {
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	TestMode         bool   // True when running tests
-	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 2014 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
+	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
 	ShPort           string

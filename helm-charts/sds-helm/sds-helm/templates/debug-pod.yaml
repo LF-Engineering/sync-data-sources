@@ -60,6 +60,8 @@ spec:
       value: '{{ $root.Values.timeoutSeconds }}'
     - name: SDS_N_LONGEST
       value: '{{ $root.Values.nLongest }}'
+    - name: SDS_STRIP_ERROR_SIZE
+      value: '{{ $root.Values.stripErrorSize }}'
     - name: SDS_SKIP_SH
       value: '{{ $root.Values.skipSH }}'
     - name: SDS_NODE_HASH
