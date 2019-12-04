@@ -1,9 +1,20 @@
 package syncdatasources
 
+import "fmt"
+
 // Config holds data source config options
 type Config struct {
 	Name  string `yaml:"name"`
 	Value string `yaml:"value"`
+}
+
+// String - default string output for a config
+func (c Config) String() string {
+	return fmt.Sprintf(
+		"'%s':'%s'",
+		c.Name,
+		c.Value,
+	)
 }
 
 // Endpoint holds data source endpoint options
