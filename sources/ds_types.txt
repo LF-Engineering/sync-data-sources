@@ -1,1 +1,1 @@
-groupsio confluence pipermail discourse jenkins dockerhub slack bugzilla gerrit meetup git jira github
+groupsio confluence pipermail discourse jenkins dockerhub slack bugzilla bugzillarest gerrit meetup git jira github

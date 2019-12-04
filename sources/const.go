@@ -42,6 +42,9 @@ const DockerHub string = "dockerhub"
 // Bugzilla - bugzilla
 const Bugzilla string = "bugzilla"
 
+// BugzillaRest - bugzillarest (requires Bugzilla 5.X)
+const BugzillaRest string = "bugzillarest"
+
 // MeetUp - meetup
 const MeetUp string = "meetup"
 
