@@ -30,4 +30,4 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 # Debug
 
 - If not installed with the Helm chart (which is the default), for the `test` env do: `cd helm-charts/sds-helm/`, `./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment. Then `./run.sh`.
-- When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks.csv`, finally delete debug pod: `./debug_delete.sh test`.
+- When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks_test.csv`, finally delete debug pod: `./debug_delete.sh test`.
