@@ -57,6 +57,7 @@
 # timeoutSeconds: '72000'
 # nLongest: '30'
 # skipSH: '1'
+# stripErrorSize: '4096'
 
 # Standard values:
 deployEnv: 'set-me'
@@ -66,6 +67,7 @@ dryRunSeconds: ''
 timeoutSeconds: ''
 nLongest: ''
 skipSH: ''
+stripErrorSize: ''
 esURL: ''
 esBulkSize: ''
 concurrencyPolicy: Forbid
