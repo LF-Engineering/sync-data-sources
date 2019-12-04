@@ -663,18 +663,19 @@ func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
 func massageEndpoint(endpoint string, ds string) (e []string) {
 	defaults := map[string]struct{}{
-		lib.Git:        {},
-		lib.Confluence: {},
-		lib.Gerrit:     {},
-		lib.Jira:       {},
-		lib.Slack:      {},
-		lib.GroupsIO:   {},
-		lib.Pipermail:  {},
-		lib.Discourse:  {},
-		lib.Jenkins:    {},
-		lib.DockerHub:  {},
-		lib.Bugzilla:   {},
-		lib.MeetUp:     {},
+		lib.Git:          {},
+		lib.Confluence:   {},
+		lib.Gerrit:       {},
+		lib.Jira:         {},
+		lib.Slack:        {},
+		lib.GroupsIO:     {},
+		lib.Pipermail:    {},
+		lib.Discourse:    {},
+		lib.Jenkins:      {},
+		lib.DockerHub:    {},
+		lib.Bugzilla:     {},
+		lib.BugzillaRest: {},
+		lib.MeetUp:       {},
 	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -929,6 +930,23 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
 			} else if name == lib.BackendPassword {
 				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+		}
+	} else if ds == lib.BugzillaRest {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			m[name] = struct{}{}
+			if name == lib.BackendUser {
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+			} else if name == lib.BackendPassword {
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
 			} else if name == lib.APIToken {
 				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
 			} else {
@@ -964,12 +982,9 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 	return
 }
 
-func massageDataSource(ds string) string {
-	if ds == "bugzilla" {
-		return "bugzillarest"
-	}
-	return ds
-}
+//func massageDataSource(ds string) string {
+//	return ds
+//}
 
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
@@ -1027,12 +1042,14 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 			result.Code[1] = 1
 			return
 		}
-		commandLine = append(commandLine, massageDataSource(ary[0]))
+		// commandLine = append(commandLine, massageDataSource(ary[0]))
+		commandLine = append(commandLine, ary[0])
 		commandLine = append(commandLine, "--category")
 		commandLine = append(commandLine, ary[1])
 		ds = ary[0]
 	} else {
-		commandLine = append(commandLine, massageDataSource(ds))
+		// commandLine = append(commandLine, massageDataSource(ds))
+		commandLine = append(commandLine, ds)
 	}
 
 	// Handle DS endpoint
