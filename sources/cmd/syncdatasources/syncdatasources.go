@@ -853,16 +853,20 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
 			}
 		}
+		_, ok := m["no-verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
+		}
 	} else if ds == lib.Pipermail {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
-			_, ok := m["no-verify"]
-			if !ok {
-				c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
-			}
+		}
+		_, ok := m["no-verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
 		}
 	} else if ds == lib.Discourse {
 		for _, cfg := range *config {
