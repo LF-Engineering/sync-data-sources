@@ -374,6 +374,7 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 			return
 		}
 	}
+	lib.Printf("CSV file %s written\n", csvFile)
 }
 
 func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
