@@ -637,7 +637,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 	}
 	info()
-	saveCSV(ctx, tasks)
 	return nil
 }
 
