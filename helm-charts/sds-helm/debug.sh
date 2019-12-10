@@ -1,7 +1,7 @@
 #!/bin/bash
 # NODES=4 - set number of nodes
 # NS=sds - set namespace name, default sds
-# FLAGS="esURL=\"`cat sds-helm/secrets/ES_URL_ext.secret`\",pvSize=30Gi"
+# FLAGS=esURL=`cat sds-helm/secrets/ES_URL_ext.secret`,pvSize=30Gi
 if [ -z "$1" ]
 then
   echo "$0: you need to specify env: test, dev, stg, prod"
