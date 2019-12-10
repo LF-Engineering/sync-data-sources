@@ -4,6 +4,7 @@
 # NODES=4 - set number of nodes
 # DRY=1 - dry run mode
 # NS=sds - set namespace name, default sds
+# FLAGS='esURL="`cat sds-helm/secrets/ES_URL_external.secret`",pvSize=30Gi"
 if [ -z "$1" ]
 then
   echo "$0: you need to specify env: test, dev, stg, prod"
@@ -20,15 +21,19 @@ if [ -z "$NS" ]
 then
   NS=sds
 fi
+if [ -z "$FLAGS" ]
+then
+  FLAGS="foo=bar"
+fi
 if [ -z "$DRY" ]
 then
-  "${1}h.sh" install "${NS}-namespace" ./sds-helm --set "namespace=$NS,skipSecrets=1,skipCron=1,skipPV=1,nodeNum=$NODES,nodeHash=$HSH"
+  "${1}h.sh" install "${NS}-namespace" ./sds-helm --set "namespace=$NS,skipSecrets=1,skipCron=1,skipPV=1,nodeNum=$NODES,nodeHash=$HSH,$FLAGS"
   change_namespace.sh $1 "$NS"
-  "${1}h.sh" install "$NS" ./sds-helm --set "namespace=$NS,deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH"
+  "${1}h.sh" install "$NS" ./sds-helm --set "namespace=$NS,deployEnv=$1,skipNamespace=1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH,$FLAGS"
   change_namespace.sh $1 default
 else
   echo "Dry run mode"
   change_namespace.sh $1 "$NS"
-  "${1}h.sh" install --debug --dry-run --generate-name ./sds-helm --set "namespace=$NS,deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH,dryRun=1,dryRunCode=4"
+  "${1}h.sh" install --debug --dry-run --generate-name ./sds-helm --set "namespace=$NS,deployEnv=$1,debugPod=$DBG,esBulkSize=$ES_BULK_SIZE,nodeNum=$NODES,nodeHash=$HSH,dryRun=1,dryRunCode=4,$FLAGS"
   change_namespace.sh $1 default
 fi
