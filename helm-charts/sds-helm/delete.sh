@@ -1,10 +1,15 @@
 #!/bin/bash
+# NS=sds - set namespace name, default sds
 if  [ -z "$1" ]
 then
   echo "$0: you need to specify env: test, dev, stg, prod"
   exit 1
 fi
-change_namespace.sh $1 sds
-"${1}h.sh" delete sds
+if [ -z "$NS" ]
+then
+  NS=sds
+fi
+change_namespace.sh $1 "$NS"
+"${1}h.sh" delete "$NS"
 change_namespace.sh $1 default
-"${1}h.sh" delete sds-namespace
+"${1}h.sh" delete "${NS}-namespace"
