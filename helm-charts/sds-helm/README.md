@@ -52,16 +52,17 @@ Other environment parameters:
 
 # Deploy on LF infra
 
-- Install: `[DBG=1] [DRY=1] [ES_BULK_SIZE=10000] [NODES=n] ./setup.sh test|prod`.
+- Install: `[DBG=1] [DRY=1] [ES_BULK_SIZE=10000] [NODES=n] [NS=sds] ./setup.sh test|prod`.
 - Shell into debug pod (only when installed with `DBG=1`): `pod_shell.sh test sds sds-debug`.
 - Inside the pod you can for example run: `p2o.py --enrich --index sds_raw --index-enrich sds_enriched -e "http://$SDS_ES_URL" --debug --db-host "${SH_HOST}" --db-sortinghat "${SH_DB}" --db-user "${SH_USER}" --db-password "${SH_PASS}" github cncf devstats --category issue -t key1 key2 --sleep-for-rate`.
-- Unnstall: `./delete.sh test|prod`.
+- Unnstall: `[NS=sds] ./delete.sh test|prod`.
+- To have more than one `SDS` running on the same cluster use: `NS=sds2`, specify any namespace name other than default `sds`.
 
 
 # Debug pod
 
-- If not installed with the Helm chart (which is the default), for the `test` env do: `cd helm-charts/sds-helm/`, `[NODES=n] ./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment. Then `./run.sh`.
-- When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks_test.csv`, finally delete debug pod: `./debug_delete.sh test`.
+- If not installed with the Helm chart (which is the default), for the `test` env do: `cd helm-charts/sds-helm/`, `[NODES=n] [NS=sds] ./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment. Then `./run.sh`.
+- When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks_test.csv`, finally delete debug pod: `[NS=sds] ./debug_delete.sh test`.
 
 
 # Deploying on multiple nodes
