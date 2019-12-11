@@ -86,6 +86,8 @@ spec:
       value: '{{ $root.Values.sdsSkipTime }}'
     - name: SDS_ES_BULKSIZE
       value: '{{ $root.Values.esBulkSize }}'
+    - name: BRANCH
+      value: '{{ $root.Values.deployEnv }}'
     - name: SH_USER
       valueFrom:
         secretKeyRef:
@@ -121,6 +123,13 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.zipSecret }}
           key: ZIPPASS.secret
+{{ if $root.Values.useRepoAccess }}
+    - name: REPO_ACCESS
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.repoSecret }}
+          key: REPO_ACCESS.secret
+{{ end }}
     image: '{{ $root.Values.debugImage }}-{{ $root.Values.deployEnv }}'
     imagePullPolicy: {{ $root.Values.imagePullPolicy }}
     name: '{{ $root.Values.debugPodName }}-{{ $nIdx }}'
