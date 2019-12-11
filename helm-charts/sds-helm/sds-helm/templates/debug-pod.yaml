@@ -118,6 +118,11 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.esSecret }}
           key: ES_URL.secret
+    - name: SDS_GITHUB_OAUTH
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.githubSecret }}
+          key: GITHUB_OAUTH.secret
     - name: ZIPPASS
       valueFrom:
         secretKeyRef:

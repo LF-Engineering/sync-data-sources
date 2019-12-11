@@ -3,6 +3,7 @@ package syncdatasources
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -205,4 +206,28 @@ func ToYMDDate(dt time.Time) string {
 // ToYMDHMSDate - return time formatted as YYYY-MM-DD HH:MI:SS
 func ToYMDHMSDate(dt time.Time) string {
 	return fmt.Sprintf("%04d-%02d-%02d %02d:%02d:%02d", dt.Year(), dt.Month(), dt.Day(), dt.Hour(), dt.Minute(), dt.Second())
+}
+
+// PeriodParse - tries to parse period
+func PeriodParse(perStr string) (dur time.Duration, ok bool) {
+	idx := strings.Index(perStr, "[rate reset in ")
+	if idx == -1 {
+		return
+	}
+	rateStr := ""
+	_, err := fmt.Sscanf(perStr[idx:], "[rate reset in %s", &rateStr)
+	if err != nil || len(rateStr) < 2 {
+		return
+	}
+	rateStr = rateStr[0 : len(rateStr)-1]
+	if rateStr == "" {
+		return
+	}
+	d, err := time.ParseDuration(rateStr)
+	if err != nil {
+		return
+	}
+	dur = d
+	ok = true
+	return
 }

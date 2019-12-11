@@ -6,6 +6,7 @@
 # shDB: ''
 # esURL: ''
 # zipPass: ''
+# githubOAuth: ''
 # repoAccess: ''
 #
 # You can skip some parts of the deployment (useful when deploying partailly again)
@@ -14,6 +15,7 @@
 # skipSHSecret (will skip creating SH (sorting hat) secret)
 # skipESSecret (will skip creating ES (ElasticSearch) secret)
 # skipZipSecret (will skip creating ZIP file password secret)
+# skipGithubSecret (will skip creating GitHub file password secret)
 # skipRepoSecret (will skip creating repo access secret)
 # skipNamespace (will skip sds namespace creation)
 # skipPV (will skip persistent volume creation)
@@ -23,6 +25,7 @@
 # skipSHSecret: 1
 # skipESSecret: 1
 # skipZipSecret: 1
+# skipGithubSecret: 1
 # skipNamespace: 1
 # skipRepoSecret: 1
 # skipPV: 1
@@ -94,6 +97,7 @@ secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
 zipSecret: zip-pass
+githubSecret: github-oauth
 repoSecret: repo-secret
 pvName: sds
 pvAccessMode: ReadWriteOnce

@@ -30,8 +30,9 @@ type Ctx struct {
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
-	TestMode         bool   // True when running tests
 	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
+	GitHubOAuth      string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
+	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
 	ShPort           string
@@ -201,6 +202,9 @@ func (ctx *Ctx) Init() {
 			ctx.StripErrorSize = 1024
 		}
 	}
+
+	// GitHub OAuth
+	ctx.GitHubOAuth = os.Getenv("SDS_GITHUB_OAUTH")
 
 	// Context out if requested
 	if ctx.CtxOut {
