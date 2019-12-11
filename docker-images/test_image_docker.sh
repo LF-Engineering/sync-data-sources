@@ -1,4 +1,5 @@
 #!/bin/bash
+# REPO_ACCESS=https://github_id:github_oauth2_token@github.com/LF-Engineering/dev-analytics-api - use dynamic fixture fetching from repo instead of hardcoded in data.zip
 if [ -z "${DOCKER_USER}" ]
 then
   echo "$0: you need to set docker user via DOCKER_USER=username"
@@ -20,4 +21,4 @@ if [ -z "${command}" ]
 then
   export command=/bin/bash
 fi
-docker run -e ZIPPASS="$pass" -it "${DOCKER_USER}/sync-data-sources-${BRANCH}" "$command"
+docker run -e BRANCH="$BRANCH" -e REPO_ACCESS="$REPO_ACCESS" -e ZIPPASS="$pass" -it "${DOCKER_USER}/sync-data-sources-${BRANCH}" "$command"

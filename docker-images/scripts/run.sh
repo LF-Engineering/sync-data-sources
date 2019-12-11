@@ -1,2 +1,7 @@
 #!/bin/sh
-./unzip.sh && syncdatasources
+if [ -z "$REPO_ACCESS" ]
+then
+  ./unzip.sh && syncdatasources
+else
+  ./fetch.sh && syncdatasources
+fi
