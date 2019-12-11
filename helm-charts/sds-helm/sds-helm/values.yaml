@@ -74,7 +74,7 @@ skipSH: ''
 stripErrorSize: ''
 esURL: ''
 esBulkSize: ''
-useRepoAccess: '1'
+useRepoAccess: ''
 concurrencyPolicy: Forbid
 fullnameOverride: sds
 imagePullPolicy: Always
