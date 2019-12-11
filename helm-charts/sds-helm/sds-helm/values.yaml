@@ -6,6 +6,7 @@
 # shDB: ''
 # esURL: ''
 # zipPass: ''
+# repoAccess: ''
 #
 # You can skip some parts of the deployment (useful when deploying partailly again)
 # skipCron (will not create a new cron job, you should set it when cron job is already created, if you want to recreate a cron job, delete the existing one first and do not set this flag)
@@ -13,6 +14,7 @@
 # skipSHSecret (will skip creating SH (sorting hat) secret)
 # skipESSecret (will skip creating ES (ElasticSearch) secret)
 # skipZipSecret (will skip creating ZIP file password secret)
+# skipRepoSecret (will skip creating repo access secret)
 # skipNamespace (will skip sds namespace creation)
 # skipPV (will skip persistent volume creation)
 #
@@ -22,6 +24,7 @@
 # skipESSecret: 1
 # skipZipSecret: 1
 # skipNamespace: 1
+# skipRepoSecret: 1
 # skipPV: 1
 #
 # sync-data-sources binary Environmental options (see README.md or NOTES.txt)
@@ -58,6 +61,7 @@
 # nLongest: '30'
 # skipSH: '1'
 # stripErrorSize: '4096'
+# useRepoAccess: ''
 
 # Standard values:
 deployEnv: 'set-me'
@@ -70,6 +74,7 @@ skipSH: ''
 stripErrorSize: ''
 esURL: ''
 esBulkSize: ''
+useRepoAccess: '1'
 concurrencyPolicy: Forbid
 fullnameOverride: sds
 imagePullPolicy: Always
@@ -89,6 +94,7 @@ secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
 zipSecret: zip-pass
+repoSecret: repo-secret
 pvName: sds
 pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
