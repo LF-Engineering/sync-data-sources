@@ -17,16 +17,24 @@ func (c Config) String() string {
 	)
 }
 
-// Endpoint holds data source endpoint options
+// Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
-	Name string `yaml:"name"`
+	Name string
+}
+
+// RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
+// flags can be "type: github_org/github_user" which means that we need to get actual repository list from github org/user
+type RawEndpoint struct {
+	Name  string            `yaml:"name"`
+	Flags map[string]string `yaml:"flags"`
 }
 
 // DataSource contains data source spec from dev-analytics-api
 type DataSource struct {
-	Slug      string     `yaml:"slug"`
-	Config    []Config   `yaml:"config"`
-	Endpoints []Endpoint `yaml:"endpoints"`
+	Slug         string        `yaml:"slug"`
+	Config       []Config      `yaml:"config"`
+	RawEndpoints []RawEndpoint `yaml:"endpoints"`
+	Endpoints    []Endpoint    `yaml:"-"`
 }
 
 // Fixture contains full YAML structure of dev-analytics-api fixture files

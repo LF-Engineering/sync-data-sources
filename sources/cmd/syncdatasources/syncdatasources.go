@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/csv"
 	"fmt"
 	"io/ioutil"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
+	"github.com/google/go-github/github"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -193,7 +195,105 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	}
 }
 
-func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
+func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
+	hint := -1
+	cache := make(map[string][]string)
+	for i := range fixture.DataSources {
+		for _, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
+			epType, ok := rawEndpoint.Flags["type"]
+			if !ok {
+				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: rawEndpoint.Name})
+				continue
+			}
+			switch epType {
+			case "github_org":
+				if hint < 0 {
+					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
+					hint = aHint
+				}
+				ary := strings.Split(rawEndpoint.Name, "/")
+				lAry := len(ary)
+				org := ary[lAry-1]
+				root := strings.Join(ary[0:lAry-1], "/")
+				repos, ok := cache[org]
+				if !ok {
+					opt := &github.RepositoryListByOrgOptions{Type: "public"} // can also use "all"
+					opt.PerPage = 100
+					repos = []string{}
+					for {
+						repositories, response, err := gc[hint].Repositories.ListByOrg(gctx, org, opt)
+						if err != nil {
+							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v", org, response, err)
+							break
+						}
+						for _, repo := range repositories {
+							if repo.Name != nil {
+								name := root + "/" + org + "/" + *(repo.Name)
+								repos = append(repos, name)
+							}
+						}
+						if response.NextPage == 0 {
+							break
+						}
+						opt.Page = response.NextPage
+					}
+					cache[org] = repos
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("org %s repos: %+v\n", org, repos)
+				}
+				for _, repo := range repos {
+					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
+				}
+			case "github_user":
+				if hint < 0 {
+					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
+					hint = aHint
+				}
+				ary := strings.Split(rawEndpoint.Name, "/")
+				lAry := len(ary)
+				user := ary[lAry-1]
+				root := strings.Join(ary[0:lAry-1], "/")
+				repos, ok := cache[user]
+				if !ok {
+					opt := &github.RepositoryListOptions{Type: "public"}
+					opt.PerPage = 100
+					repos = []string{}
+					for {
+						repositories, response, err := gc[hint].Repositories.List(gctx, user, opt)
+						if err != nil {
+							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v", user, response, err)
+							break
+						}
+						for _, repo := range repositories {
+							if repo.Name != nil {
+								name := root + "/" + user + "/" + *(repo.Name)
+								repos = append(repos, name)
+							}
+						}
+						if response.NextPage == 0 {
+							break
+						}
+						opt.Page = response.NextPage
+					}
+					cache[user] = repos
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("user %s repos: %+v\n", user, repos)
+				}
+				for _, repo := range repos {
+					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
+				}
+			default:
+				lib.Printf("Warning: unknown raw endpoint type: %s\n", epType)
+				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: rawEndpoint.Name})
+				continue
+			}
+		}
+	}
+}
+
+func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
 	// Synchronize go routine
 	defer func() {
 		if ch != nil {
@@ -220,11 +320,15 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	if fixture.Disabled == true {
 		return
 	}
+	postprocessFixture(gctx, gc, ctx, &fixture)
 	validateFixture(ctx, &fixture, fixtureFile)
 	return
 }
 
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
+	// Connect to GitHub
+	gctx, gcs := lib.GHClient(ctx)
+
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
 	fixtures := []lib.Fixture{}
@@ -238,7 +342,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			if fixtureFile == "" {
 				continue
 			}
-			go processFixtureFile(ch, ctx, fixtureFile)
+			go processFixtureFile(gctx, gcs, ch, ctx, fixtureFile)
 			nThreads++
 			if nThreads == thrN {
 				fixture := <-ch
@@ -266,7 +370,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			if fixtureFile == "" {
 				continue
 			}
-			fixture := processFixtureFile(nil, ctx, fixtureFile)
+			fixture := processFixtureFile(gctx, gcs, nil, ctx, fixtureFile)
 			if fixture.Disabled != true {
 				fixtures = append(fixtures, fixture)
 			}

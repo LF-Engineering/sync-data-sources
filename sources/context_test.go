@@ -36,6 +36,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		ElasticURL:     in.ElasticURL,
 		EsBulkSize:     in.EsBulkSize,
 		SkipSH:         in.SkipSH,
+		GitHubOAuth:    in.GitHubOAuth,
 		TestMode:       in.TestMode,
 	}
 	return &out
@@ -174,6 +175,7 @@ func TestInit(t *testing.T) {
 		ExecQuiet:      false,
 		ExecOutput:     false,
 		ElasticURL:     "http://127.0.0.1:9200",
+		GitHubOAuth:    "",
 		EsBulkSize:     0,
 		SkipSH:         false,
 		TestMode:       true,
@@ -291,6 +293,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"ElasticURL": "http://other.server:9222"},
+			),
+		},
+		{
+			"Set GitHubOAuth",
+			map[string]string{"SDS_GITHUB_OAUTH": "key1,key2"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"GitHubOAuth": "key1,key2"},
 			),
 		},
 		{
@@ -446,14 +457,6 @@ func TestInit(t *testing.T) {
 	// Execute test cases
 	for index, test := range testCases {
 		var gotContext lib.Ctx
-
-		// Because GitHubOAuth is depending on /etc/github/oauth* files
-		// We can't test this, because user test environment can have those files or not
-		// We're forcing skipping that test unless this is a special test for GitHubOAuth
-		_, ok := test.environment["SDS_GITHUB_OAUTH"]
-		if !ok {
-			test.environment["SDS_GITHUB_OAUTH"] = "not_use"
-		}
 
 		// Remember initial environment
 		currEnv := make(map[string]string)
