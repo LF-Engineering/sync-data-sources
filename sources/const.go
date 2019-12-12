@@ -72,4 +72,5 @@ var ErrorStrings = map[int]string{
 	2: "incorrect endpoint value for given data source",
 	3: "incorrect config option(s) for given data source",
 	4: "p2o.py error",
+	5: "setting SSH private key error",
 }

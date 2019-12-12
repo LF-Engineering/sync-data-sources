@@ -27,6 +27,7 @@ type Ctx struct {
 	DryRun           bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
 	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
+	DryRunAllowSSH   bool   // From SDS_DRY_RUN_ALLOW_SSH, if set it will allow setting SSH keys in dry run mode
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
@@ -142,6 +143,7 @@ func (ctx *Ctx) Init() {
 
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
+	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
