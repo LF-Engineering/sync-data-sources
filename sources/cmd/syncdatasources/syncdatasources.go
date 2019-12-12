@@ -212,10 +212,12 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
-				for _, s := range arr {
-					if s != "" {
-						ary = append(ary, s)
+				l := len(arr) - 1
+				for i, s := range arr {
+					if i == l && s == "" {
+						break
 					}
+					ary = append(ary, s)
 				}
 				lAry := len(ary)
 				org := ary[lAry-1]
@@ -257,10 +259,12 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
-				for _, s := range arr {
-					if s != "" {
-						ary = append(ary, s)
+				l := len(arr) - 1
+				for i, s := range arr {
+					if i == l && s == "" {
+						break
 					}
+					ary = append(ary, s)
 				}
 				lAry := len(ary)
 				user := ary[lAry-1]
