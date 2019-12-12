@@ -22,7 +22,6 @@ import (
 )
 
 var (
-	sshKeyOnce   sync.Once
 	randInitOnce sync.Once
 )
 
@@ -532,6 +531,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	endTimes := make(map[int]time.Time)
 	durations := make(map[int]time.Duration)
 	var mtx = &sync.RWMutex{}
+	var sshKeyMtx = &sync.Mutex{}
 	info := func() {
 		mtx.RLock()
 		if len(processing) > 0 {
@@ -651,7 +651,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			processing[idx] = struct{}{}
 			startTimes[idx] = time.Now()
 			mtx.Unlock()
-			go processTask(ch, ctx, idx, task)
+			go processTask(ch, ctx, idx, task, sshKeyMtx)
 			nThreads++
 			if nThreads == thrN {
 				result := <-ch
@@ -723,7 +723,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 		for idx, task := range tasks {
 			processing[idx] = struct{}{}
-			result := processTask(nil, ctx, idx, task)
+			result := processTask(nil, ctx, idx, task, sshKeyMtx)
 			res := result.Code
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
@@ -756,15 +756,35 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	return nil
 }
 
-func addSSHPrivKey(ctx *lib.Ctx, key string) bool {
-	if ctx.DryRun {
+func makeCurrentSSHKey(ctx *lib.Ctx, idxSlug string) bool {
+	if ctx.DryRun && !ctx.DryRunAllowSSH {
+		return true
+	}
+	home := os.Getenv("HOME")
+	dir := home + "/.ssh"
+	fnTo := dir + "/id_rsa"
+	fnFrom := fnTo + "-" + idxSlug
+	cmd := exec.Command("cp", fnFrom, fnTo)
+	err := cmd.Run()
+	if err != nil {
+		lib.Printf("Failed command cp %s %s: %+v\n", fnFrom, fnTo, err)
+		return false
+	}
+	if ctx.Debug >= 0 {
+		lib.Printf("Set current SSH Key: %s\n", fnFrom)
+	}
+	return true
+}
+
+func addSSHPrivKey(ctx *lib.Ctx, key, idxSlug string) bool {
+	if ctx.DryRun && !ctx.DryRunAllowSSH {
 		return true
 	}
 	home := os.Getenv("HOME")
 	dir := home + "/.ssh"
 	cmd := exec.Command("mkdir", dir)
 	_ = cmd.Run()
-	fn := dir + "/id_rsa"
+	fn := dir + "/id_rsa-" + idxSlug
 	err := ioutil.WriteFile(fn, []byte(key), 0600)
 	if err != nil {
 		lib.Printf("Error adding SSH Key %s: %+v\n", fn, err)
@@ -844,7 +864,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 
 // massageConfig - this function makes sure that given config options are valid for a given data source
 // it also ensures some essential options are enabled and eventually reformats config
-func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.MultiConfig, fail bool) {
+func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []lib.MultiConfig, fail, keyAdded bool) {
 	m := make(map[string]struct{})
 	if ds == lib.GitHub {
 		for _, cfg := range *config {
@@ -903,9 +923,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 			name := cfg.Name
 			value := cfg.Value
 			if name == "ssh-key" {
-				sshKeyOnce.Do(func() {
-					fail = !addSSHPrivKey(ctx, value)
-				})
+				fail = !addSSHPrivKey(ctx, value, idxSlug)
+				if !fail {
+					keyAdded = true
+				}
 				continue
 			}
 			m[name] = struct{}{}
@@ -1106,7 +1127,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds string) (c []lib.Multi
 //	return ds
 //}
 
-func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (result lib.TaskResult) {
+func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, sshKeyMtx *sync.Mutex) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
@@ -1184,7 +1205,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	}
 
 	// Handle DS config options
-	multiConfig, fail := massageConfig(ctx, &(task.Config), ds)
+	multiConfig, fail, keyAdded := massageConfig(ctx, &(task.Config), ds, idxSlug)
 	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
 		result.Code[1] = 3
@@ -1207,8 +1228,21 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
+			if keyAdded {
+				sshKeyMtx.Lock()
+				fail := !makeCurrentSSHKey(ctx, idxSlug)
+				if fail == true {
+					sshKeyMtx.Unlock()
+					lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
+					result.Code[1] = 5
+					return
+				}
+			}
 			if ctx.DryRunSeconds > 0 {
 				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+			}
+			if keyAdded {
+				sshKeyMtx.Unlock()
 			}
 			result.Code[1] = ctx.DryRunCode
 			if ctx.DryRunCode != 0 {
@@ -1217,7 +1251,20 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task) (
 			}
 			return
 		}
+		if keyAdded {
+			sshKeyMtx.Lock()
+			fail := !makeCurrentSSHKey(ctx, idxSlug)
+			if fail == true {
+				sshKeyMtx.Unlock()
+				lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
+				result.Code[1] = 5
+				return
+			}
+		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
+		if keyAdded {
+			sshKeyMtx.Unlock()
+		}
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
 		pyE := false
