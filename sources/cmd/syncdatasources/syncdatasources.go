@@ -211,7 +211,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
 					hint = aHint
 				}
-				ary := strings.Split(rawEndpoint.Name, "/")
+				arr := strings.Split(rawEndpoint.Name, "/")
+				ary := []string{}
+				for _, s := range arr {
+					if s != "" {
+						ary = append(ary, s)
+					}
+				}
 				lAry := len(ary)
 				org := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
@@ -250,7 +256,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
 					hint = aHint
 				}
-				ary := strings.Split(rawEndpoint.Name, "/")
+				arr := strings.Split(rawEndpoint.Name, "/")
+				ary := []string{}
+				for _, s := range arr {
+					if s != "" {
+						ary = append(ary, s)
+					}
+				}
 				lAry := len(ary)
 				user := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
