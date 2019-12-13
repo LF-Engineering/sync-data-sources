@@ -26,6 +26,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 - Install: `[NODES=n] [NS=sds] ./setup.sh test|prod`.
 - Unnstall: `[NS=sds] ./delete.sh test|prod`.
+- Other example (with external ES): `` NODES=2 NS=sds-ext FLAGS="esURL=\"`cat sds-helm/secrets/ES_URL_external.secret`\",pvSize=30Gi" ./setup.sh test ``.
 
 # Debug
 
