@@ -907,9 +907,11 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
 		}
-		_, ok := m["latest-items"]
-		if !ok {
-			c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}})
+		if ctx.LatestItems {
+			_, ok := m["latest-items"]
+			if !ok {
+				c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}})
+			}
 		}
 	} else if ds == lib.Confluence {
 		for _, cfg := range *config {
