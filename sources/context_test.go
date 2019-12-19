@@ -38,6 +38,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		EsBulkSize:     in.EsBulkSize,
 		SkipSH:         in.SkipSH,
 		GitHubOAuth:    in.GitHubOAuth,
+		LatestItems:    in.LatestItems,
 		TestMode:       in.TestMode,
 	}
 	return &out
@@ -163,6 +164,7 @@ func TestInit(t *testing.T) {
 		NCPUs:          0,
 		CtxOut:         false,
 		NodeHash:       false,
+		LatestItems:    false,
 		DryRun:         false,
 		DryRunCode:     0,
 		DryRunSeconds:  0,
@@ -450,6 +452,15 @@ func TestInit(t *testing.T) {
 				map[string]interface{}{
 					"SkipSH": true,
 				},
+			),
+		},
+		{
+			"Setting backend latest items flag",
+			map[string]string{"SDS_LATEST_ITEMS": "1"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"LatestItems": true},
 			),
 		},
 	}

@@ -65,6 +65,7 @@
 # skipSH: '1'
 # stripErrorSize: '4096'
 # useRepoAccess: ''
+# latestItems: ''
 
 # Standard values:
 deployEnv: 'set-me'
@@ -81,6 +82,7 @@ useRepoAccess: '1'
 concurrencyPolicy: Forbid
 fullnameOverride: sds
 imagePullPolicy: Always
+latestItems: ''
 syncCommand: './run.sh'
 syncImage: 'lukaszgryglicki/sync-data-sources'
 syncPodName: sds

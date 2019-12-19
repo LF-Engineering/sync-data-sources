@@ -102,6 +102,8 @@ spec:
               value: '{{ $root.Values.sdsSkipTime }}'
             - name: SDS_ES_BULKSIZE
               value: '{{ $root.Values.esBulkSize }}'
+            - name: SDS_LATEST_ITEMS
+              value: '{{ $root.Values.latestItems }}'
             - name: BRANCH
               value: '{{ $root.Values.deployEnv }}'
             - name: SH_USER
