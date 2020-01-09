@@ -471,7 +471,7 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 	defer func() { _ = oFile.Close() }()
 	writer = csv.NewWriter(oFile)
 	defer writer.Flush()
-	hdr := []string{"project", "filename", "datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
+	hdr := []string{"timestamp", "project", "filename", "datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
 	err = writer.Write(hdr)
 	if err != nil {
 		lib.Printf("CSV write header error: %+v\n", err)

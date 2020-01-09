@@ -68,6 +68,7 @@ func (t Task) ToCSV() []string {
 		err = fmt.Sprintf("%+v", t.Err)
 	}
 	return []string{
+		fmt.Sprintf("%+v", time.Now()),
 		t.FxSlug,
 		t.FxFn,
 		t.DsSlug,
