@@ -34,6 +34,7 @@ type Ctx struct {
 	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
 	GitHubOAuth      string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems      bool   // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
+	CSVPrefix        string // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -211,6 +212,12 @@ func (ctx *Ctx) Init() {
 
 	// Latest items p2o.py backend flag support
 	ctx.LatestItems = os.Getenv("SDS_LATEST_ITEMS") != ""
+
+	// CSV logs prefix
+	ctx.CSVPrefix = os.Getenv("SDS_CSV_PREFIX")
+	if ctx.CSVPrefix == "" {
+		ctx.CSVPrefix = "jobs"
+	}
 
 	// Context out if requested
 	if ctx.CtxOut {

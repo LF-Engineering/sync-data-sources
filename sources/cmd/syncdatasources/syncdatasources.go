@@ -462,7 +462,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 
 func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 	var writer *csv.Writer
-	csvFile := fmt.Sprintf("/root/.perceval/tasks_%d_%d.csv", ctx.NodeIdx, ctx.NodeNum)
+	csvFile := fmt.Sprintf("/root/.perceval/%s_%d_%d.csv", ctx.CSVPrefix, ctx.NodeIdx, ctx.NodeNum)
 	oFile, err := os.Create(csvFile)
 	if err != nil {
 		lib.Printf("CSV create error: %+v\n", err)

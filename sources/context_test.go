@@ -39,6 +39,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipSH:         in.SkipSH,
 		GitHubOAuth:    in.GitHubOAuth,
 		LatestItems:    in.LatestItems,
+		CSVPrefix:      in.CSVPrefix,
 		TestMode:       in.TestMode,
 	}
 	return &out
@@ -181,6 +182,7 @@ func TestInit(t *testing.T) {
 		ElasticURL:     "http://127.0.0.1:9200",
 		GitHubOAuth:    "",
 		EsBulkSize:     0,
+		CSVPrefix:      "jobs",
 		SkipSH:         false,
 		TestMode:       true,
 	}
@@ -461,6 +463,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"LatestItems": true},
+			),
+		},
+		{
+			"Set CSV prefix",
+			map[string]string{"SDS_CSV_PREFIX": "debug_jobs"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"CSVPrefix": "debug_jobs"},
 			),
 		},
 	}
