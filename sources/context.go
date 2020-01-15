@@ -37,6 +37,7 @@ type Ctx struct {
 	CSVPrefix        string // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
 	Silent           bool   // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
 	ScrollWait       int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
+	ScrollSize       int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -221,7 +222,7 @@ func (ctx *Ctx) Init() {
 		ctx.CSVPrefix = "jobs"
 	}
 
-	// Scroll wait
+	// Scroll wait p2o.py --scroll-wait 900
 	if os.Getenv("SDS_SCROLL_WAIT") == "" {
 		ctx.ScrollWait = 0
 	} else {
@@ -231,6 +232,17 @@ func (ctx *Ctx) Init() {
 			ctx.ScrollWait = scrollWait
 		}
 	}
+	// ES scroll size p2o.py --scroll-size 1000
+	if os.Getenv("SDS_SCROLL_SIZE") == "" {
+		ctx.ScrollSize = 1000
+	} else {
+		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
+		FatalNoLog(err)
+		if scrollSize > 0 {
+			ctx.ScrollSize = scrollSize
+		}
+	}
+
 	// Skip -d p2o.py flag
 	ctx.Silent = os.Getenv("SDS_SILENT") != ""
 
