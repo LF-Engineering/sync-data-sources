@@ -66,6 +66,8 @@
 # stripErrorSize: '4096'
 # useRepoAccess: ''
 # latestItems: ''
+# scrollWait: '30'
+# silent: 'y'
 
 # Standard values:
 deployEnv: 'set-me'
@@ -78,6 +80,8 @@ skipSH: ''
 stripErrorSize: ''
 esURL: ''
 esBulkSize: ''
+scrollWait: ''
+silent: ''
 useRepoAccess: '1'
 concurrencyPolicy: Forbid
 fullnameOverride: sds
