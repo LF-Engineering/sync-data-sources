@@ -35,6 +35,8 @@ type Ctx struct {
 	GitHubOAuth      string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems      bool   // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
 	CSVPrefix        string // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
+	Silent           bool   // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
+	ScrollWait       int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -218,6 +220,19 @@ func (ctx *Ctx) Init() {
 	if ctx.CSVPrefix == "" {
 		ctx.CSVPrefix = "jobs"
 	}
+
+	// Scroll wait
+	if os.Getenv("SDS_SCROLL_WAIT") == "" {
+		ctx.ScrollWait = 0
+	} else {
+		scrollWait, err := strconv.Atoi(os.Getenv("SDS_SCROLL_WAIT"))
+		FatalNoLog(err)
+		if scrollWait > 0 {
+			ctx.ScrollWait = scrollWait
+		}
+	}
+	// Skip -d p2o.py flag
+	ctx.Silent = os.Getenv("SDS_SILENT") != ""
 
 	// Context out if requested
 	if ctx.CtxOut {

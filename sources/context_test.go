@@ -39,6 +39,8 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipSH:         in.SkipSH,
 		GitHubOAuth:    in.GitHubOAuth,
 		LatestItems:    in.LatestItems,
+		ScrollWait:     in.ScrollWait,
+		Silent:         in.Silent,
 		CSVPrefix:      in.CSVPrefix,
 		TestMode:       in.TestMode,
 	}
@@ -182,6 +184,8 @@ func TestInit(t *testing.T) {
 		ElasticURL:     "http://127.0.0.1:9200",
 		GitHubOAuth:    "",
 		EsBulkSize:     0,
+		ScrollWait:     0,
+		Silent:         false,
 		CSVPrefix:      "jobs",
 		SkipSH:         false,
 		TestMode:       true,
@@ -232,6 +236,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"EsBulkSize": 10000},
+			),
+		},
+		{
+			"Setting scroll wait",
+			map[string]string{"SDS_SCROLL_WAIT": "30"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"ScrollWait": 30},
 			),
 		},
 		{
@@ -463,6 +476,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"LatestItems": true},
+			),
+		},
+		{
+			"Setting silent mode",
+			map[string]string{"SDS_SILENT": "y"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"Silent": true},
 			),
 		},
 		{
