@@ -1152,6 +1152,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, s
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	commandLine := []string{
 		"p2o.py",
+		"-g",
 		"--enrich",
 		"--index",
 		idxSlug + "-raw",
