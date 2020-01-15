@@ -67,6 +67,7 @@
 # useRepoAccess: ''
 # latestItems: ''
 # scrollWait: '30'
+# scrollSize: '10000'
 # silent: 'y'
 
 # Standard values:
@@ -81,6 +82,7 @@ stripErrorSize: ''
 esURL: ''
 esBulkSize: ''
 scrollWait: ''
+scrollSize: ''
 silent: ''
 useRepoAccess: '1'
 concurrencyPolicy: Forbid

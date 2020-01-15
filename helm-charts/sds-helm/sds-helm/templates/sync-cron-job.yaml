@@ -106,6 +106,8 @@ spec:
               value: '{{ $root.Values.latestItems }}'
             - name: SDS_SCROLL_WAIT
               value: '{{ $root.Values.scrollWait }}'
+            - name: SDS_SCROLL_SIZE
+              value: '{{ $root.Values.scrollSize }}'
             - name: SDS_SILENT
               value: '{{ $root.Values.silent }}'
             - name: BRANCH
