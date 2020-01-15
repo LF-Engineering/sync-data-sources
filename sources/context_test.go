@@ -40,6 +40,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		GitHubOAuth:    in.GitHubOAuth,
 		LatestItems:    in.LatestItems,
 		ScrollWait:     in.ScrollWait,
+		ScrollSize:     in.ScrollSize,
 		Silent:         in.Silent,
 		CSVPrefix:      in.CSVPrefix,
 		TestMode:       in.TestMode,
@@ -185,6 +186,7 @@ func TestInit(t *testing.T) {
 		GitHubOAuth:    "",
 		EsBulkSize:     0,
 		ScrollWait:     0,
+		ScrollSize:     1000,
 		Silent:         false,
 		CSVPrefix:      "jobs",
 		SkipSH:         false,
@@ -239,12 +241,18 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Setting scroll wait",
-			map[string]string{"SDS_SCROLL_WAIT": "30"},
+			"Setting scroll size and wait",
+			map[string]string{
+				"SDS_SCROLL_WAIT": "30",
+				"SDS_SCROLL_SIZE": "500",
+			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"ScrollWait": 30},
+				map[string]interface{}{
+					"ScrollWait": 30,
+					"ScrollSize": 500,
+				},
 			),
 		},
 		{
