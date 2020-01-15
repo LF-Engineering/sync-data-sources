@@ -41,7 +41,9 @@ Other environment parameters:
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
-- `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data.
+- `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data (default is 1000).
+- `SDS_SCROLL_SIZE`/`scrollSize` - ElasticSearch scroll size when processing data (default is 1000).
+- `SDS_SCROLL_WAIT`/`scrollWait` - time to wait for ElasticSearch scroll to become available (when all scrolls are used), default 900 (seconds).
 - `SDS_DRY_RUN`/`dryRun` - Run in dry-run mode, do not execute any grimoire stack command, report success instead.
 - `SDS_DRY_RUN_CODE`/`dryRunCode` - When in dry-run mode, set fake grimoire command result exit code.
 - `SDS_DRY_RUN_SECONDS`/`dryRunSeconds` - When in dry-run mode, set fake grimoire command running time in seconds.
@@ -49,6 +51,7 @@ Other environment parameters:
 - `SDS_N_LONGEST`/`nLongest` - number of longest running tasks to display in stats, default 10.
 - `SDS_STRIP_ERROR_SIZE`/`stripErrorSize` - error messages longer that this value will be stripped by half of this value from beginning and from end
 - `SDS_SKIP_SH`/`skipSH` - do not use SortingHat.
+- `SDS_SILENT`/`silent` - do not pass `-g` (debug) flag to `p2o.py` calls, makes output a lot less verbose.
 
 # Deploy on LF infra
 
