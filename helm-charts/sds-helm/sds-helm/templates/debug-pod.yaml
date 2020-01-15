@@ -90,6 +90,10 @@ spec:
       value: '{{ $root.Values.esBulkSize }}'
     - name: SDS_LATEST_ITEMS
       value: '{{ $root.Values.latestItems }}'
+    - name: SDS_SCROLL_WAIT
+      value: '{{ $root.Values.scrollWait }}'
+    - name: SDS_SILENT
+      value: '{{ $root.Values.silent }}'
     - name: BRANCH
       value: '{{ $root.Values.deployEnv }}'
     - name: SH_USER
