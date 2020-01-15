@@ -1152,7 +1152,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, s
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	commandLine := []string{
 		"p2o.py",
-		"-g",
 		"--enrich",
 		"--index",
 		idxSlug + "-raw",
@@ -1161,17 +1160,25 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, s
 		"-e",
 		ctx.ElasticURL,
 	}
+	// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
 	if !ctx.Silent {
 		commandLine = append(commandLine, "-g")
 	}
+	// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
+	if ctx.CmdDebug > 0 {
+		commandLine = append(commandLine, "--debug")
+	}
+	if ctx.EsBulkSize > 0 {
+		commandLine = append(commandLine, "--bulk-size")
+		commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
+	}
+	if ctx.ScrollSize > 0 {
+		commandLine = append(commandLine, "--scroll-size")
+		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
+	}
 	if ctx.ScrollWait > 0 {
-		commandLine = append(
-			commandLine,
-			[]string{
-				"--scroll-wait",
-				strconv.Itoa(ctx.ScrollWait),
-			}...,
-		)
+		commandLine = append(commandLine, "--scroll-wait")
+		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
 	}
 	if !ctx.SkipSH {
 		commandLine = append(
@@ -1187,13 +1194,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, s
 				ctx.ShPass,
 			}...,
 		)
-	}
-	if ctx.CmdDebug > 0 {
-		commandLine = append(commandLine, "--debug")
-	}
-	if ctx.EsBulkSize > 0 {
-		commandLine = append(commandLine, "--bulk-size")
-		commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
 	}
 	if strings.Contains(ds, "/") {
 		ary := strings.Split(ds, "/")

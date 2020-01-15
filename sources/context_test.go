@@ -256,6 +256,21 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
+			"Setting scroll size and wait to 0s",
+			map[string]string{
+				"SDS_SCROLL_WAIT": "0",
+				"SDS_SCROLL_SIZE": "0",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"ScrollWait": 0,
+					"ScrollSize": 0,
+				},
+			),
+		},
+		{
 			"Setting max retry parameter",
 			map[string]string{"SDS_MAXRETRY": "5"},
 			dynamicSetFields(

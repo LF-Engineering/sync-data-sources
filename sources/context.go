@@ -238,7 +238,7 @@ func (ctx *Ctx) Init() {
 	} else {
 		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
 		FatalNoLog(err)
-		if scrollSize > 0 {
+		if scrollSize >= 0 {
 			ctx.ScrollSize = scrollSize
 		}
 	}
