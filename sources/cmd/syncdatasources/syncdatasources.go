@@ -1161,6 +1161,18 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, s
 		"-e",
 		ctx.ElasticURL,
 	}
+	if !ctx.Silent {
+		commandLine = append(commandLine, "-g")
+	}
+	if ctx.ScrollWait > 0 {
+		commandLine = append(
+			commandLine,
+			[]string{
+				"--scroll-wait",
+				strconv.Itoa(ctx.ScrollWait),
+			}...,
+		)
+	}
 	if !ctx.SkipSH {
 		commandLine = append(
 			commandLine,
