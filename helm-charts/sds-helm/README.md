@@ -52,6 +52,8 @@ Other environment parameters:
 - `SDS_STRIP_ERROR_SIZE`/`stripErrorSize` - error messages longer that this value will be stripped by half of this value from beginning and from end
 - `SDS_SKIP_SH`/`skipSH` - do not use SortingHat.
 - `SDS_SILENT`/`silent` - do not pass `-g` (debug) flag to `p2o.py` calls, makes output a lot less verbose.
+- `SDS_SKIP_DATA`/`skipData` - do not run incremental data sync.
+- `SDS_SKIP_AFFS`/`skipAffs` - do not re-enrich historical affiliations data.
 
 # Deploy on LF infra
 
