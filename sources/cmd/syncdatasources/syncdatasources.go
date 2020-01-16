@@ -503,9 +503,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	failed := [][2]int{}
 	processed := 0
 	all := len(tasks)
+	mul := 1
 	var orderMtx map[int]*sync.Mutex
 	if !ctx.SkipData && !ctx.SkipAffs {
-		all *= 2
+		mul = 2
+		all *= mul
 		orderMtx = make(map[int]*sync.Mutex)
 		for idx := range tasks {
 			tmtx := &sync.Mutex{}
@@ -615,7 +617,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		out := false
 		for _, ds := range dss {
 			data := byDs[ds]
-			allDs := data[0]
+			allDs := data[0] * mul
 			failedDs := data[1]
 			processedDs := data[2]
 			if failedDs > 0 || processedDs != allDs {
@@ -625,7 +627,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 		for _, fx := range fxs {
 			data := byFx[fx]
-			allFx := data[0]
+			allFx := data[0] * mul
 			failedFx := data[1]
 			processedFx := data[2]
 			if failedFx > 0 || processedFx != allFx {
