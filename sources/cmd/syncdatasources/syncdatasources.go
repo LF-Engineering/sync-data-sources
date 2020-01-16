@@ -645,6 +645,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	lastTime := time.Now()
 	dtStart := lastTime
 	modes := []bool{false, true}
+	nThreads := 0
+	ch := make(chan lib.TaskResult)
 	for _, affs := range modes {
 		stTime := time.Now()
 		lib.Printf("Affiliations mode: %+v\n", affs)
@@ -661,8 +663,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
 			}
-			ch := make(chan lib.TaskResult)
-			nThreads := 0
 			for idx, task := range tasks {
 				mtx.Lock()
 				processing[idx] = struct{}{}
@@ -701,39 +701,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 				}
 			}
-			if ctx.Debug > 0 {
-				lib.Printf("Final threads join\n")
-			}
-			for nThreads > 0 {
-				result := <-ch
-				res := result.Code
-				tIdx := res[0]
-				tasks[tIdx].CommandLine = result.CommandLine
-				tasks[tIdx].Retries = result.Retries
-				tasks[tIdx].Err = result.Err
-				nThreads--
-				ds := tasks[tIdx].DsSlug
-				fx := tasks[tIdx].FxSlug
-				mtx.Lock()
-				delete(processing, tIdx)
-				endTimes[tIdx] = time.Now()
-				durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
-				tasks[tIdx].Duration = durations[tIdx]
-				dataDs := byDs[ds]
-				dataFx := byFx[fx]
-				if res[1] != 0 {
-					failed = append(failed, res)
-					dataDs[1]++
-					dataFx[1]++
-				}
-				dataDs[2]++
-				dataFx[2]++
-				byDs[ds] = dataDs
-				byFx[fx] = dataFx
-				processed++
-				mtx.Unlock()
-				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
-			}
 		} else {
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using ST version\n", len(tasks))
@@ -770,7 +737,42 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 		}
 		enTime := time.Now()
-		lib.Printf("Pass (affiliations: %+v) finished in %v\n", affs, enTime.Sub(stTime))
+		lib.Printf("Pass (affiliations: %+v) finished in %v (excluding pending %d threads)\n", affs, enTime.Sub(stTime), nThreads)
+	}
+	if thrN > 1 {
+		if ctx.Debug > 0 {
+			lib.Printf("Final threads join\n")
+		}
+		for nThreads > 0 {
+			result := <-ch
+			res := result.Code
+			tIdx := res[0]
+			tasks[tIdx].CommandLine = result.CommandLine
+			tasks[tIdx].Retries = result.Retries
+			tasks[tIdx].Err = result.Err
+			nThreads--
+			ds := tasks[tIdx].DsSlug
+			fx := tasks[tIdx].FxSlug
+			mtx.Lock()
+			delete(processing, tIdx)
+			endTimes[tIdx] = time.Now()
+			durations[tIdx] = endTimes[tIdx].Sub(startTimes[tIdx])
+			tasks[tIdx].Duration = durations[tIdx]
+			dataDs := byDs[ds]
+			dataFx := byFx[fx]
+			if res[1] != 0 {
+				failed = append(failed, res)
+				dataDs[1]++
+				dataFx[1]++
+			}
+			dataDs[2]++
+			dataFx[2]++
+			byDs[ds] = dataDs
+			byFx[fx] = dataFx
+			processed++
+			mtx.Unlock()
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+		}
 	}
 	info()
 	return nil
