@@ -513,7 +513,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			tmtx := &sync.Mutex{}
 			tmtx.Lock()
 			orderMtx[idx] = tmtx
-			lib.Printf("mtx %d locked\n", idx)
 		}
 	}
 	byDs := make(map[string][3]int)
@@ -1319,12 +1318,14 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			taskOrderMtx.Unlock()
 			lib.Fatalf("per task mutex map is defined, but no mutex for idx: %d", idx)
 		}
+		taskOrderMtx.Unlock()
 		// Ensure that data sync task is finished before attempting to run historical affiliations
 		st := time.Now()
 		lib.Printf("wait for mtx %d\n", idx)
 		tmtx.Lock()
 		tmtx.Unlock()
 		lib.Printf("mtx %d passed (affs task)\n", idx)
+		taskOrderMtx.Lock()
 		orderMtx[idx] = tmtx
 		taskOrderMtx.Unlock()
 		en := time.Now()
