@@ -686,7 +686,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					tasks[tIdx].CommandLine = result.CommandLine
 					tasks[tIdx].Retries = result.Retries
 					tasks[tIdx].Err = result.Err
-					if orderMtx != nil {
+					if !affs && orderMtx != nil {
 						tmtx, ok := orderMtx[tIdx]
 						if !ok {
 							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
@@ -1300,7 +1300,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		tmtx.Unlock()
 		orderMtx[idx] = tmtx
 		en := time.Now()
-		lib.Printf("%+v: waited for data sync on %d mutex: %v\n", task, idx, en.Sub(st))
+		took := en.Sub(st)
+		if took > time.Duration(1)*time.Second {
+			lib.Printf("waited for data sync on %d mutex: %v\n", idx, en.Sub(st))
+		}
 	}
 	retries := 0
 	dtStart := time.Now()
