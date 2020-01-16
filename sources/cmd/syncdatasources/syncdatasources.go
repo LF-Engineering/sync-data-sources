@@ -686,22 +686,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				if nThreads == thrN {
 					result := <-ch
 					res := result.Code
+					taffs := result.Affs
 					tIdx := res[0]
 					tasks[tIdx].CommandLine = result.CommandLine
 					tasks[tIdx].Retries = result.Retries
 					tasks[tIdx].Err = result.Err
-					if !affs && orderMtx != nil {
-						taskOrderMtx.Lock()
-						tmtx, ok := orderMtx[tIdx]
-						if !ok {
-							taskOrderMtx.Unlock()
-							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
-						}
-						tmtx.Unlock()
-						orderMtx[tIdx] = tmtx
-						lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
-						taskOrderMtx.Unlock()
-					}
 					nThreads--
 					ds := tasks[tIdx].DsSlug
 					fx := tasks[tIdx].FxSlug
@@ -724,6 +713,18 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					processed++
 					mtx.Unlock()
 					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+					if !taffs && orderMtx != nil {
+						taskOrderMtx.Lock()
+						tmtx, ok := orderMtx[tIdx]
+						if !ok {
+							taskOrderMtx.Unlock()
+							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
+						}
+						tmtx.Unlock()
+						orderMtx[tIdx] = tmtx
+						lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
+						taskOrderMtx.Unlock()
+					}
 				}
 			}
 		} else {
@@ -770,6 +771,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		for nThreads > 0 {
 			result := <-ch
 			res := result.Code
+			taffs := result.Affs
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
 			tasks[tIdx].Retries = result.Retries
@@ -796,6 +798,18 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			processed++
 			mtx.Unlock()
 			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+			if !taffs && orderMtx != nil {
+				taskOrderMtx.Lock()
+				tmtx, ok := orderMtx[tIdx]
+				if !ok {
+					taskOrderMtx.Unlock()
+					lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
+				}
+				tmtx.Unlock()
+				orderMtx[tIdx] = tmtx
+				lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
+				taskOrderMtx.Unlock()
+			}
 		}
 		enTime := time.Now()
 		lib.Printf("Pass (threads join) finished in %v\n", enTime.Sub(stTime))
@@ -1189,6 +1203,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		lib.Printf("Processing (affs: %+v): %s\n", affs, task)
 	}
 	result.Code[0] = idx
+	result.Affs = affs
 
 	// Handle DS slug
 	ds := task.DsSlug
