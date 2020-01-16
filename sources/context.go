@@ -252,8 +252,12 @@ func (ctx *Ctx) Init() {
 	ctx.SkipData = os.Getenv("SDS_SKIP_DATA") != ""
 	ctx.SkipAffs = os.Getenv("SDS_SKIP_AFFS") != ""
 
+	// Forbidden configurations
 	if ctx.SkipSH && !ctx.SkipAffs {
 		FatalNoLog(fmt.Errorf("you cannot skip SortingHat and not skip affiliations at the same time"))
+	}
+	if ctx.SkipData && ctx.SkipAffs {
+		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync and historical affiliations sync at the same time"))
 	}
 
 	// Context out if requested

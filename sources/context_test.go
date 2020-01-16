@@ -487,7 +487,6 @@ func TestInit(t *testing.T) {
 			"Set skip SortingHat/Data/Affs mode",
 			map[string]string{
 				"SDS_SKIP_SH":   "1",
-				"SDS_SKIP_DATA": "y",
 				"SDS_SKIP_AFFS": "t",
 			},
 			dynamicSetFields(
@@ -495,8 +494,20 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipSH":   true,
-					"SkipData": true,
 					"SkipAffs": true,
+				},
+			),
+		},
+		{
+			"Set skip SortingHat/Data/Affs mode",
+			map[string]string{
+				"SDS_SKIP_DATA": "y",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipData": true,
 				},
 			),
 		},
