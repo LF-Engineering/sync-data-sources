@@ -721,7 +721,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						}
 						tmtx.Unlock()
 						orderMtx[tIdx] = tmtx
-						lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
+						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
 						taskOrderMtx.Unlock()
 					}
 				}
@@ -802,11 +802,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tmtx, ok := orderMtx[tIdx]
 				if !ok {
 					taskOrderMtx.Unlock()
-					lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
+					lib.Fatalf("per task mutex map is defined, but no mutex for tIdx (final threads join): %d", tIdx)
 				}
 				tmtx.Unlock()
 				orderMtx[tIdx] = tmtx
-				lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
+				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
 				taskOrderMtx.Unlock()
 			}
 		}
@@ -1321,17 +1321,17 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		taskOrderMtx.Unlock()
 		// Ensure that data sync task is finished before attempting to run historical affiliations
 		st := time.Now()
-		lib.Printf("wait for mtx %d\n", idx)
+		// lib.Printf("wait for mtx %d\n", idx)
 		tmtx.Lock()
 		tmtx.Unlock()
-		lib.Printf("mtx %d passed (affs task)\n", idx)
+		// lib.Printf("mtx %d passed (affs task)\n", idx)
 		taskOrderMtx.Lock()
 		orderMtx[idx] = tmtx
 		taskOrderMtx.Unlock()
 		en := time.Now()
 		took := en.Sub(st)
-		if took > time.Duration(1)*time.Second {
-			lib.Printf("waited for data sync on %d mutex: %v\n", idx, en.Sub(st))
+		if took > time.Duration(10)*time.Minute {
+			lib.Printf("Waited for data sync on %d mutex: %v\n", idx, en.Sub(st))
 		}
 	}
 	retries := 0
