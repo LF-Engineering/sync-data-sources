@@ -88,5 +88,6 @@ type TaskResult struct {
 	Code        [2]int
 	CommandLine string
 	Retries     int
+	Affs        bool
 	Err         error
 }
