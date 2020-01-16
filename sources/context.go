@@ -252,6 +252,10 @@ func (ctx *Ctx) Init() {
 	ctx.SkipData = os.Getenv("SDS_SKIP_DATA") != ""
 	ctx.SkipAffs = os.Getenv("SDS_SKIP_AFFS") != ""
 
+	if ctx.SkipSH && !ctx.SkipAffs {
+		FatalNoLog(fmt.Errorf("you cannot skip SortingHat and not skip affiliations at the same time"))
+	}
+
 	// Context out if requested
 	if ctx.CtxOut {
 		ctx.Print()
