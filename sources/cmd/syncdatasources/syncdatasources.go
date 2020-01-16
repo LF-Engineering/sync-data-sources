@@ -392,7 +392,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		}
 	}
 	if len(fixtures) == 0 {
-		lib.Fatalf("No fixtures read, this is error, please define at least one\n")
+		lib.Fatalf("No fixtures read, this is error, please define at least one")
 	}
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
@@ -663,7 +663,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 		if thrN > 1 {
 			if ctx.Debug >= 0 {
-				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
+				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", all, thrN, affs)
 			}
 			for idx, task := range tasks {
 				mtx.Lock()
@@ -742,6 +742,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		lib.Printf("Pass (affiliations: %+v) finished in %v (excluding pending %d threads)\n", affs, enTime.Sub(stTime), nThreads)
 	}
 	if thrN > 1 {
+		stTime := time.Now()
 		lib.Printf("Final %d threads join\n", nThreads)
 		for nThreads > 0 {
 			result := <-ch
@@ -773,6 +774,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			mtx.Unlock()
 			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 		}
+		enTime := time.Now()
+		lib.Printf("Pass (threads join) finished in %v\n", enTime.Sub(stTime))
 	}
 	info()
 	return nil
