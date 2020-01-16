@@ -692,7 +692,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
 						}
 						tmtx.Unlock()
-						orderMtx[idx] = tmtx
+						orderMtx[tIdx] = tmtx
 					}
 					nThreads--
 					ds := tasks[tIdx].DsSlug
