@@ -513,6 +513,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			tmtx := &sync.Mutex{}
 			tmtx.Lock()
 			orderMtx[idx] = tmtx
+			lib.Printf("mtx %d locked\n", idx)
 		}
 	}
 	byDs := make(map[string][3]int)
@@ -548,6 +549,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	durations := make(map[int]time.Duration)
 	mtx := &sync.RWMutex{}
 	sshKeyMtx := &sync.Mutex{}
+	taskOrderMtx := &sync.Mutex{}
 	info := func() {
 		mtx.RLock()
 		if len(processing) > 0 {
@@ -672,14 +674,14 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 		if thrN > 1 {
 			if ctx.Debug >= 0 {
-				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", all, thrN, affs)
+				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
 			}
 			for idx, task := range tasks {
 				mtx.Lock()
 				processing[idx] = struct{}{}
 				startTimes[idx] = time.Now()
 				mtx.Unlock()
-				go processTask(ch, ctx, idx, task, affs, sshKeyMtx, orderMtx)
+				go processTask(ch, ctx, idx, task, affs, sshKeyMtx, taskOrderMtx, orderMtx)
 				nThreads++
 				if nThreads == thrN {
 					result := <-ch
@@ -689,12 +691,16 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					tasks[tIdx].Retries = result.Retries
 					tasks[tIdx].Err = result.Err
 					if !affs && orderMtx != nil {
+						taskOrderMtx.Lock()
 						tmtx, ok := orderMtx[tIdx]
 						if !ok {
+							taskOrderMtx.Unlock()
 							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
 						}
 						tmtx.Unlock()
 						orderMtx[tIdx] = tmtx
+						lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
+						taskOrderMtx.Unlock()
 					}
 					nThreads--
 					ds := tasks[tIdx].DsSlug
@@ -726,7 +732,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				processing[idx] = struct{}{}
-				result := processTask(nil, ctx, idx, task, affs, nil, nil)
+				result := processTask(nil, ctx, idx, task, affs, nil, nil, nil)
 				res := result.Code
 				tIdx := res[0]
 				tasks[tIdx].CommandLine = result.CommandLine
@@ -1171,7 +1177,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 //	return ds
 //}
 
-func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, sshKeyMtx *sync.Mutex, orderMtx map[int]*sync.Mutex) (result lib.TaskResult) {
+func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, sshKeyMtx, taskOrderMtx *sync.Mutex, orderMtx map[int]*sync.Mutex) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
@@ -1292,15 +1298,20 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	result.CommandLine = strings.Join(commandLine, " ")
 	if affs && orderMtx != nil {
+		taskOrderMtx.Lock()
 		tmtx, ok := orderMtx[idx]
 		if !ok {
+			taskOrderMtx.Unlock()
 			lib.Fatalf("per task mutex map is defined, but no mutex for idx: %d", idx)
 		}
 		// Ensure that data sync task is finished before attempting to run historical affiliations
 		st := time.Now()
+		lib.Printf("wait for mtx %d\n", idx)
 		tmtx.Lock()
 		tmtx.Unlock()
+		lib.Printf("mtx %d passed (affs task)\n", idx)
 		orderMtx[idx] = tmtx
+		taskOrderMtx.Unlock()
 		en := time.Now()
 		took := en.Sub(st)
 		if took > time.Duration(1)*time.Second {
