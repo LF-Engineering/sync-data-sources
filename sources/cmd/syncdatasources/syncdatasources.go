@@ -656,6 +656,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			lib.Printf("Historical data affiliations sync skipped\n")
 			continue
 		}
+		processed = 0
 		if thrN > 1 {
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
@@ -697,7 +698,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					byFx[fx] = dataFx
 					processed++
 					mtx.Unlock()
-					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
+					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 				}
 			}
 			if ctx.Debug > 0 {
@@ -731,7 +732,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				byFx[fx] = dataFx
 				processed++
 				mtx.Unlock()
-				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
+				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 			}
 		} else {
 			if ctx.Debug >= 0 {
@@ -765,7 +766,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				byFx[fx] = dataFx
 				processed++
 				mtx.Unlock()
-				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
+				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 			}
 		}
 		enTime := time.Now()
