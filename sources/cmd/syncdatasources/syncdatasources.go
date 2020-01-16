@@ -503,6 +503,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	failed := [][2]int{}
 	processed := 0
 	all := len(tasks)
+	if !ctx.SkipData && !ctx.SkipAffs {
+		all *= 2
+	}
 	byDs := make(map[string][3]int)
 	byFx := make(map[string][3]int)
 	for _, task := range tasks {
@@ -658,7 +661,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			lib.Printf("Historical data affiliations sync skipped\n")
 			continue
 		}
-		processed = 0
 		if thrN > 1 {
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
@@ -740,9 +742,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		lib.Printf("Pass (affiliations: %+v) finished in %v (excluding pending %d threads)\n", affs, enTime.Sub(stTime), nThreads)
 	}
 	if thrN > 1 {
-		if ctx.Debug > 0 {
-			lib.Printf("Final threads join\n")
-		}
+		lib.Printf("Final %d threads join\n", nThreads)
 		for nThreads > 0 {
 			result := <-ch
 			res := result.Code
