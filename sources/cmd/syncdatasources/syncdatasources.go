@@ -646,7 +646,16 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	dtStart := lastTime
 	modes := []bool{false, true}
 	for _, affs := range modes {
+		stTime := time.Now()
 		lib.Printf("Affiliations mode: %+v\n", affs)
+		if affs == false && ctx.SkipData {
+			lib.Printf("Incremental data sync skipped\n")
+			continue
+		}
+		if affs == true && ctx.SkipAffs {
+			lib.Printf("Historical data affiliations sync skipped\n")
+			continue
+		}
 		if thrN > 1 {
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
@@ -759,6 +768,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(2)*time.Minute, tasks[tIdx].ShortString())
 			}
 		}
+		enTime := time.Now()
+		lib.Printf("Pass (affiliations: %+v) finished in %v\n", affs, enTime.Sub(stTime))
 	}
 	info()
 	return nil
