@@ -84,6 +84,8 @@ spec:
               value: '{{ $root.Values.skipData }}'
             - name: SDS_SKIP_AFFS
               value: '{{ $root.Values.skipAffs }}'
+            - name: SDS_SKIP_ALIASES
+              value: '{{ $root.Values.skipAliases }}'
             - name: SDS_NODE_HASH
               value: '{{ $root.Values.nodeHash }}'
             - name: SDS_NODE_NUM

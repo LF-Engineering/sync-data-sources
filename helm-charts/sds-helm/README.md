@@ -53,6 +53,7 @@ Other environment parameters:
 - `SDS_SILENT`/`silent` - do not pass `-g` (debug) flag to `p2o.py` calls, makes output a lot less verbose.
 - `SDS_SKIP_DATA`/`skipData` - do not run incremental data sync.
 - `SDS_SKIP_AFFS`/`skipAffs` - do not re-enrich historical affiliations data.
+- `SDS_SKIP_ALIASES`/`skipAliases` - do not create index aliases.
 
 # Deploy on LF infra
 
