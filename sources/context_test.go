@@ -44,6 +44,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		Silent:         in.Silent,
 		SkipData:       in.SkipData,
 		SkipAffs:       in.SkipAffs,
+		SkipAliases:    in.SkipAliases,
 		CSVPrefix:      in.CSVPrefix,
 		TestMode:       in.TestMode,
 	}
@@ -194,6 +195,7 @@ func TestInit(t *testing.T) {
 		SkipSH:         false,
 		SkipData:       false,
 		SkipAffs:       false,
+		SkipAliases:    false,
 		TestMode:       true,
 	}
 
@@ -484,17 +486,19 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set skip SortingHat/Data/Affs mode",
+			"Set skip SortingHat/Data/Affs/Aliases mode",
 			map[string]string{
-				"SDS_SKIP_SH":   "1",
-				"SDS_SKIP_AFFS": "t",
+				"SDS_SKIP_SH":      "1",
+				"SDS_SKIP_AFFS":    "t",
+				"SDS_SKIP_ALIASES": "y",
 			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{
-					"SkipSH":   true,
-					"SkipAffs": true,
+					"SkipSH":      true,
+					"SkipAffs":    true,
+					"SkipAliases": true,
 				},
 			),
 		},
