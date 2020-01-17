@@ -506,6 +506,10 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 	} else {
 		url = fmt.Sprintf("%s/%s/_alias/%s", ctx.ElasticURL, pair[0], pair[1])
 	}
+	if ctx.DryRun {
+		lib.Printf("DryRun: Method:%s url:%s\n", method, url)
+		return
+	}
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
 		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
