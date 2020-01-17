@@ -306,6 +306,16 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 		}
 	}
+	for ai, alias := range fixture.Aliases {
+		idxSlug := "sds-" + alias.From
+		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+		fixture.Aliases[ai].From = idxSlug
+		for ti, to := range alias.To {
+			idxSlug := "sds-" + to
+			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			fixture.Aliases[ai].To[ti] = idxSlug
+		}
+	}
 }
 
 func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (fixture lib.Fixture) {
@@ -396,6 +406,22 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
+	}
+	if !ctx.SkipAliases {
+		// Check if all aliases are unique
+		aliases := make(map[string]string)
+		for fi, fixture := range fixtures {
+			for ai, alias := range fixture.Aliases {
+				for ti, to := range alias.To {
+					desc := fmt.Sprintf("Fixture #%d: Fn:%s Slug:%s, Alias #%d: From:%s, To: #%d:%s", fi+1, fixture.Fn, fixture.Slug, ai+1, alias.From, ti+1, to)
+					got, ok := aliases[to]
+					if ok {
+						lib.Fatalf("Alias conflict, already exists:\n%s\nWhile trying to add:\n%s\n", got, desc)
+					}
+					aliases[to] = desc
+				}
+			}
+		}
 	}
 	// Then for all fixtures defined, all slugs must be unique - check this also
 	st := make(map[string]lib.Fixture)

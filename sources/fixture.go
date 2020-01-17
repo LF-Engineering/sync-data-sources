@@ -42,9 +42,15 @@ type Fixture struct {
 	Disabled    bool              `yaml:"disabled"`
 	Native      map[string]string `yaml:"native"`
 	DataSources []DataSource      `yaml:"data_sources"`
-	//Aliases     []Alias           `yaml:"aliases"`
-	Fn   string
-	Slug string
+	Aliases     []Alias           `yaml:"aliases"`
+	Fn          string
+	Slug        string
+}
+
+// Alias conatin indexing aliases data, single index from (source) and list of aliases that should point to that index
+type Alias struct {
+	From string   `yaml:"from"`
+	To   []string `yaml:"to"`
 }
 
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
