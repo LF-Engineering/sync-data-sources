@@ -20,7 +20,7 @@ type Ctx struct {
 	ExecOutput       bool   // default false, set to true to capture commands STDOUT
 	ExecOutputStderr bool   // default false, set to true to capture commands STDOUT
 	ElasticURL       string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
-	EsBulkSize       int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified"
+	EsBulkSize       int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified" (10000)
 	NodeHash         bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
 	NodeNum          int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
 	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hasesh matching this node will run
