@@ -573,8 +573,8 @@ func TestInit(t *testing.T) {
 		}
 
 		// Initialize context while new environment is set
-		gotContext.Init()
 		gotContext.TestMode = true
+		gotContext.Init()
 		if test.environment["SDS_CTXOUT"] != "" {
 			os.Stdout = stdout
 		}
