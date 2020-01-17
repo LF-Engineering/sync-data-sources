@@ -43,7 +43,6 @@ type Ctx struct {
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
-	ShPort           string
 	ShPass           string
 	ShDB             string
 }
@@ -99,12 +98,19 @@ func (ctx *Ctx) Init() {
 		}
 	}
 
+	// Skip SortingHat mode
+	ctx.SkipSH = os.Getenv("SDS_SKIP_SH") != ""
+
 	// Sorting Hat DB parameters
 	ctx.ShUser = os.Getenv("SH_USER")
 	ctx.ShHost = os.Getenv("SH_HOST")
-	ctx.ShPort = os.Getenv("SH_PORT")
 	ctx.ShPass = os.Getenv("SH_PASS")
 	ctx.ShDB = os.Getenv("SH_DB")
+
+	if !ctx.TestMode && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
+		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
+		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, password, db) must all be defined unless skiping SortingHat"))
+	}
 
 	// Log Time
 	ctx.LogTime = os.Getenv("SDS_SKIPTIME") == ""
@@ -195,9 +201,6 @@ func (ctx *Ctx) Init() {
 			ctx.NLongest = 10
 		}
 	}
-
-	// Skip SortingHat mode
-	ctx.SkipSH = os.Getenv("SDS_SKIP_SH") != ""
 
 	// Strip error size (default 512)
 	if os.Getenv("SDS_STRIP_ERROR_SIZE") == "" {
