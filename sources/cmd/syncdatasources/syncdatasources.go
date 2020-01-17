@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -407,7 +408,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
 	}
-	if !ctx.SkipAliases {
+	if !ctx.SkipAliases && ctx.NoMultiAliases {
 		// Check if all aliases are unique
 		aliases := make(map[string]string)
 		for fi, fixture := range fixtures {
@@ -416,7 +417,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 					desc := fmt.Sprintf("Fixture #%d: Fn:%s Slug:%s, Alias #%d: From:%s, To: #%d:%s", fi+1, fixture.Fn, fixture.Slug, ai+1, alias.From, ti+1, to)
 					got, ok := aliases[to]
 					if ok {
-						lib.Fatalf("Alias conflict, already exists:\n%s\nWhile trying to add:\n%s\n", got, desc)
+						lib.Fatalf("Alias conflict (multi aliases disabled), already exists:\n%s\nWhile trying to add:\n%s\n", got, desc)
 					}
 					aliases[to] = desc
 				}
@@ -483,7 +484,97 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		ctx.ExecOutput = false
 		ctx.ExecOutputStderr = false
 	}()
-	return processTasks(ctx, &tasks, dss)
+	rslt := processTasks(ctx, &tasks, dss)
+	if !ctx.SkipAliases {
+		if ctx.CleanupAliases {
+			processAliases(ctx, &fixtures, lib.Delete)
+		}
+		processAliases(ctx, &fixtures, lib.Put)
+	}
+	return rslt
+}
+
+func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string) {
+	defer func() {
+		if ch != nil {
+			ch <- struct{}{}
+		}
+	}()
+	var url string
+	if method == lib.Delete {
+		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, pair[1])
+	} else {
+		url = fmt.Sprintf("%s/%s/_alias/%s", ctx.ElasticURL, pair[0], pair[1])
+	}
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+	}
+}
+
+func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
+	st := time.Now()
+	fixtures := *pFixtures
+	pairs := [][2]string{}
+	tom := make(map[string]struct{})
+	for _, fixture := range fixtures {
+		for _, alias := range fixture.Aliases {
+			for _, to := range alias.To {
+				_, ok := tom[to]
+				if ok && method == lib.Delete {
+					continue
+				}
+				pairs = append(pairs, [2]string{alias.From, to})
+				tom[to] = struct{}{}
+			}
+		}
+	}
+	if ctx.Debug > 0 {
+		fmt.Printf("Aliases:\n%+v\n", pairs)
+	}
+	// Get number of CPUs available
+	thrN := lib.GetThreadsNum(ctx)
+	if thrN > 1 {
+		lib.Printf("Now processing %d aliases using method %s MT%d version\n", len(pairs), method, thrN)
+		ch := make(chan struct{})
+		nThreads := 0
+		for _, pair := range pairs {
+			go processAlias(ch, ctx, pair, method)
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
+			}
+		}
+		for nThreads > 0 {
+			<-ch
+			nThreads--
+		}
+	} else {
+		lib.Printf("Now processing %d aliases using method %s ST version\n", len(pairs), method)
+		for _, pair := range pairs {
+			processAlias(nil, ctx, pair, method)
+		}
+	}
+	en := time.Now()
+	lib.Printf("Processed %d aliases using method %s took: %v\n", len(pairs), method, en.Sub(st))
 }
 
 func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
