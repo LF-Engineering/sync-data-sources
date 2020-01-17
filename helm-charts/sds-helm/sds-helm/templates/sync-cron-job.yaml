@@ -126,11 +126,6 @@ spec:
                 secretKeyRef:
                   name: {{ $root.Values.shSecret }}
                   key: SH_HOST.secret
-            - name: SH_PORT
-              valueFrom:
-                secretKeyRef:
-                  name: {{ $root.Values.shSecret }}
-                  key: SH_PORT.secret
             - name: SH_PASS
               valueFrom:
                 secretKeyRef:

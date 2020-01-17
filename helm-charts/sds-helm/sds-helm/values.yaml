@@ -1,7 +1,6 @@
 # Secrets that can be set via files in `./secrets/*.secret`, via commandline by `--set 'shUser=xyz,shHost=host.com,...'` or even uncomment them in the lines below.
 # shUser: ''
 # shHost: ''
-# shPort: ''
 # shPass: ''
 # shDB: ''
 # esURL: ''
