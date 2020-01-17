@@ -1452,7 +1452,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		en := time.Now()
 		took := en.Sub(st)
 		if took > time.Duration(10)*time.Minute {
-			lib.Printf("Waited for data sync on %d mutex: %v\n", idx, en.Sub(st))
+			lib.Printf("Waited for data sync on %d/%+v mutex: %v\n", idx, task, en.Sub(st))
 		}
 	}
 	retries := 0
