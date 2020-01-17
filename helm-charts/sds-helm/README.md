@@ -54,6 +54,8 @@ Other environment parameters:
 - `SDS_SKIP_DATA`/`skipData` - do not run incremental data sync.
 - `SDS_SKIP_AFFS`/`skipAffs` - do not re-enrich historical affiliations data.
 - `SDS_SKIP_ALIASES`/`skipAliases` - do not create index aliases.
+- `SDS_NO_MULTI_ALIASES`/`noMultiAliases` - alias names must be unique, so every alias can only point to a single index. If not set then single alias can point to multiple indices.
+- `SDS_CLEANUP_ALIASES`/`cleanupAliases` - drop aliases before creating them, this can be used to clean existing aliases from some orphaned/no longer needed indexes.
 
 # Deploy on LF infra
 

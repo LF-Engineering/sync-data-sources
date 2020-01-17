@@ -71,6 +71,8 @@
 # scrollWait: '30'
 # scrollSize: '10000'
 # silent: 'y'
+# noMultiAliases: '1'
+# cleanupAliases: '1'
 
 # Standard values:
 deployEnv: 'set-me'
@@ -83,6 +85,8 @@ skipSH: ''
 skipData: ''
 skipAffs: ''
 skipAliases: ''
+noMultiAliases: ''
+cleanupAliases: ''
 stripErrorSize: ''
 esURL: ''
 esBulkSize: ''

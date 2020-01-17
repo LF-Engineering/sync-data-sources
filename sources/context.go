@@ -39,6 +39,8 @@ type Ctx struct {
 	SkipData         bool   // From SDS_SKIP_DATA, if set - it will not run incremental data sync
 	SkipAffs         bool   // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
 	SkipAliases      bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases
+	NoMultiAliases   bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexs can be accessed through a single alias
+	CleanupAliases   bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
 	ScrollWait       int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
 	ScrollSize       int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	TestMode         bool   // True when running tests
@@ -256,6 +258,8 @@ func (ctx *Ctx) Init() {
 	ctx.SkipData = os.Getenv("SDS_SKIP_DATA") != ""
 	ctx.SkipAffs = os.Getenv("SDS_SKIP_AFFS") != ""
 	ctx.SkipAliases = os.Getenv("SDS_SKIP_ALIASES") != ""
+	ctx.NoMultiAliases = os.Getenv("SDS_NO_MULTI_ALIASES") != ""
+	ctx.CleanupAliases = os.Getenv("SDS_CLEANUP_ALIASES") != ""
 
 	// Forbidden configurations
 	if ctx.SkipSH && !ctx.SkipAffs {

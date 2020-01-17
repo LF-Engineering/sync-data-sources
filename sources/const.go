@@ -66,6 +66,12 @@ const FromDate string = "from-date"
 // Password - password
 const Password string = "password"
 
+// Delete - DELETE
+const Delete string = "DELETE"
+
+// Put - PUT
+const Put string = "PUT"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	1: "datasource slug contains > 1 '/' separators",
