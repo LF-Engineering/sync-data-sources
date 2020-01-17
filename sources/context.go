@@ -101,6 +101,28 @@ func (ctx *Ctx) Init() {
 		}
 	}
 
+	// Dry Run mode
+	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
+	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
+	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
+		ctx.DryRunCode = 0
+	} else {
+		code, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_CODE"))
+		FatalNoLog(err)
+		if code >= 1 && code <= 4 {
+			ctx.DryRunCode = code
+		}
+	}
+	if os.Getenv("SDS_DRY_RUN_SECONDS") == "" {
+		ctx.DryRunSeconds = 0
+	} else {
+		secs, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_SECONDS"))
+		FatalNoLog(err)
+		if secs > 0 {
+			ctx.DryRunSeconds = secs
+		}
+	}
+
 	// Skip SortingHat mode
 	ctx.SkipSH = os.Getenv("SDS_SKIP_SH") != ""
 
@@ -110,7 +132,7 @@ func (ctx *Ctx) Init() {
 	ctx.ShPass = os.Getenv("SH_PASS")
 	ctx.ShDB = os.Getenv("SH_DB")
 
-	if !ctx.TestMode && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
+	if !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
 		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, password, db) must all be defined unless skiping SortingHat"))
 	}
@@ -154,28 +176,6 @@ func (ctx *Ctx) Init() {
 		FatalNoLog(err)
 		if nodeIdx >= 0 && nodeIdx < ctx.NodeNum {
 			ctx.NodeIdx = nodeIdx
-		}
-	}
-
-	// Dry Run mode
-	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
-	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
-	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
-		ctx.DryRunCode = 0
-	} else {
-		code, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_CODE"))
-		FatalNoLog(err)
-		if code >= 1 && code <= 4 {
-			ctx.DryRunCode = code
-		}
-	}
-	if os.Getenv("SDS_DRY_RUN_SECONDS") == "" {
-		ctx.DryRunSeconds = 0
-	} else {
-		secs, err := strconv.Atoi(os.Getenv("SDS_DRY_RUN_SECONDS"))
-		FatalNoLog(err)
-		if secs > 0 {
-			ctx.DryRunSeconds = secs
 		}
 	}
 
