@@ -42,8 +42,9 @@ type Fixture struct {
 	Disabled    bool              `yaml:"disabled"`
 	Native      map[string]string `yaml:"native"`
 	DataSources []DataSource      `yaml:"data_sources"`
-	Fn          string
-	Slug        string
+	//Aliases     []Alias           `yaml:"aliases"`
+	Fn   string
+	Slug string
 }
 
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
