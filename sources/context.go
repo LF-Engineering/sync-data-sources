@@ -265,8 +265,8 @@ func (ctx *Ctx) Init() {
 	if ctx.SkipSH && !ctx.SkipAffs {
 		FatalNoLog(fmt.Errorf("you cannot skip SortingHat and not skip affiliations at the same time"))
 	}
-	if ctx.SkipData && ctx.SkipAffs {
-		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync and historical affiliations sync at the same time"))
+	if ctx.SkipData && ctx.SkipAffs && ctx.SkipAliases {
+		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync, historical affiliations sync and aliases at the same time"))
 	}
 
 	// Context out if requested
