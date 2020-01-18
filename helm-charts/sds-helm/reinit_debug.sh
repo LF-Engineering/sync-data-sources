@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ -z "$1" ]
+then
+  echo "$0: you need to specify wait time as an arg, for example 120"
+  exit 1
+fi
 NS=sds-ext ./debug_delete.sh prod
 NS=sds-ext ./debug_delete.sh test
 NS=sds ./debug_delete.sh prod
