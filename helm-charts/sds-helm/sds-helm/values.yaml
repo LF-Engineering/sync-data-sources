@@ -73,6 +73,9 @@
 # silent: 'y'
 # noMultiAliases: '1'
 # cleanupAliases: '1'
+#useNodeSelector: '1'
+#nodeSelector:
+#  lfda: grimoire
 
 # Standard values:
 deployEnv: 'set-me'
@@ -126,9 +129,6 @@ nodeHash: ''
 nodeNum: 1
 labels:
   name: sds
-useNodeSelector: '1'
-nodeSelector:
-  lfda: grimoire
 debugPod: ''
 debugPodName: 'sds-debug'
 debugCommand: '/bin/sleep'
