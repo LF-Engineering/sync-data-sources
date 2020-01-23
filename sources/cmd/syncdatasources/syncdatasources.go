@@ -444,8 +444,11 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				cfgs = append(cfgs, cfg.String())
 			}
 			sort.Strings(cfgs)
+			cfg := strings.Join(cfgs, ",")
+			cfg = strings.Replace(cfg, " ", "", -1)
+			cfg = strings.Replace(cfg, "\t", "", -1)
 			for _, ep := range ds.Endpoints {
-				key := [3]string{ds.Slug, ep.Name, strings.Join(cfgs, ",")}
+				key := [3]string{ds.Slug, ep.Name, cfg}
 				slugs := eps[key]
 				slugs = append(slugs, slug)
 				eps[key] = slugs
