@@ -435,12 +435,17 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		st[slug] = fixture
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
-	eps := make(map[[2]string][]string)
+	eps := make(map[[3]string][]string)
 	for _, fixture := range fixtures {
 		slug := fixture.Native["slug"]
 		for _, ds := range fixture.DataSources {
+			cfgs := []string{}
+			for _, cfg := range ds.Config {
+				cfgs = append(cfgs, cfg.String())
+			}
+			sort.Strings(cfgs)
 			for _, ep := range ds.Endpoints {
-				key := [2]string{ds.Slug, ep.Name}
+				key := [3]string{ds.Slug, ep.Name, strings.Join(cfgs, ",")}
 				slugs := eps[key]
 				slugs = append(slugs, slug)
 				eps[key] = slugs
@@ -451,7 +456,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		if len(slugs) == 1 {
 			continue
 		}
-		lib.Printf("Endpoint %+v that can be split into shared, used in %+v\n", ep, slugs)
+		lib.Printf("NOTICE: Endpoint (%s,%s) that can be split into shared, used in %+v\n", ep[0], ep[1], slugs)
 	}
 	tasks := []lib.Task{}
 	nodeIdx := ctx.NodeIdx
