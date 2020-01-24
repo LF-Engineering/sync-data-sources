@@ -435,32 +435,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		st[slug] = fixture
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
-	eps := make(map[[3]string][]string)
-	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
-		for _, ds := range fixture.DataSources {
-			cfgs := []string{}
-			for _, cfg := range ds.Config {
-				cfgs = append(cfgs, cfg.String())
-			}
-			sort.Strings(cfgs)
-			cfg := strings.Join(cfgs, ",")
-			cfg = strings.Replace(cfg, " ", "", -1)
-			cfg = strings.Replace(cfg, "\t", "", -1)
-			for _, ep := range ds.Endpoints {
-				key := [3]string{ds.Slug, ep.Name, cfg}
-				slugs := eps[key]
-				slugs = append(slugs, slug)
-				eps[key] = slugs
-			}
-		}
-	}
-	for ep, slugs := range eps {
-		if len(slugs) == 1 {
-			continue
-		}
-		lib.Printf("NOTICE: Endpoint (%s,%s) that can be split into shared, used in %+v\n", ep[0], ep[1], slugs)
-	}
+	checkForSharedEndpoints(&fixtures)
 	tasks := []lib.Task{}
 	nodeIdx := ctx.NodeIdx
 	nodeNum := ctx.NodeNum
@@ -519,6 +494,36 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		processAliases(ctx, &fixtures, lib.Put)
 	}
 	return rslt
+}
+
+func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
+	fixtures := *pfixtures
+	eps := make(map[[3]string][]string)
+	for _, fixture := range fixtures {
+		slug := fixture.Native["slug"]
+		for _, ds := range fixture.DataSources {
+			cfgs := []string{}
+			for _, cfg := range ds.Config {
+				cfgs = append(cfgs, cfg.String())
+			}
+			sort.Strings(cfgs)
+			cfg := strings.Join(cfgs, ",")
+			cfg = strings.Replace(cfg, " ", "", -1)
+			cfg = strings.Replace(cfg, "\t", "", -1)
+			for _, ep := range ds.Endpoints {
+				key := [3]string{ds.Slug, ep.Name, cfg}
+				slugs := eps[key]
+				slugs = append(slugs, slug)
+				eps[key] = slugs
+			}
+		}
+	}
+	for ep, slugs := range eps {
+		if len(slugs) == 1 {
+			continue
+		}
+		lib.Printf("NOTICE: Endpoint (%s,%s) that can be split into shared, used in %+v\n", ep[0], ep[1], slugs)
+	}
 }
 
 func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string) {
