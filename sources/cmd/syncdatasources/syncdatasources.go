@@ -538,7 +538,7 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	fixtures := *pfixtures
 	if ctx.NodeIdx > 0 {
-		lib.Printf("Skipping dropping unused indexes and laiases, this only runs on 1st node\n")
+		lib.Printf("Skipping dropping unused indexes, this only runs on 1st node\n")
 		return
 	}
 	should := make(map[string]struct{})
@@ -588,7 +588,6 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		if !strings.HasPrefix(sIndex, "sds-") {
 			continue
 		}
-		got[sIndex] = struct{}{}
 		got[sIndex] = struct{}{}
 	}
 	missing := []string{}
@@ -643,14 +642,116 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
 		return
 	}
-	lib.Printf("Indices dropped\n")
+	lib.Printf("%d indices dropped\n", len(extra))
 }
 
 func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+	fixtures := *pfixtures
 	if ctx.NodeIdx > 0 {
-		lib.Printf("Skipping dropping unused indexes and laiases, this only runs on 1st node\n")
+		lib.Printf("Skipping dropping unused aliases, this only runs on 1st node\n")
 		return
 	}
+	should := make(map[string]struct{})
+	for _, fixture := range fixtures {
+		for _, alias := range fixture.Aliases {
+			for _, to := range alias.To {
+				aliasSlug := "sds-" + to
+				aliasSlug = strings.Replace(aliasSlug, "/", "-", -1)
+				should[to] = struct{}{}
+			}
+		}
+	}
+	method := lib.Get
+	url := fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	aliases := []lib.EsAlias{}
+	err = json.NewDecoder(resp.Body).Decode(&aliases)
+	if err != nil {
+		lib.Printf("JSON decode error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	got := make(map[string]struct{})
+	for _, alias := range aliases {
+		sAlias := alias.Alias
+		if !strings.HasPrefix(sAlias, "sds-") {
+			continue
+		}
+		got[sAlias] = struct{}{}
+	}
+	missing := []string{}
+	extra := []string{}
+	for alias := range should {
+		_, ok := got[alias]
+		if !ok {
+			missing = append(missing, alias)
+		}
+	}
+	for alias := range got {
+		_, ok := should[alias]
+		if !ok {
+			extra = append(extra, alias)
+		}
+	}
+	sort.Strings(missing)
+	sort.Strings(extra)
+	if len(missing) > 0 {
+		lib.Printf("Missing aliases: %s\n", strings.Join(missing, ", "))
+	}
+	if len(extra) == 0 {
+		lib.Printf("No aliases to drop, environment clean\n")
+		return
+	}
+	lib.Printf("Aliases to delete: %s\n", strings.Join(extra, ", "))
+	method = lib.Delete
+	url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, strings.Join(extra, ","))
+	if ctx.DryRun {
+		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(url))
+		return
+	}
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	lib.Printf("%d aliases dropped\n", len(extra))
 }
 
 func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string) {
