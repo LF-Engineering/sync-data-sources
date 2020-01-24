@@ -45,6 +45,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipData:       in.SkipData,
 		SkipAffs:       in.SkipAffs,
 		SkipAliases:    in.SkipAliases,
+		SkipDropUnused: in.SkipDropUnused,
 		NoMultiAliases: in.NoMultiAliases,
 		CleanupAliases: in.CleanupAliases,
 		CSVPrefix:      in.CSVPrefix,
@@ -200,6 +201,7 @@ func TestInit(t *testing.T) {
 		SkipAliases:    false,
 		NoMultiAliases: false,
 		CleanupAliases: false,
+		SkipDropUnused: false,
 		TestMode:       true,
 	}
 
@@ -497,6 +499,7 @@ func TestInit(t *testing.T) {
 				"SDS_SKIP_ALIASES":     "y",
 				"SDS_NO_MULTI_ALIASES": "y",
 				"SDS_CLEANUP_ALIASES":  "y",
+				"SDS_SKIP_DROP_UNUSED": "y",
 			},
 			dynamicSetFields(
 				t,
@@ -507,6 +510,7 @@ func TestInit(t *testing.T) {
 					"SkipAliases":    true,
 					"NoMultiAliases": true,
 					"CleanupAliases": true,
+					"SkipDropUnused": true,
 				},
 			),
 		},
