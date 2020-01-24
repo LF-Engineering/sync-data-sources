@@ -556,12 +556,12 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	defer func() {
@@ -570,7 +570,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
@@ -607,13 +607,13 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 {
-		lib.Printf("Missing indices: %s\n", strings.Join(missing, ", "))
+		lib.Printf("NOTICE: Missing indices (%d): %s\n", len(missing), strings.Join(missing, ", "))
 	}
 	if len(extra) == 0 {
 		lib.Printf("No indices to drop, environment clean\n")
 		return
 	}
-	lib.Printf("Indices to delete: %s\n", strings.Join(extra, ", "))
+	lib.Printf("Indices to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, strings.Join(extra, ","))
 	if ctx.DryRun {
@@ -622,12 +622,12 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	defer func() {
@@ -636,7 +636,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
@@ -665,12 +665,12 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	url := fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	defer func() {
@@ -679,7 +679,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
@@ -716,13 +716,13 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 {
-		lib.Printf("Missing aliases: %s\n", strings.Join(missing, ", "))
+		lib.Printf("NOTICE: Missing aliases %d: %s\n", len(missing), strings.Join(missing, ", "))
 	}
 	if len(extra) == 0 {
 		lib.Printf("No aliases to drop, environment clean\n")
 		return
 	}
-	lib.Printf("Aliases to delete: %s\n", strings.Join(extra, ", "))
+	lib.Printf("Aliases to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, strings.Join(extra, ","))
 	if ctx.DryRun {
@@ -731,12 +731,12 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	defer func() {
@@ -745,7 +745,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
@@ -772,12 +772,12 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 	}
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	defer func() {
@@ -786,7 +786,7 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
