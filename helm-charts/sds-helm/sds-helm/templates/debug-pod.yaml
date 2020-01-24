@@ -76,6 +76,8 @@ spec:
       value: '{{ $root.Values.noMultiAliases }}'
     - name: SDS_CLEANUP_ALIASES
       value: '{{ $root.Values.cleanupAliases }}'
+    - name: SDS_SKIP_DROP_UNUSED
+      value: '{{ $root.Values.skipDropUnused }}'
     - name: SDS_NODE_HASH
       value: '{{ $root.Values.nodeHash }}'
     - name: SDS_NODE_NUM

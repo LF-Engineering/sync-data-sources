@@ -44,9 +44,10 @@ Other environment parameters:
 - `SDS_SILENT`/`silent` - do not pass `-g` (debug) flag to `p2o.py` calls, makes output a lot less verbose.
 - `SDS_SKIP_DATA`/`skipData` - do not run incremental data sync.
 - `SDS_SKIP_AFFS`/`skipAffs` - do not re-enrich historical affiliations data.
-- `SDS_SKIP_ALIASES`/`skipAliases` - do not create index aliases.
+- `SDS_SKIP_ALIASES`/`skipAliases` - do not create index aliases, do not attempt to drop unused aliases
 - `SDS_NO_MULTI_ALIASES`/`noMultiAliases` - alias names must be unique, so every alias can only point to a single index. If not set then single alias can point to multiple indices.
 - `SDS_CLEANUP_ALIASES`/`cleanupAliases` - drop aliases before creating them, this can be used to clean existing aliases from some orphaned/no longer needed indexes.
+- `SDS_SKIP_DROP_UNUSED`/`skipDropUnused` - do not drop unused indexes/aliases
 
 Multi node support:
 
