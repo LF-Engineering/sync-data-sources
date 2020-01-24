@@ -23,7 +23,7 @@ type Ctx struct {
 	EsBulkSize       int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified" (10000)
 	NodeHash         bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
 	NodeNum          int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
-	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hasesh matching this node will run
+	NodeIdx          int    // From SDS_NODE_NUM, set number of current node, so only hashes matching this node will run
 	DryRun           bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
 	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
@@ -38,7 +38,7 @@ type Ctx struct {
 	Silent           bool   // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
 	SkipData         bool   // From SDS_SKIP_DATA, if set - it will not run incremental data sync
 	SkipAffs         bool   // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
-	SkipAliases      bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases
+	SkipAliases      bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
 	SkipDropUnused   bool   // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
 	NoMultiAliases   bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexs can be accessed through a single alias
 	CleanupAliases   bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))

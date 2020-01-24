@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"math/rand"
@@ -231,7 +232,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					for {
 						repositories, response, err := gc[hint].Repositories.ListByOrg(gctx, org, opt)
 						if err != nil {
-							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v", org, response, err)
+							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v\n", org, response, err)
 							break
 						}
 						for _, repo := range repositories {
@@ -278,7 +279,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					for {
 						repositories, response, err := gc[hint].Repositories.List(gctx, user, opt)
 						if err != nil {
-							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v", user, response, err)
+							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v\n", user, response, err)
 							break
 						}
 						for _, repo := range repositories {
@@ -436,6 +437,14 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
 	checkForSharedEndpoints(&fixtures)
+	// Drop unused indexes and aliases
+	if !ctx.SkipDropUnused {
+		dropUnusedIndexes(ctx, &fixtures)
+		// Aliases
+		if !ctx.SkipAliases {
+			dropUnusedAliases(ctx, &fixtures)
+		}
+	}
 	tasks := []lib.Task{}
 	nodeIdx := ctx.NodeIdx
 	nodeNum := ctx.NodeNum
@@ -523,6 +532,124 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 			continue
 		}
 		lib.Printf("NOTICE: Endpoint (%s,%s) that can be split into shared, used in %+v\n", ep[0], ep[1], slugs)
+	}
+}
+
+func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+	fixtures := *pfixtures
+	if ctx.NodeIdx > 0 {
+		lib.Printf("Skipping dropping unused indexes and laiases, this only runs on 1st node\n")
+		return
+	}
+	should := make(map[string]struct{})
+	for _, fixture := range fixtures {
+		slug := fixture.Slug
+		slug = strings.Replace(slug, "/", "-", -1)
+		for _, ds := range fixture.DataSources {
+			idxSlug := "sds-" + slug + "-" + ds.Slug
+			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			should[idxSlug] = struct{}{}
+			should[idxSlug+"-raw"] = struct{}{}
+		}
+	}
+	method := lib.Get
+	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	indices := []lib.EsIndex{}
+	err = json.NewDecoder(resp.Body).Decode(&indices)
+	if err != nil {
+		lib.Printf("JSON decode error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	got := make(map[string]struct{})
+	for _, index := range indices {
+		sIndex := index.Index
+		if !strings.HasPrefix(sIndex, "sds-") {
+			continue
+		}
+		got[sIndex] = struct{}{}
+		got[sIndex] = struct{}{}
+	}
+	missing := []string{}
+	extra := []string{}
+	for index := range should {
+		_, ok := got[index]
+		if !ok {
+			missing = append(missing, index)
+		}
+	}
+	for index := range got {
+		_, ok := should[index]
+		if !ok {
+			extra = append(extra, index)
+		}
+	}
+	sort.Strings(missing)
+	sort.Strings(extra)
+	if len(missing) > 0 {
+		lib.Printf("Missing indices: %s\n", strings.Join(missing, ", "))
+	}
+	if len(extra) == 0 {
+		lib.Printf("No indices to drop, environment clean\n")
+		return
+	}
+	lib.Printf("Indices to delete: %s\n", strings.Join(extra, ", "))
+	method = lib.Delete
+	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, strings.Join(extra, ","))
+	if ctx.DryRun {
+		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(url))
+		return
+	}
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	lib.Printf("Indices dropped\n")
+}
+
+func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+	if ctx.NodeIdx > 0 {
+		lib.Printf("Skipping dropping unused indexes and laiases, this only runs on 1st node\n")
+		return
 	}
 }
 
