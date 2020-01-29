@@ -75,6 +75,9 @@ const Put string = "PUT"
 // Get - GET
 const Get string = "GET"
 
+// Head - HEAD
+const Head string = "HEAD"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	1: "datasource slug contains > 1 '/' separators",
