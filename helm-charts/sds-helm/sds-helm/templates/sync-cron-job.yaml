@@ -82,6 +82,8 @@ spec:
               value: '{{ $root.Values.skipSH }}'
             - name: SDS_SKIP_DATA
               value: '{{ $root.Values.skipData }}'
+            - name: SDS_SKIP_CHECK_FREQ
+              value: '{{ $root.Values.skipCheckFreq }}'
             - name: SDS_SKIP_AFFS
               value: '{{ $root.Values.skipAffs }}'
             - name: SDS_SKIP_ALIASES

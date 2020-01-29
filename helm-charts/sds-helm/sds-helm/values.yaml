@@ -71,12 +71,13 @@
 # latestItems: ''
 # scrollWait: '30'
 # scrollSize: '10000'
+# skipCheckFreq: 'y'
 # silent: 'y'
 # noMultiAliases: '1'
 # cleanupAliases: '1'
-#useNodeSelector: '1'
-#nodeSelector:
-#  lfda: grimoire
+# useNodeSelector: '1'
+# nodeSelector:
+#   lfda: grimoire
 
 # Standard values:
 deployEnv: 'set-me'
@@ -97,6 +98,7 @@ esURL: ''
 esBulkSize: ''
 scrollWait: ''
 scrollSize: ''
+skipCheckFreq: ''
 silent: ''
 useRepoAccess: '1'
 concurrencyPolicy: Forbid
