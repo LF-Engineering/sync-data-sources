@@ -78,6 +78,9 @@ const Get string = "GET"
 // Head - HEAD
 const Head string = "HEAD"
 
+// Post - POST
+const Post string = "POST"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	1: "datasource slug contains > 1 '/' separators",

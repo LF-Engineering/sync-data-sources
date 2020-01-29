@@ -13,6 +13,7 @@ type Task struct {
 	DsSlug      string
 	FxSlug      string
 	FxFn        string
+	MaxFreq     time.Duration
 	CommandLine string
 	Retries     int
 	Err         error
@@ -27,8 +28,8 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v}",
-		t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine, t.Retries, t.Err != nil, t.Duration,
+		"{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v}",
+		t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.CommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq,
 	)
 }
 

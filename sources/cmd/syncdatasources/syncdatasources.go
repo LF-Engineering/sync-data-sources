@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -479,6 +480,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 						DsSlug:   dataSource.Slug,
 						FxSlug:   fixture.Slug,
 						FxFn:     fixture.Fn,
+						MaxFreq:  dataSource.MaxFreq,
 					},
 				)
 			}
@@ -645,7 +647,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	indices := []lib.EsIndex{}
 	err = json.NewDecoder(resp.Body).Decode(&indices)
 	if err != nil {
-		lib.Printf("JSON decode error: %+v for %s url: %s", err, method, url)
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	got := make(map[string]struct{})
@@ -754,7 +756,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	aliases := []lib.EsAlias{}
 	err = json.NewDecoder(resp.Body).Decode(&aliases)
 	if err != nil {
-		lib.Printf("JSON decode error: %+v for %s url: %s", err, method, url)
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, url)
 		return
 	}
 	got := make(map[string]struct{})
@@ -1637,6 +1639,155 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 //	return ds
 //}
 
+func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dts []time.Time, ok bool) {
+	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for search: %s query:%s\n", err, index, esQuery)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc/_search", ctx.ElasticURL, index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	payload := lib.EsSearchResultPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	ok = true
+	for _, hit := range payload.Hits.Hits {
+		dts = append(dts, hit.Source.Dt)
+	}
+	return
+}
+
+func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
+	data := lib.EsLastRunPayload{Index: index, Endpoint: ep, Type: "last_sync", Dt: time.Now()}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for index: %s, endpoint: %s, data: %+v\n", err, index, ep, data)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, dataIndex)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 201 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	ok = true
+	return
+}
+
+func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
+	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for search: %s query:%s\n", err, index, esQuery)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_delete_by_query", ctx.ElasticURL, index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		return
+	}
+	ok = true
+	return
+}
+
+func setLastRun(ctx *lib.Ctx, index, ep string) bool {
+	// TODO: skip in dry run, skip when "skip freq check" flag is set
+	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
+	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
+	if !ok {
+		return false
+	}
+	if len(dts) > 0 {
+		if ctx.Debug > 0 {
+			lib.Printf("Previous sync recorded for %s/%s: %+v, deleting\n", index, ep, dts)
+		}
+		deleted := deleteByQuery(ctx, "sdsdata", esQuery)
+		if !deleted {
+			return false
+		}
+	} else {
+		if ctx.Debug > 0 {
+			lib.Printf("No previous sync recorded for %s/%s\n", index, ep)
+		}
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Adding sync record for %s/%s\n", index, ep)
+	}
+	added := addLastRun(ctx, "sdsdata", index, ep)
+	return added
+}
+
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, sshKeyMtx, taskOrderMtx *sync.Mutex, orderMtx map[int]*sync.Mutex) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
@@ -1737,6 +1888,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	for _, ep := range eps {
 		commandLine = append(commandLine, ep)
 	}
+	sEp := strings.Join(eps, " ")
 
 	// Handle DS config options
 	multiConfig, fail, keyAdded := massageConfig(ctx, &(task.Config), ds, idxSlug)
@@ -1806,6 +1958,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
 				result.Retries = rand.Intn(ctx.MaxRetry)
 			}
+			_ = setLastRun(ctx, idxSlug, sEp)
 			return
 		}
 		if keyAdded && sshKeyMtx != nil {
@@ -1857,6 +2010,12 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		result.Err = fmt.Errorf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
 		result.Retries = retries
 		return
+	}
+	if !affs {
+		updated := setLastRun(ctx, idxSlug, sEp)
+		if !updated {
+			lib.Printf("failed to set last sync date for %s/%s\n", idxSlug, sEp)
+		}
 	}
 	result.Retries = retries
 	return
