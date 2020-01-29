@@ -44,6 +44,7 @@ type Ctx struct {
 	CleanupAliases   bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
 	ScrollWait       int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
 	ScrollSize       int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
+	SkipCheckFreq    bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -270,6 +271,9 @@ func (ctx *Ctx) Init() {
 	if ctx.SkipData && ctx.SkipAffs && ctx.SkipAliases {
 		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync, historical affiliations sync and aliases at the same time"))
 	}
+
+	// Skip check sync frequency
+	ctx.SkipCheckFreq = os.Getenv("SDS_SKIP_CHECK_FREQ") != ""
 
 	// Context out if requested
 	if ctx.CtxOut {

@@ -134,7 +134,7 @@ func validateEndpoint(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSo
 	}
 }
 
-func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource) {
+func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSource *lib.DataSource) {
 	if dataSource.Slug == "" {
 		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
 	}
@@ -147,6 +147,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.Data
 			lib.Fatalf("Cannot parse duration %s in data source: %+v, fixture: %+v\n", dataSource.MaxFrequency, dataSource, fixture)
 		}
 		dataSource.MaxFreq = dur
+		fixture.DataSources[index].MaxFreq = dur
 		lib.Printf("Data source %s/%s max sync frequency: %+v\n", fixture.Slug, dataSource.Slug, dataSource.MaxFreq)
 	}
 	for _, cfg := range dataSource.Config {
@@ -191,8 +192,8 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
-	for _, dataSource := range fixture.DataSources {
-		validateDataSource(ctx, fixture, &dataSource)
+	for index, dataSource := range fixture.DataSources {
+		validateDataSource(ctx, fixture, index, &dataSource)
 	}
 	st := make(map[string]lib.DataSource)
 	for _, dataSource := range fixture.DataSources {
@@ -879,7 +880,7 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 		}
 	}
 	if ctx.Debug > 0 {
-		fmt.Printf("Aliases:\n%+v\n", pairs)
+		lib.Printf("Aliases:\n%+v\n", pairs)
 	}
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
@@ -1762,7 +1763,6 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 }
 
 func setLastRun(ctx *lib.Ctx, index, ep string) bool {
-	// TODO: skip in dry run, skip when "skip freq check" flag is set
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
 	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
 	if !ok {
@@ -1771,6 +1771,10 @@ func setLastRun(ctx *lib.Ctx, index, ep string) bool {
 	if len(dts) > 0 {
 		if ctx.Debug > 0 {
 			lib.Printf("Previous sync recorded for %s/%s: %+v, deleting\n", index, ep, dts)
+		}
+		if ctx.DryRun {
+			lib.Printf("Would delete and then add last sync date via: %s\n", esQuery)
+			return true
 		}
 		deleted := deleteByQuery(ctx, "sdsdata", esQuery)
 		if !deleted {
@@ -1784,8 +1788,40 @@ func setLastRun(ctx *lib.Ctx, index, ep string) bool {
 	if ctx.Debug > 0 {
 		lib.Printf("Adding sync record for %s/%s\n", index, ep)
 	}
+	if ctx.DryRun {
+		lib.Printf("Would add last sync date for: %s/%s\n", index, ep)
+		return true
+	}
 	added := addLastRun(ctx, "sdsdata", index, ep)
 	return added
+}
+
+func checkSyncFreq(ctx *lib.Ctx, index, ep string, freq time.Duration) bool {
+	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
+	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
+	if !ok {
+		lib.Printf("Error getting last sync date, assuming all is OK and allowing sync\n")
+		return true
+	}
+	if len(dts) == 0 {
+		if ctx.Debug > 0 {
+			lib.Printf("No previous sync recorded for %s/%s, allowing sync\n", index, ep)
+		}
+		return true
+	}
+	ago := time.Now().Sub(dts[0])
+	allowed := true
+	if ago < freq {
+		allowed = false
+	}
+	if !allowed {
+		lib.Printf("%s/%s Freq: %+v, Ago: %+v, allowed: %+v (wait %+v)\n", index, ep, freq, ago, allowed, freq-ago)
+	} else {
+		if ctx.Debug > 0 {
+			lib.Printf("%s/%s Freq: %+v, Ago: %+v, allowed: %+v\n", index, ep, freq, ago, allowed)
+		}
+	}
+	return allowed
 }
 
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, sshKeyMtx, taskOrderMtx *sync.Mutex, orderMtx map[int]*sync.Mutex) (result lib.TaskResult) {
@@ -1889,6 +1925,15 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		commandLine = append(commandLine, ep)
 	}
 	sEp := strings.Join(eps, " ")
+	if !ctx.SkipCheckFreq {
+		var nilDur time.Duration
+		if task.MaxFreq != nilDur {
+			freqOK := checkSyncFreq(ctx, idxSlug, sEp, task.MaxFreq)
+			if !freqOK {
+				return
+			}
+		}
+	}
 
 	// Handle DS config options
 	multiConfig, fail, keyAdded := massageConfig(ctx, &(task.Config), ds, idxSlug)

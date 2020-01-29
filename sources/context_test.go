@@ -49,6 +49,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		NoMultiAliases: in.NoMultiAliases,
 		CleanupAliases: in.CleanupAliases,
 		CSVPrefix:      in.CSVPrefix,
+		SkipCheckFreq:  in.SkipCheckFreq,
 		TestMode:       in.TestMode,
 	}
 	return &out
@@ -202,6 +203,7 @@ func TestInit(t *testing.T) {
 		NoMultiAliases: false,
 		CleanupAliases: false,
 		SkipDropUnused: false,
+		SkipCheckFreq:  false,
 		TestMode:       true,
 	}
 
@@ -492,6 +494,19 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
+			"Set skip sync frequency check",
+			map[string]string{
+				"SDS_SKIP_CHECK_FREQ": "y",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipCheckFreq": true,
+				},
+			),
+		},
+		{
 			"Set skip SortingHat/Data/Affs/Aliases mode",
 			map[string]string{
 				"SDS_SKIP_SH":          "1",
@@ -515,7 +530,7 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set skip SortingHat/Data/Affs mode",
+			"Set skip Data mode",
 			map[string]string{
 				"SDS_SKIP_DATA": "y",
 			},
