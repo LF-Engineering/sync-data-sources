@@ -146,7 +146,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.Data
 			lib.Fatalf("Cannot parse duration %s in data source: %+v, fixture: %+v\n", dataSource.MaxFrequency, dataSource, fixture)
 		}
 		dataSource.MaxFreq = dur
-		lib.Printf("Data source %s max sync frequency: %+v\n", dataSource.Slug, dataSource.MaxFreq)
+		lib.Printf("Data source %s/%s max sync frequency: %+v\n", fixture.Slug, dataSource.Slug, dataSource.MaxFreq)
 	}
 	for _, cfg := range dataSource.Config {
 		validateConfig(ctx, fixture, dataSource, &cfg)
@@ -453,6 +453,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			dropUnusedAliases(ctx, &fixtures)
 		}
 	}
+	// SDS data index
+	ensureDataIndex(ctx)
+	// Tasks
 	tasks := []lib.Task{}
 	nodeIdx := ctx.NodeIdx
 	nodeNum := ctx.NodeNum
@@ -540,6 +543,61 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 			continue
 		}
 		lib.Printf("NOTICE: Endpoint (%s,%s) that can be split into shared, used in %+v\n", ep[0], ep[1], slugs)
+	}
+}
+
+func ensureDataIndex(ctx *lib.Ctx) {
+	method := lib.Head
+	dataIndex := "sdsdata"
+	url := fmt.Sprintf("%s/%s", ctx.ElasticURL, dataIndex)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		if resp.StatusCode != 404 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			return
+		}
+		lib.Printf("Missing %s index, creating\n", dataIndex)
+		method = lib.Put
+		req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			return
+		}
+		lib.Printf("%s index created\n", dataIndex)
 	}
 }
 
