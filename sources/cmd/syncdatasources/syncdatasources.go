@@ -140,6 +140,14 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.Data
 	if ctx.Debug > 2 {
 		lib.Printf("Config for %s/%s: %+v\n", fixture.Fn, dataSource.Slug, dataSource.Config)
 	}
+	if dataSource.MaxFrequency != "" {
+		dur, err := time.ParseDuration(dataSource.MaxFrequency)
+		if err != nil {
+			lib.Fatalf("Cannot parse duration %s in data source: %+v, fixture: %+v\n", dataSource.MaxFrequency, dataSource, fixture)
+		}
+		dataSource.MaxFreq = dur
+		lib.Printf("Data source %s max sync frequency: %+v\n", dataSource.Slug, dataSource.MaxFreq)
+	}
 	for _, cfg := range dataSource.Config {
 		validateConfig(ctx, fixture, dataSource, &cfg)
 	}

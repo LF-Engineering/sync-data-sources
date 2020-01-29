@@ -1,6 +1,9 @@
 package syncdatasources
 
-import "fmt"
+import (
+	"fmt"
+	"time"
+)
 
 // Config holds data source config options
 type Config struct {
@@ -33,8 +36,10 @@ type RawEndpoint struct {
 type DataSource struct {
 	Slug         string        `yaml:"slug"`
 	Config       []Config      `yaml:"config"`
+	MaxFrequency string        `yaml:"max_frequency"`
 	RawEndpoints []RawEndpoint `yaml:"endpoints"`
 	Endpoints    []Endpoint    `yaml:"-"`
+	MaxFreq      time.Duration `yaml:"-"`
 }
 
 // Fixture contains full YAML structure of dev-analytics-api fixture files
