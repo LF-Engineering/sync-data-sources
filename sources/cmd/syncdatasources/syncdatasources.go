@@ -956,7 +956,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if thrN > 1 {
 		tMtx.SSHKeyMtx = &sync.Mutex{}
 		tMtx.TaskOrderMtx = &sync.Mutex{}
-		tMtx.SyncFreqMtx = &sync.RWMutex{}
+		tMtx.SyncFreqMtx = &sync.Mutex{}
 	}
 	failed := [][2]int{}
 	processed := 0
@@ -1812,9 +1812,9 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.Duration) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
 	if tMtx.SyncFreqMtx != nil {
-		tMtx.SyncFreqMtx.RLock()
+		tMtx.SyncFreqMtx.Lock()
 		defer func() {
-			tMtx.SyncFreqMtx.RUnlock()
+			tMtx.SyncFreqMtx.Unlock()
 		}()
 	}
 	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
