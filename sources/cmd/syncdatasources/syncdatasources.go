@@ -956,6 +956,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if thrN > 1 {
 		tMtx.SSHKeyMtx = &sync.Mutex{}
 		tMtx.TaskOrderMtx = &sync.Mutex{}
+		tMtx.SyncFreqMtx = &sync.RWMutex{}
 	}
 	failed := [][2]int{}
 	processed := 0
@@ -964,11 +965,13 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if !ctx.SkipData && !ctx.SkipAffs {
 		mul = 2
 		all *= mul
-		tMtx.OrderMtx = make(map[int]*sync.Mutex)
-		for idx := range tasks {
-			tmtx := &sync.Mutex{}
-			tmtx.Lock()
-			tMtx.OrderMtx[idx] = tmtx
+		if thrN > 1 {
+			tMtx.OrderMtx = make(map[int]*sync.Mutex)
+			for idx := range tasks {
+				tmtx := &sync.Mutex{}
+				tmtx.Lock()
+				tMtx.OrderMtx[idx] = tmtx
+			}
 		}
 	}
 	byDs := make(map[string][3]int)
@@ -1766,8 +1769,14 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 	return
 }
 
-func setLastRun(ctx *lib.Ctx, index, ep string) bool {
+func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
+	if tMtx.SyncFreqMtx != nil {
+		tMtx.SyncFreqMtx.Lock()
+		defer func() {
+			tMtx.SyncFreqMtx.Unlock()
+		}()
+	}
 	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
 	if !ok {
 		return false
@@ -1800,8 +1809,14 @@ func setLastRun(ctx *lib.Ctx, index, ep string) bool {
 	return added
 }
 
-func checkSyncFreq(ctx *lib.Ctx, index, ep string, freq time.Duration) bool {
+func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.Duration) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
+	if tMtx.SyncFreqMtx != nil {
+		tMtx.SyncFreqMtx.RLock()
+		defer func() {
+			tMtx.SyncFreqMtx.RUnlock()
+		}()
+	}
 	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
 	if !ok {
 		lib.Printf("Error getting last sync date, assuming all is OK and allowing sync\n")
@@ -1932,7 +1947,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if !ctx.SkipEsData && !affs && !ctx.SkipCheckFreq {
 		var nilDur time.Duration
 		if task.MaxFreq != nilDur {
-			freqOK := checkSyncFreq(ctx, idxSlug, sEp, task.MaxFreq)
+			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
 			if !freqOK {
 				return
 			}
@@ -2008,7 +2023,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				result.Retries = rand.Intn(ctx.MaxRetry)
 			}
 			if !ctx.SkipEsData && !affs {
-				_ = setLastRun(ctx, idxSlug, sEp)
+				_ = setLastRun(ctx, tMtx, idxSlug, sEp)
 			}
 			return
 		}
@@ -2063,7 +2078,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		return
 	}
 	if !ctx.SkipEsData && !affs {
-		updated := setLastRun(ctx, idxSlug, sEp)
+		updated := setLastRun(ctx, tMtx, idxSlug, sEp)
 		if !updated {
 			lib.Printf("failed to set last sync date for %s/%s\n", idxSlug, sEp)
 		}
