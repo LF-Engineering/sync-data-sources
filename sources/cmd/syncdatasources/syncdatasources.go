@@ -952,19 +952,23 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	tasks := *ptasks
 	saveCSV(ctx, tasks)
 	thrN := lib.GetThreadsNum(ctx)
+	tMtx := lib.TaskMtx{}
+	if thrN > 1 {
+		tMtx.SSHKeyMtx = &sync.Mutex{}
+		tMtx.TaskOrderMtx = &sync.Mutex{}
+	}
 	failed := [][2]int{}
 	processed := 0
 	all := len(tasks)
 	mul := 1
-	var orderMtx map[int]*sync.Mutex
 	if !ctx.SkipData && !ctx.SkipAffs {
 		mul = 2
 		all *= mul
-		orderMtx = make(map[int]*sync.Mutex)
+		tMtx.OrderMtx = make(map[int]*sync.Mutex)
 		for idx := range tasks {
 			tmtx := &sync.Mutex{}
 			tmtx.Lock()
-			orderMtx[idx] = tmtx
+			tMtx.OrderMtx[idx] = tmtx
 		}
 	}
 	byDs := make(map[string][3]int)
@@ -999,8 +1003,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	endTimes := make(map[int]time.Time)
 	durations := make(map[int]time.Duration)
 	mtx := &sync.RWMutex{}
-	sshKeyMtx := &sync.Mutex{}
-	taskOrderMtx := &sync.Mutex{}
 	info := func() {
 		mtx.RLock()
 		if len(processing) > 0 {
@@ -1132,7 +1134,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				processing[idx] = struct{}{}
 				startTimes[idx] = time.Now()
 				mtx.Unlock()
-				go processTask(ch, ctx, idx, task, affs, sshKeyMtx, taskOrderMtx, orderMtx)
+				go processTask(ch, ctx, idx, task, affs, &tMtx)
 				nThreads++
 				if nThreads == thrN {
 					result := <-ch
@@ -1164,17 +1166,17 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					processed++
 					mtx.Unlock()
 					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
-					if !taffs && orderMtx != nil {
-						taskOrderMtx.Lock()
-						tmtx, ok := orderMtx[tIdx]
+					if !taffs && tMtx.OrderMtx != nil {
+						tMtx.TaskOrderMtx.Lock()
+						tmtx, ok := tMtx.OrderMtx[tIdx]
 						if !ok {
-							taskOrderMtx.Unlock()
+							tMtx.TaskOrderMtx.Unlock()
 							lib.Fatalf("per task mutex map is defined, but no mutex for tIdx: %d", tIdx)
 						}
 						tmtx.Unlock()
-						orderMtx[tIdx] = tmtx
+						tMtx.OrderMtx[tIdx] = tmtx
 						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
-						taskOrderMtx.Unlock()
+						tMtx.TaskOrderMtx.Unlock()
 					}
 				}
 			}
@@ -1184,7 +1186,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				processing[idx] = struct{}{}
-				result := processTask(nil, ctx, idx, task, affs, nil, nil, nil)
+				result := processTask(nil, ctx, idx, task, affs, &tMtx)
 				res := result.Code
 				tIdx := res[0]
 				tasks[tIdx].CommandLine = result.CommandLine
@@ -1249,17 +1251,17 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			processed++
 			mtx.Unlock()
 			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
-			if !taffs && orderMtx != nil {
-				taskOrderMtx.Lock()
-				tmtx, ok := orderMtx[tIdx]
+			if !taffs && tMtx.OrderMtx != nil {
+				tMtx.TaskOrderMtx.Lock()
+				tmtx, ok := tMtx.OrderMtx[tIdx]
 				if !ok {
-					taskOrderMtx.Unlock()
+					tMtx.TaskOrderMtx.Unlock()
 					lib.Fatalf("per task mutex map is defined, but no mutex for tIdx (final threads join): %d", tIdx)
 				}
 				tmtx.Unlock()
-				orderMtx[tIdx] = tmtx
+				tMtx.OrderMtx[tIdx] = tmtx
 				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
-				taskOrderMtx.Unlock()
+				tMtx.TaskOrderMtx.Unlock()
 			}
 		}
 		enTime := time.Now()
@@ -1826,7 +1828,7 @@ func checkSyncFreq(ctx *lib.Ctx, index, ep string, freq time.Duration) bool {
 	return allowed
 }
 
-func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, sshKeyMtx, taskOrderMtx *sync.Mutex, orderMtx map[int]*sync.Mutex) (result lib.TaskResult) {
+func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
 		// Synchronize go routine
@@ -1957,23 +1959,23 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 	}
 	result.CommandLine = strings.Join(commandLine, " ")
-	if affs && orderMtx != nil {
-		taskOrderMtx.Lock()
-		tmtx, ok := orderMtx[idx]
+	if affs && tMtx.OrderMtx != nil {
+		tMtx.TaskOrderMtx.Lock()
+		tmtx, ok := tMtx.OrderMtx[idx]
 		if !ok {
-			taskOrderMtx.Unlock()
+			tMtx.TaskOrderMtx.Unlock()
 			lib.Fatalf("per task mutex map is defined, but no mutex for idx: %d", idx)
 		}
-		taskOrderMtx.Unlock()
+		tMtx.TaskOrderMtx.Unlock()
 		// Ensure that data sync task is finished before attempting to run historical affiliations
 		st := time.Now()
 		// lib.Printf("wait for mtx %d\n", idx)
 		tmtx.Lock()
 		tmtx.Unlock()
 		// lib.Printf("mtx %d passed (affs task)\n", idx)
-		taskOrderMtx.Lock()
-		orderMtx[idx] = tmtx
-		taskOrderMtx.Unlock()
+		tMtx.TaskOrderMtx.Lock()
+		tMtx.OrderMtx[idx] = tmtx
+		tMtx.TaskOrderMtx.Unlock()
 		en := time.Now()
 		took := en.Sub(st)
 		if took > time.Duration(10)*time.Minute {
@@ -1984,11 +1986,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
-			if keyAdded && sshKeyMtx != nil {
-				sshKeyMtx.Lock()
+			if keyAdded && tMtx.SSHKeyMtx != nil {
+				tMtx.SSHKeyMtx.Lock()
 				fail := !makeCurrentSSHKey(ctx, idxSlug)
 				if fail == true {
-					sshKeyMtx.Unlock()
+					tMtx.SSHKeyMtx.Unlock()
 					lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
 					result.Code[1] = 5
 					return
@@ -1997,8 +1999,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			if ctx.DryRunSeconds > 0 {
 				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
 			}
-			if keyAdded && sshKeyMtx != nil {
-				sshKeyMtx.Unlock()
+			if keyAdded && tMtx.SSHKeyMtx != nil {
+				tMtx.SSHKeyMtx.Unlock()
 			}
 			result.Code[1] = ctx.DryRunCode
 			if ctx.DryRunCode != 0 {
@@ -2010,19 +2012,19 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 			return
 		}
-		if keyAdded && sshKeyMtx != nil {
-			sshKeyMtx.Lock()
+		if keyAdded && tMtx.SSHKeyMtx != nil {
+			tMtx.SSHKeyMtx.Lock()
 			fail := !makeCurrentSSHKey(ctx, idxSlug)
 			if fail == true {
-				sshKeyMtx.Unlock()
+				tMtx.SSHKeyMtx.Unlock()
 				lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
 				result.Code[1] = 5
 				return
 			}
 		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
-		if keyAdded && sshKeyMtx != nil {
-			sshKeyMtx.Unlock()
+		if keyAdded && tMtx.SSHKeyMtx != nil {
+			tMtx.SSHKeyMtx.Unlock()
 		}
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
