@@ -266,10 +266,10 @@ func (ctx *Ctx) Init() {
 	ctx.SkipDropUnused = os.Getenv("SDS_SKIP_DROP_UNUSED") != ""
 
 	// Forbidden configurations
-	if ctx.SkipSH && !ctx.SkipAffs {
+	if !ctx.DryRun && ctx.SkipSH && !ctx.SkipAffs {
 		FatalNoLog(fmt.Errorf("you cannot skip SortingHat and not skip affiliations at the same time"))
 	}
-	if ctx.SkipData && ctx.SkipAffs && ctx.SkipAliases {
+	if !ctx.DryRun && ctx.SkipData && ctx.SkipAffs && ctx.SkipAliases {
 		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync, historical affiliations sync and aliases at the same time"))
 	}
 
