@@ -74,6 +74,7 @@
 # skipCheckFreq: 'y'
 # skipEsData: 'y'
 # silent: 'y'
+# maxDeleteTrials: '5'
 # noMultiAliases: '1'
 # cleanupAliases: '1'
 # useNodeSelector: '1'
@@ -102,6 +103,7 @@ scrollSize: ''
 skipCheckFreq: ''
 skipEsData: ''
 silent: ''
+maxDeleteTrials: ''
 useRepoAccess: '1'
 concurrencyPolicy: Forbid
 fullnameOverride: sds

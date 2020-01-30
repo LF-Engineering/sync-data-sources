@@ -59,6 +59,7 @@ Other environment parameters:
 - `SDS_SKIP_DROP_UNUSED`/`skipDropUnused` - do not drop unused indexes/aliases.
 - `SDS_SKIP_ES_DATA`/`skipEsData`  do not process "sdsdata" index at all (SDS state saved in ES).
 - `SDS_SKIP_CHECK_FREQ`/`skipCheckFreq` - skip check sync frequency.
+- `SDS_MAX_DELETE_TRIALS`/`maxDeleteTrials` - set maximum retries for delete by query.
 
 # Deploy on LF infra
 
