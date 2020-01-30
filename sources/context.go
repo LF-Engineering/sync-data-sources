@@ -28,6 +28,7 @@ type Ctx struct {
 	DryRunCode       int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	DryRunSeconds    int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
 	DryRunAllowSSH   bool   // From SDS_DRY_RUN_ALLOW_SSH, if set it will allow setting SSH keys in dry run mode
+	DryRunAllowFreq  bool   // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
@@ -46,6 +47,7 @@ type Ctx struct {
 	ScrollSize       int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	SkipCheckFreq    bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
 	SkipEsData       bool   // From SDS_SKIP_ES_DATA, will totally skip  anything related to "sdsdata" index processing (storing SDS state)
+	MaxDeleteTrials  int    // From SDS_MAX_DELETE_TRIALS, default 10
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -107,6 +109,7 @@ func (ctx *Ctx) Init() {
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
 	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
+	ctx.DryRunAllowFreq = os.Getenv("SDS_DRY_RUN_ALLOW_FREQ") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -278,6 +281,19 @@ func (ctx *Ctx) Init() {
 
 	// Skip check sync frequency
 	ctx.SkipCheckFreq = os.Getenv("SDS_SKIP_CHECK_FREQ") != ""
+
+	// Max delete by query attempts - this can fail due to version conflicts
+	if os.Getenv("SDS_MAX_DELETE_TRIALS") == "" {
+		ctx.MaxDeleteTrials = 10
+	} else {
+		maxDeleteTrials, err := strconv.Atoi(os.Getenv("SDS_MAX_DELETE_TRIALS"))
+		FatalNoLog(err)
+		if maxDeleteTrials > 0 {
+			ctx.MaxDeleteTrials = maxDeleteTrials
+		} else {
+			ctx.MaxDeleteTrials = 10
+		}
+	}
 
 	// Context out if requested
 	if ctx.CtxOut {

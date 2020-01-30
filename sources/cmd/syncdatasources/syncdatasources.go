@@ -956,7 +956,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if thrN > 1 {
 		tMtx.SSHKeyMtx = &sync.Mutex{}
 		tMtx.TaskOrderMtx = &sync.Mutex{}
-		tMtx.SyncFreqMtx = &sync.Mutex{}
+		tMtx.SyncFreqMtx = &sync.RWMutex{}
 	}
 	failed := [][2]int{}
 	processed := 0
@@ -1656,7 +1656,7 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_doc/_search", ctx.ElasticURL, index)
+	url := fmt.Sprintf("%s/%s/_doc/_search?size=1000", ctx.ElasticURL, index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
@@ -1712,7 +1712,7 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_delete_by_query", ctx.ElasticURL, index)
+	url := fmt.Sprintf("%s/%s/_delete_by_query?conflicts=proceed&refresh=true", ctx.ElasticURL, index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
@@ -1728,6 +1728,12 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != 200 {
+		if resp.StatusCode == 409 {
+			if ctx.Debug > 0 {
+				lib.Printf("Delete by query failed: index=%s query=%s\n", index, esQuery)
+			}
+			return
+		}
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
 			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
@@ -1794,27 +1800,29 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 			lib.Printf("Previous sync recorded for %s/%s: %+v, deleting\n", index, ep, dt)
 		}
 		if ctx.DryRun {
-			lib.Printf("Would delete and then add last sync date via: %s\n", esQuery)
-			return true
+			if !ctx.DryRunAllowFreq {
+				lib.Printf("Would delete and then add last sync date via: %s\n", esQuery)
+				return true
+			}
+			lib.Printf("Dry run allowed delete and then add last sync date via: %s\n", esQuery)
 		}
 		trials := 0
-		maxTrials := 5
 		for {
 			deleted := deleteByQuery(ctx, "sdsdata", esQuery)
 			if deleted {
 				if trials > 0 {
-					lib.Printf("Deleted sync record for %s/%s after %d/%d trials\n", index, ep, trials, maxTrials)
+					lib.Printf("Deleted sync record for %s/%s after %d/%d trials\n", index, ep, trials, ctx.MaxDeleteTrials)
 				}
 				break
 			}
-			tMtx.SyncFreqMtx.Unlock()
-			time.Sleep(time.Duration(20) * time.Millisecond)
-			tMtx.SyncFreqMtx.Lock()
 			trials++
-			if trials == maxTrials {
-				lib.Printf("Failed to delete sync record for %s/%s, tried %d times\n", index, ep, maxTrials)
+			if trials == ctx.MaxDeleteTrials {
+				lib.Printf("Failed to delete sync record for %s/%s, tried %d times\n", index, ep, ctx.MaxDeleteTrials)
 				return false
 			}
+			tMtx.SyncFreqMtx.Unlock()
+			time.Sleep(time.Duration(10*trials) * time.Millisecond)
+			tMtx.SyncFreqMtx.Lock()
 		}
 	} else {
 		if ctx.Debug > 0 {
@@ -1825,8 +1833,11 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 		lib.Printf("Adding sync record for %s/%s\n", index, ep)
 	}
 	if ctx.DryRun {
-		lib.Printf("Would add last sync date for: %s/%s\n", index, ep)
-		return true
+		if !ctx.DryRunAllowFreq {
+			lib.Printf("Would add last sync date for: %s/%s\n", index, ep)
+			return true
+		}
+		lib.Printf("Dry run allowed add last sync date for: %s/%s\n", index, ep)
 	}
 	added := addLastRun(ctx, "sdsdata", index, ep)
 	return added
@@ -1835,9 +1846,9 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.Duration) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
 	if tMtx.SyncFreqMtx != nil {
-		tMtx.SyncFreqMtx.Lock()
+		tMtx.SyncFreqMtx.RLock()
 		defer func() {
-			tMtx.SyncFreqMtx.Unlock()
+			tMtx.SyncFreqMtx.RUnlock()
 		}()
 	}
 	dt, ok, found := searchByQuery(ctx, "sdsdata", esQuery)
