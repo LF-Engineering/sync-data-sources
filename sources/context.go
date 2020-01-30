@@ -40,11 +40,12 @@ type Ctx struct {
 	SkipAffs         bool   // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
 	SkipAliases      bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
 	SkipDropUnused   bool   // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
-	NoMultiAliases   bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexs can be accessed through a single alias
+	NoMultiAliases   bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
 	CleanupAliases   bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
 	ScrollWait       int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
 	ScrollSize       int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	SkipCheckFreq    bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
+	SkipEsData       bool   // From SDS_SKIP_ES_DATA, will totally skip  anything related to "sdsdata" index processing (storing SDS state)
 	TestMode         bool   // True when running tests
 	ShUser           string // Sorting Hat database parameters
 	ShHost           string
@@ -271,6 +272,9 @@ func (ctx *Ctx) Init() {
 	if ctx.SkipData && ctx.SkipAffs && ctx.SkipAliases {
 		FatalNoLog(fmt.Errorf("you cannot skip incremental data sync, historical affiliations sync and aliases at the same time"))
 	}
+
+	// Skip sdsdata index processing
+	ctx.SkipEsData = os.Getenv("SDS_SKIP_ES_DATA") != ""
 
 	// Skip check sync frequency
 	ctx.SkipCheckFreq = os.Getenv("SDS_SKIP_CHECK_FREQ") != ""
