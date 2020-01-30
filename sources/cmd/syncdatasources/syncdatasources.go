@@ -1647,7 +1647,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 //	return ds
 //}
 
-func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dts []time.Time, ok bool) {
+func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found bool) {
 	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
 	payloadBytes, err := json.Marshal(data)
 	if err != nil {
@@ -1689,8 +1689,16 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dts []time.Time, ok boo
 		return
 	}
 	ok = true
+	dts := []time.Time{}
 	for _, hit := range payload.Hits.Hits {
 		dts = append(dts, hit.Source.Dt)
+	}
+	if len(dts) > 0 {
+		found = true
+		sort.Slice(dts, func(i, j int) bool {
+			return dts[i].After(dts[j])
+		})
+		dt = dts[0]
 	}
 	return
 }
@@ -1777,21 +1785,36 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 			tMtx.SyncFreqMtx.Unlock()
 		}()
 	}
-	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
+	dt, ok, found := searchByQuery(ctx, "sdsdata", esQuery)
 	if !ok {
 		return false
 	}
-	if len(dts) > 0 {
+	if found {
 		if ctx.Debug > 0 {
-			lib.Printf("Previous sync recorded for %s/%s: %+v, deleting\n", index, ep, dts)
+			lib.Printf("Previous sync recorded for %s/%s: %+v, deleting\n", index, ep, dt)
 		}
 		if ctx.DryRun {
 			lib.Printf("Would delete and then add last sync date via: %s\n", esQuery)
 			return true
 		}
-		deleted := deleteByQuery(ctx, "sdsdata", esQuery)
-		if !deleted {
-			return false
+		trials := 0
+		maxTrials := 5
+		for {
+			deleted := deleteByQuery(ctx, "sdsdata", esQuery)
+			if deleted {
+				if trials > 0 {
+					lib.Printf("Deleted sync record for %s/%s after %d/%d trials\n", index, ep, trials, maxTrials)
+				}
+				break
+			}
+			tMtx.SyncFreqMtx.Unlock()
+			time.Sleep(time.Duration(20) * time.Millisecond)
+			tMtx.SyncFreqMtx.Lock()
+			trials++
+			if trials == maxTrials {
+				lib.Printf("Failed to delete sync record for %s/%s, tried %d times\n", index, ep, maxTrials)
+				return false
+			}
 		}
 	} else {
 		if ctx.Debug > 0 {
@@ -1817,18 +1840,18 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 			tMtx.SyncFreqMtx.Unlock()
 		}()
 	}
-	dts, ok := searchByQuery(ctx, "sdsdata", esQuery)
+	dt, ok, found := searchByQuery(ctx, "sdsdata", esQuery)
 	if !ok {
 		lib.Printf("Error getting last sync date, assuming all is OK and allowing sync\n")
 		return true
 	}
-	if len(dts) == 0 {
+	if !found {
 		if ctx.Debug > 0 {
 			lib.Printf("No previous sync recorded for %s/%s, allowing sync\n", index, ep)
 		}
 		return true
 	}
-	ago := time.Now().Sub(dts[0])
+	ago := time.Now().Sub(dt)
 	allowed := true
 	if ago < freq {
 		allowed = false
