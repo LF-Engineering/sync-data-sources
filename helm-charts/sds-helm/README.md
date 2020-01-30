@@ -57,6 +57,7 @@ Other environment parameters:
 - `SDS_NO_MULTI_ALIASES`/`noMultiAliases` - alias names must be unique, so every alias can only point to a single index. If not set then single alias can point to multiple indices.
 - `SDS_CLEANUP_ALIASES`/`cleanupAliases` - drop aliases before creating them, this can be used to clean existing aliases from some orphaned/no longer needed indexes.
 - `SDS_SKIP_DROP_UNUSED`/`skipDropUnused` - do not drop unused indexes/aliases.
+- `SDS_SKIP_ES_DATA`/`skipEsData`  do not process "sdsdata" index at all (SDS state saved in ES).
 - `SDS_SKIP_CHECK_FREQ`/`skipCheckFreq` - skip check sync frequency.
 
 # Deploy on LF infra
