@@ -112,6 +112,8 @@ spec:
       value: '{{ $root.Values.scrollSize }}'
     - name: SDS_SILENT
       value: '{{ $root.Values.silent }}'
+    - name: SDS_MAX_DELETE_TRIALS
+      value: '{{ $root.Values.maxDeleteTrials }}'
     - name: BRANCH
       value: '{{ $root.Values.deployEnv }}'
     - name: SH_USER
