@@ -1925,7 +1925,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		commandLine = append(commandLine, ep)
 	}
 	sEp := strings.Join(eps, " ")
-	if !ctx.SkipCheckFreq {
+	if !affs && !ctx.SkipCheckFreq {
 		var nilDur time.Duration
 		if task.MaxFreq != nilDur {
 			freqOK := checkSyncFreq(ctx, idxSlug, sEp, task.MaxFreq)
@@ -2003,7 +2003,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
 				result.Retries = rand.Intn(ctx.MaxRetry)
 			}
-			_ = setLastRun(ctx, idxSlug, sEp)
+			if !affs {
+				_ = setLastRun(ctx, idxSlug, sEp)
+			}
 			return
 		}
 		if keyAdded && sshKeyMtx != nil {
