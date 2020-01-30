@@ -3,6 +3,7 @@ package syncdatasources
 import (
 	"fmt"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -91,4 +92,12 @@ type TaskResult struct {
 	Retries     int
 	Affs        bool
 	Err         error
+}
+
+// TaskMtx - holds are mutexes used in task processing
+type TaskMtx struct {
+	SSHKeyMtx    *sync.Mutex
+	TaskOrderMtx *sync.Mutex
+	SyncFreqMtx  *sync.Mutex
+	OrderMtx     map[int]*sync.Mutex
 }
