@@ -52,6 +52,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		CSVPrefix:       in.CSVPrefix,
 		SkipCheckFreq:   in.SkipCheckFreq,
 		SkipEsData:      in.SkipEsData,
+		SkipEsLog:       in.SkipEsLog,
 		MaxDeleteTrials: in.MaxDeleteTrials,
 		TestMode:        in.TestMode,
 	}
@@ -209,6 +210,7 @@ func TestInit(t *testing.T) {
 		SkipDropUnused:  false,
 		SkipCheckFreq:   false,
 		SkipEsData:      false,
+		SkipEsLog:       false,
 		MaxDeleteTrials: 10,
 		TestMode:        true,
 	}
@@ -533,7 +535,7 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set sdsdata index processing (SDS state storage)",
+			"Set skip sdsdata index processing (SDS state storage)",
 			map[string]string{
 				"SDS_SKIP_ES_DATA": "1",
 			},
@@ -542,6 +544,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipEsData": true,
+				},
+			),
+		},
+		{
+			"Set skip ES log storage",
+			map[string]string{
+				"SDS_SKIP_ES_LOG": "y",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipEsLog": true,
 				},
 			),
 		},
