@@ -84,6 +84,8 @@ spec:
               value: '{{ $root.Values.skipData }}'
             - name: SDS_SKIP_ES_DATA
               value: '{{ $root.Values.skipEsData }}'
+            - name: SDS_SKIP_ES_LOG
+              value: '{{ $root.Values.skipEsLog }}'
             - name: SDS_SKIP_CHECK_FREQ
               value: '{{ $root.Values.skipCheckFreq }}'
             - name: SDS_SKIP_AFFS
