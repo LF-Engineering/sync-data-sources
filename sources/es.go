@@ -1,6 +1,12 @@
 package syncdatasources
 
-import "time"
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"time"
+)
 
 // EsIndex - keeps index data as returned by ElasticSearch
 type EsIndex struct {
@@ -63,4 +69,64 @@ type EsLastRunPayload struct {
 	Endpoint string    `json:"endpoint"`
 	Type     string    `json:"type"`
 	Dt       time.Time `json:"dt"`
+}
+
+// EnsureIndex - ensure that given index exists in ES
+// init: when this flag is set, do not use syncdatasources.Printf which would cause infinite recurence
+func EnsureIndex(ctx *Ctx, index string, init bool) {
+	printf := Printf
+	if init {
+		printf = fmt.Printf
+	}
+	method := Head
+	url := fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		printf("New request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		if resp.StatusCode != 404 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				return
+			}
+			printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			return
+		}
+		printf("Missing %s index, creating\n", index)
+		method = Put
+		req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+		if err != nil {
+			printf("New request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			printf("Do request error: %+v for %s url: %s\n", err, method, url)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				return
+			}
+			printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			return
+		}
+		printf("%s index created\n", index)
+	}
 }
