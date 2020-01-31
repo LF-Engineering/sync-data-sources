@@ -15,6 +15,7 @@ var (
 func newLogContext() *Ctx {
 	var ctx Ctx
 	ctx.Init()
+	EnsureIndex(&ctx, "sdslog", true)
 	return &ctx
 }
 
