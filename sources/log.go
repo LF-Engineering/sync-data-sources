@@ -15,7 +15,9 @@ var (
 func newLogContext() *Ctx {
 	var ctx Ctx
 	ctx.Init()
-	EnsureIndex(&ctx, "sdslog", true)
+	if !ctx.SkipEsLog {
+		EnsureIndex(&ctx, "sdslog", true)
+	}
 	return &ctx
 }
 
@@ -25,10 +27,17 @@ func Printf(format string, args ...interface{}) (n int, err error) {
 	logOnce.Do(func() { logCtx = newLogContext() })
 
 	// Actual logging to stdout & DB
+	now := time.Now()
+	var msg string
 	if logCtx.LogTime {
-		n, err = fmt.Printf("%s: "+format, append([]interface{}{ToYMDHMSDate(time.Now())}, args...)...)
+		msg = fmt.Sprintf("%s: "+format, append([]interface{}{ToYMDHMSDate(now)}, args...)...)
 	} else {
-		n, err = fmt.Printf(format, args...)
+		msg = fmt.Sprintf(format, args...)
 	}
+	n, err = fmt.Printf(msg)
+	if logCtx.SkipEsLog {
+		return
+	}
+	err = EsLog(logCtx, msg, now)
 	return
 }

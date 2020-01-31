@@ -1,6 +1,8 @@
 package syncdatasources
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -71,6 +73,12 @@ type EsLastRunPayload struct {
 	Dt       time.Time `json:"dt"`
 }
 
+// EsLogPayload - ES log single document
+type EsLogPayload struct {
+	Msg string    `json:"msg"`
+	Dt  time.Time `json:"dt"`
+}
+
 // EnsureIndex - ensure that given index exists in ES
 // init: when this flag is set, do not use syncdatasources.Printf which would cause infinite recurence
 func EnsureIndex(ctx *Ctx, index string, init bool) {
@@ -129,4 +137,42 @@ func EnsureIndex(ctx *Ctx, index string, init bool) {
 		}
 		printf("%s index created\n", index)
 	}
+}
+
+// EsLog - log data into ES "sdslog" index
+func EsLog(ctx *Ctx, msg string, dt time.Time) error {
+	data := EsLogPayload{Msg: msg, Dt: dt}
+	index := "sdslog"
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		fmt.Printf("JSON marshall error: %+v for index: %s, data: %+v\n", err, index, data)
+		return err
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := Post
+	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		fmt.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		return err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		return err
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 201 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			fmt.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+			return err
+		}
+		fmt.Printf("Method:%s url:%s status:%d, data:%+v\n%s\n", method, url, resp.StatusCode, data, body)
+		return err
+	}
+	return nil
 }
