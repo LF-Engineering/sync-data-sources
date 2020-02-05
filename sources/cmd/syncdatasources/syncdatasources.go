@@ -1622,7 +1622,7 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d, query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
+		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
@@ -1684,7 +1684,7 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d, query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
+		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
 		return
 	}
 	ok = true
@@ -1721,7 +1721,7 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d, data:%+v\n%s\n", method, url, resp.StatusCode, data, body)
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, url, resp.StatusCode, data, body)
 		return
 	}
 	ok = true
