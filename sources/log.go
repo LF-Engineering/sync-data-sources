@@ -2,7 +2,6 @@ package syncdatasources
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -30,13 +29,12 @@ func Printf(format string, args ...interface{}) (n int, err error) {
 	// Actual logging to stdout & DB
 	now := time.Now()
 	var msg string
-	format = strings.Replace(format, "%%", "%%%%", -1)
 	if logCtx.LogTime {
 		msg = fmt.Sprintf("%s: "+format, append([]interface{}{ToYMDHMSDate(now)}, args...)...)
 	} else {
 		msg = fmt.Sprintf(format, args...)
 	}
-	n, err = fmt.Printf(msg)
+	n, err = fmt.Printf("%s", msg)
 	if logCtx.SkipEsLog {
 		return
 	}
