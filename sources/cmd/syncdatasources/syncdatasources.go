@@ -121,10 +121,10 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 
 func validateConfig(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource, cfg *lib.Config) {
 	if cfg.Name == "" {
-		lib.Fatalf("Config %+v name in data source %+v in fixture %+v is empty or undefined\n", cfg, dataSource, fixture)
+		lib.Fatalf("Config %s name in data source %+v in fixture %+v is empty or undefined\n", cfg.RedactedString(), dataSource, fixture)
 	}
 	if cfg.Value == "" {
-		lib.Fatalf("Config %+v value in data source %+v in fixture %+v is empty or undefined\n", cfg, dataSource, fixture)
+		lib.Fatalf("Config %s value in data source %+v in fixture %+v is empty or undefined\n", cfg.RedactedString(), dataSource, fixture)
 	}
 }
 
@@ -136,10 +136,10 @@ func validateEndpoint(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSo
 
 func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSource *lib.DataSource) {
 	if dataSource.Slug == "" {
-		lib.Fatalf("Data source %+v in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
+		lib.Fatalf("Data source %s in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
 	}
 	if ctx.Debug > 2 {
-		lib.Printf("Config for %s/%s: %+v\n", fixture.Fn, dataSource.Slug, dataSource.Config)
+		lib.Printf("Config for %s/%s: %s\n", fixture.Fn, dataSource.Slug, dataSource.Configs())
 	}
 	if dataSource.MaxFrequency != "" {
 		dur, err := time.ParseDuration(dataSource.MaxFrequency)
@@ -158,7 +158,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 		name := cfg.Name
 		cfg2, ok := st[name]
 		if ok {
-			lib.Fatalf("Duplicate name %s in config: %+v and %+v, data source: %+v, fixture: %+v\n", name, cfg, cfg2, dataSource, fixture)
+			lib.Fatalf("Duplicate name %s in config: %s and %s, data source: %s, fixture: %+v\n", name, cfg.RedactedString(), cfg2.RedactedString(), dataSource, fixture)
 		}
 		st[name] = cfg
 	}
@@ -170,7 +170,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 		name := endpoint.Name
 		endpoint2, ok := ste[name]
 		if ok {
-			lib.Fatalf("Duplicate name %s in endpoints: %+v and %+v, data source: %+v, fixture: %+v\n", name, endpoint, endpoint2, dataSource, fixture)
+			lib.Fatalf("Duplicate name %s in endpoints: %+v and %+v, data source: %s, fixture: %+v\n", name, endpoint, endpoint2, dataSource, fixture)
 		}
 		ste[name] = endpoint
 	}
@@ -200,7 +200,7 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 		slug := dataSource.Slug
 		dataSource2, ok := st[slug]
 		if ok {
-			lib.Fatalf("Duplicate slug %s in data sources: %+v and %+v, fixture: %+v\n", slug, dataSource, dataSource2, fixture)
+			lib.Fatalf("Duplicate slug %s in data sources: %s and %s, fixture: %+v\n", slug, dataSource, dataSource2, fixture)
 		}
 		st[slug] = dataSource
 	}
@@ -259,7 +259,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					cache[org] = repos
 				}
 				if ctx.Debug > 0 {
-					lib.Printf("org %s repos: %+v\n", org, repos)
+					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
 					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
@@ -306,7 +306,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					cache[user] = repos
 				}
 				if ctx.Debug > 0 {
-					lib.Printf("user %s repos: %+v\n", user, repos)
+					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
 					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
@@ -1099,6 +1099,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					taffs := result.Affs
 					tIdx := res[0]
 					tasks[tIdx].CommandLine = result.CommandLine
+					tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
 					tasks[tIdx].Retries = result.Retries
 					tasks[tIdx].Err = result.Err
 					nThreads--
@@ -1147,6 +1148,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				res := result.Code
 				tIdx := res[0]
 				tasks[tIdx].CommandLine = result.CommandLine
+				tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
 				tasks[tIdx].Retries = result.Retries
 				tasks[tIdx].Err = result.Err
 				ds := tasks[tIdx].DsSlug
@@ -1184,6 +1186,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			taffs := result.Affs
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
+			tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
 			tasks[tIdx].Retries = result.Retries
 			tasks[tIdx].Err = result.Err
 			nThreads--
@@ -1342,6 +1345,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
 				if strings.Contains(value, ",") {
@@ -1352,50 +1359,62 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 						key = strings.Replace(key, "]", "", -1)
 						vals = append(vals, key)
 					}
-					c = append(c, lib.MultiConfig{Name: "-t", Value: vals})
+					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
 				} else {
-					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 				}
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["sleep-for-rate"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}, RedactedValue: []string{}})
 		}
 		_, ok = m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Git {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
-			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
 		if ctx.LatestItems {
 			_, ok := m["latest-items"]
 			if !ok {
-				c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}})
+				c = append(c, lib.MultiConfig{Name: "latest-items", Value: []string{}, RedactedValue: []string{}})
 			}
 		}
 	} else if ds == lib.Confluence {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
-			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Gerrit {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			if name == "ssh-key" {
 				fail = !addSSHPrivKey(ctx, value, idxSlug)
 				if !fail {
@@ -1404,84 +1423,104 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				continue
 			}
 			m[name] = struct{}{}
-			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
 		_, ok := m["disable-host-key-check"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "disable-host-key-check", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "disable-host-key-check", Value: []string{}, RedactedValue: []string{}})
 		}
 		_, ok = m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Jira {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.BackendUser {
-				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.BackendPassword {
-				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 		_, ok = m["verify"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "verify", Value: []string{"False"}})
+			c = append(c, lib.MultiConfig{Name: "verify", Value: []string{"False"}, RedactedValue: []string{"False"}})
 		}
 	} else if ds == lib.Slack {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
-				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.GroupsIO {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.Email {
-				c = append(c, lib.MultiConfig{Name: "-e", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-e", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.Password {
-				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-verify"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Pipermail {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
-			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
 		_, ok := m["no-verify"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Discourse {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
 				if strings.Contains(value, ",") {
@@ -1490,17 +1529,17 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 						rand.Seed(time.Now().UnixNano())
 					})
 					idx := rand.Intn(len(ary))
-					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{ary[idx]}})
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{ary[idx]}, RedactedValue: []string{lib.Redacted}})
 				} else {
-					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 				}
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Jenkins {
 		for _, cfg := range *config {
@@ -1509,18 +1548,22 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				continue
 			}
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
-				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.BackendUser {
-				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.DockerHub {
 		for _, cfg := range *config {
@@ -1529,67 +1572,83 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				continue
 			}
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
-			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			_, ok := m["no-archive"]
 			if !ok {
-				c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+				c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 			}
 		}
 	} else if ds == lib.Bugzilla {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.BackendUser {
-				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.BackendPassword {
-				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.BugzillaRest {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.BackendUser {
-				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.BackendPassword {
-				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else if name == lib.APIToken {
-				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.MeetUp {
 		for _, cfg := range *config {
 			name := cfg.Name
 			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
-				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
-				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}})
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
 		_, ok := m["no-archive"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
 		_, ok = m["sleep-for-rate"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}})
+			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else {
 		fail = true
@@ -1862,35 +1921,40 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		"-e",
 		ctx.ElasticURL,
 	}
+	redactedCommandLine := make([]string, len(commandLine))
+	copy(redactedCommandLine, commandLine)
 	if affs {
-		commandLine = append(
-			commandLine,
-			[]string{
-				"--only-enrich",
-				"--refresh-identities",
-				"--no_incremental",
-			}...,
-		)
+		refresh := []string{"--only-enrich", "--refresh-identities", "--no_incremental"}
+		commandLine = append(commandLine, refresh...)
+		redactedCommandLine = append(redactedCommandLine, refresh...)
 	}
 	// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
 	if !ctx.Silent {
 		commandLine = append(commandLine, "-g")
+		redactedCommandLine = append(redactedCommandLine, "-g")
 	}
 	// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
 	if ctx.CmdDebug > 0 {
 		commandLine = append(commandLine, "--debug")
+		redactedCommandLine = append(redactedCommandLine, "--debug")
 	}
 	if ctx.EsBulkSize > 0 {
 		commandLine = append(commandLine, "--bulk-size")
 		commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
+		redactedCommandLine = append(redactedCommandLine, "--bulk-size")
+		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
 	}
 	if ctx.ScrollSize > 0 {
 		commandLine = append(commandLine, "--scroll-size")
 		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
+		redactedCommandLine = append(redactedCommandLine, "--scroll-size")
+		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
 	}
 	if ctx.ScrollWait > 0 {
 		commandLine = append(commandLine, "--scroll-wait")
 		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
+		redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
+		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
 	}
 	if !ctx.SkipSH {
 		commandLine = append(
@@ -1906,6 +1970,19 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				ctx.ShPass,
 			}...,
 		)
+		redactedCommandLine = append(
+			redactedCommandLine,
+			[]string{
+				"--db-host",
+				lib.Redacted,
+				"--db-sortinghat",
+				lib.Redacted,
+				"--db-user",
+				lib.Redacted,
+				"--db-password",
+				lib.Redacted,
+			}...,
+		)
 	}
 	if strings.Contains(ds, "/") {
 		ary := strings.Split(ds, "/")
@@ -1914,14 +1991,16 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			result.Code[1] = 1
 			return
 		}
-		// commandLine = append(commandLine, massageDataSource(ary[0]))
 		commandLine = append(commandLine, ary[0])
 		commandLine = append(commandLine, "--category")
 		commandLine = append(commandLine, ary[1])
+		redactedCommandLine = append(redactedCommandLine, ary[0])
+		redactedCommandLine = append(redactedCommandLine, "--category")
+		redactedCommandLine = append(redactedCommandLine, ary[1])
 		ds = ary[0]
 	} else {
-		// commandLine = append(commandLine, massageDataSource(ds))
 		commandLine = append(commandLine, ds)
+		redactedCommandLine = append(redactedCommandLine, ds)
 	}
 
 	// Handle DS endpoint
@@ -1933,6 +2012,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	for _, ep := range eps {
 		commandLine = append(commandLine, ep)
+		redactedCommandLine = append(redactedCommandLine, ep)
 	}
 	sEp := strings.Join(eps, " ")
 	if !ctx.SkipEsData && !affs && !ctx.SkipCheckFreq {
@@ -1963,8 +2043,14 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				commandLine = append(commandLine, val)
 			}
 		}
+		for _, val := range mcfg.RedactedValue {
+			if val != "" {
+				redactedCommandLine = append(redactedCommandLine, val)
+			}
+		}
 	}
 	result.CommandLine = strings.Join(commandLine, " ")
+	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
 	if affs && tMtx.OrderMtx != nil {
 		tMtx.TaskOrderMtx.Lock()
 		tmtx, ok := tMtx.OrderMtx[idx]
@@ -2053,9 +2139,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 		dtEnd := time.Now()
 		if pyE {
-			lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", commandLine, dtEnd.Sub(dtStart), retries, err)
+			lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
 		} else {
-			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", commandLine, dtEnd.Sub(dtStart), retries, err, str)
+			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, str)
 			str += fmt.Sprintf(": %+v", err)
 		}
 		result.Code[1] = 4

@@ -88,14 +88,15 @@ func EnsureIndex(ctx *Ctx, index string, init bool) {
 	}
 	method := Head
 	url := fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		printf("New request error: %+v for %s url: %s\n", err, method, url)
+		printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -105,22 +106,22 @@ func EnsureIndex(ctx *Ctx, index string, init bool) {
 		if resp.StatusCode != 404 {
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 				return
 			}
-			printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 			return
 		}
 		printf("Missing %s index, creating\n", index)
 		method = Put
 		req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 		if err != nil {
-			printf("New request error: %+v for %s url: %s\n", err, method, url)
+			printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
-			printf("Do request error: %+v for %s url: %s\n", err, method, url)
+			printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
 		defer func() {
@@ -129,10 +130,10 @@ func EnsureIndex(ctx *Ctx, index string, init bool) {
 		if resp.StatusCode != 200 {
 			body, err := ioutil.ReadAll(resp.Body)
 			if err != nil {
-				printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+				printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 				return
 			}
-			printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+			printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 			return
 		}
 		printf("%s index created\n", index)
@@ -151,15 +152,16 @@ func EsLog(ctx *Ctx, msg string, dt time.Time) error {
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := Post
 	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
-		fmt.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		fmt.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		fmt.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		fmt.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 		return err
 	}
 	defer func() {
@@ -168,10 +170,10 @@ func EsLog(ctx *Ctx, msg string, dt time.Time) error {
 	if resp.StatusCode != 201 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			fmt.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+			fmt.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 			return err
 		}
-		fmt.Printf("Method:%s url:%s status:%d, data:%+v\n%s\n", method, url, resp.StatusCode, data, body)
+		fmt.Printf("Method:%s url:%s status:%d, data:%+v\n%s\n", method, rurl, resp.StatusCode, data, body)
 		return err
 	}
 	return nil
