@@ -570,14 +570,15 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
+	rurl := "/_cat/indices?format=json"
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -586,16 +587,16 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
 	indices := []lib.EsIndex{}
 	err = json.NewDecoder(resp.Body).Decode(&indices)
 	if err != nil {
-		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	got := make(map[string]struct{})
@@ -632,18 +633,19 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	lib.Printf("Indices to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, strings.Join(extra, ","))
+	rurl = fmt.Sprintf("/%s", strings.Join(extra, ","))
 	if ctx.DryRun {
-		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(url))
+		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
 		return
 	}
 	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -652,10 +654,10 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
 	lib.Printf("%d indices dropped\n", len(extra))
@@ -679,14 +681,15 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
+	rurl := "/_cat/aliases?format=json"
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -695,16 +698,16 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
 	aliases := []lib.EsAlias{}
 	err = json.NewDecoder(resp.Body).Decode(&aliases)
 	if err != nil {
-		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	got := make(map[string]struct{})
@@ -741,18 +744,19 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	lib.Printf("Aliases to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, strings.Join(extra, ","))
+	rurl = fmt.Sprintf("/_all/_alias/%s", strings.Join(extra, ","))
 	if ctx.DryRun {
-		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(url))
+		lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
 		return
 	}
 	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -761,10 +765,10 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
 	lib.Printf("%d aliases dropped\n", len(extra))
@@ -776,24 +780,29 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 			ch <- struct{}{}
 		}
 	}()
-	var url string
+	var (
+		url  string
+		rurl string
+	)
 	if method == lib.Delete {
 		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, pair[1])
+		rurl = fmt.Sprintf("/_all/_alias/%s", pair[1])
 	} else {
 		url = fmt.Sprintf("%s/%s/_alias/%s", ctx.ElasticURL, pair[0], pair[1])
+		rurl = fmt.Sprintf("/%s/_alias/%s", pair[0], pair[1])
 	}
 	if ctx.DryRun {
-		lib.Printf("DryRun: Method:%s url:%s\n", method, url)
+		lib.Printf("DryRun: Method:%s url:%s\n", method, rurl)
 		return
 	}
 	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, url)
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
 	defer func() {
@@ -802,10 +811,10 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, url)
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, url, resp.StatusCode, body)
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 	}
 }
 
@@ -1602,15 +1611,16 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
 	url := fmt.Sprintf("%s/%s/_doc/_search?size=1000", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc/_search?size=1000", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+		lib.Printf("Do request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 		return
 	}
 	defer func() {
@@ -1619,17 +1629,17 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 	if resp.StatusCode != 200 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
+		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, rurl, resp.StatusCode, esQuery, body)
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
 	err = json.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err := ioutil.ReadAll(resp.Body)
-		lib.Printf("JSON decode error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+		lib.Printf("JSON decode error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 		lib.Printf("Body:%s\n", body)
 		return
 	}
@@ -1658,15 +1668,16 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
 	url := fmt.Sprintf("%s/%s/_delete_by_query?conflicts=proceed&refresh=true", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_delete_by_query?conflicts=proceed&refresh=true", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+		lib.Printf("Do request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 		return
 	}
 	defer func() {
@@ -1681,10 +1692,10 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 		}
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, url, esQuery)
+			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, url, resp.StatusCode, esQuery, body)
+		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, rurl, resp.StatusCode, esQuery, body)
 		return
 	}
 	ok = true
@@ -1701,15 +1712,16 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
 	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, dataIndex)
+	rurl := fmt.Sprintf("/%s/_doc", dataIndex)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
-		lib.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		lib.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		lib.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+		lib.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 		return
 	}
 	defer func() {
@@ -1718,10 +1730,10 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 	if resp.StatusCode != 201 {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, url, data)
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, url, resp.StatusCode, data, body)
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, rurl, resp.StatusCode, data, body)
 		return
 	}
 	ok = true
