@@ -2119,6 +2119,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if keyAdded && tMtx.SSHKeyMtx != nil {
 			tMtx.SSHKeyMtx.Unlock()
 		}
+		str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
 		pyE := false
