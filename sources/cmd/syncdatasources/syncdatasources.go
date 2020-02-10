@@ -1922,8 +1922,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		ctx.ElasticURL,
 	}
 	redactedCommandLine := make([]string, len(commandLine))
-	redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
 	copy(redactedCommandLine, commandLine)
+	redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
 	if affs {
 		refresh := []string{"--only-enrich", "--refresh-identities", "--no_incremental"}
 		commandLine = append(commandLine, refresh...)
