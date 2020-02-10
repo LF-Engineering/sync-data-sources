@@ -64,7 +64,7 @@ func (t Task) ShortStringCmd(ctx *Ctx) string {
 func (t Task) ToCSV() []string {
 	confAry := []string{}
 	for _, config := range t.Config {
-		confAry = append(confAry, config.String())
+		confAry = append(confAry, config.RedactedString())
 	}
 	err := ""
 	if t.Err != nil {

@@ -152,6 +152,7 @@ func (ctx *Ctx) Init() {
 	if ctx.ElasticURL == "" {
 		ctx.ElasticURL = "http://127.0.0.1:9200"
 	}
+	GElasticURL = ctx.ElasticURL
 	// ES bulk size
 	if os.Getenv("SDS_ES_BULKSIZE") == "" {
 		ctx.EsBulkSize = 0
