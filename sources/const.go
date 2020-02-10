@@ -6,6 +6,9 @@ const OK string = "ok"
 // APIToken - constant string
 const APIToken string = "api-token"
 
+// SSHKey - constant string
+const SSHKey string = "ssh-key"
+
 // Git - git
 const Git string = "git"
 
@@ -65,6 +68,9 @@ const FromDate string = "from-date"
 
 // Password - password
 const Password string = "password"
+
+// Redacted - [redacted]
+const Redacted string = "[redacted]"
 
 // Delete - DELETE
 const Delete string = "DELETE"
