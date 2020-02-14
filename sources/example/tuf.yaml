@@ -1,0 +1,13 @@
+---
+native:
+  slug: tuf
+data_sources:
+- slug: git
+  endpoints:
+  - name: https://github.com/theupdateframework
+    flags:
+      type: github_org
+  config:
+  - name: from-date
+    value: '2019-10-01'
+  index_suffix: '-for-merge'
