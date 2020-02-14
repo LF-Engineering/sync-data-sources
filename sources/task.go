@@ -20,6 +20,7 @@ type Task struct {
 	Retries             int
 	Err                 error
 	Duration            time.Duration
+	DsFullSlug          string
 }
 
 // String - default string output for a task (generic)
@@ -30,19 +31,19 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s DS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v}",
-		t.Endpoint, t.DsSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq,
+		"{Endpoint:%s DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v}",
+		t.Endpoint, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq,
 	)
 }
 
 // ShortString - output quick endpoint info (usually used for non finished tasks)
 func (t Task) ShortString() string {
-	return fmt.Sprintf("%s: %s / %s", t.FxSlug, t.DsSlug, t.Endpoint)
+	return fmt.Sprintf("%s: %s / %s", t.FxSlug, t.DsFullSlug, t.Endpoint)
 }
 
 // ShortStringCmd - output quick endpoint info (with command line)
 func (t Task) ShortStringCmd(ctx *Ctx) string {
-	s := fmt.Sprintf("%s: %s / %s [%s]: ", t.FxSlug, t.DsSlug, t.Endpoint, t.RedactedCommandLine)
+	s := fmt.Sprintf("%s: %s / %s [%s]: ", t.FxSlug, t.DsFullSlug, t.Endpoint, t.RedactedCommandLine)
 	if t.Err == nil {
 		s += "succeeded"
 		if t.Retries > 0 {
@@ -75,6 +76,7 @@ func (t Task) ToCSV() []string {
 		t.FxSlug,
 		t.FxFn,
 		t.DsSlug,
+		t.DsFullSlug,
 		t.Endpoint,
 		"{" + strings.Join(confAry, ", ") + "}",
 		t.RedactedCommandLine,

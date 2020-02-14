@@ -31,7 +31,7 @@ type Ctx struct {
 	DryRunAllowFreq  bool   // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
 	TimeoutSeconds   int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest         int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
-	SkipSH           bool   // Fro SDS_SKIP_SH, if set sorting hata database processing will be skipped
+	SkipSH           bool   // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	StripErrorSize   int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
 	GitHubOAuth      string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems      bool   // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
@@ -62,6 +62,13 @@ func (ctx *Ctx) Init() {
 	ctx.ExecQuiet = false
 	ctx.ExecOutput = false
 	ctx.ExecOutputStderr = false
+
+	// ElasticSearch
+	ctx.ElasticURL = os.Getenv("SDS_ES_URL")
+	if ctx.ElasticURL == "" {
+		ctx.ElasticURL = "http://127.0.0.1:9200"
+	}
+	GElasticURL = ctx.ElasticURL
 
 	// Debug
 	if os.Getenv("SDS_DEBUG") == "" {
@@ -147,12 +154,6 @@ func (ctx *Ctx) Init() {
 	// Log Time
 	ctx.LogTime = os.Getenv("SDS_SKIPTIME") == ""
 
-	// ElasticSearch
-	ctx.ElasticURL = os.Getenv("SDS_ES_URL")
-	if ctx.ElasticURL == "" {
-		ctx.ElasticURL = "http://127.0.0.1:9200"
-	}
-	GElasticURL = ctx.ElasticURL
 	// ES bulk size
 	if os.Getenv("SDS_ES_BULKSIZE") == "" {
 		ctx.EsBulkSize = 0

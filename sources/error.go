@@ -16,7 +16,9 @@ func FatalOnError(err error) string {
 	if err != nil {
 		tm := time.Now()
 		s := fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n%s\n", tm, err.Error(), string(debug.Stack()))
-		s = strings.Replace(s, GElasticURL, Redacted, -1)
+		if GElasticURL != "" {
+			s = strings.Replace(s, GElasticURL, Redacted, -1)
+		}
 		Printf("%s", s)
 		fmt.Fprintf(os.Stderr, "%s", s)
 		panic("stacktrace")
@@ -34,7 +36,9 @@ func FatalNoLog(err error) string {
 	if err != nil {
 		tm := time.Now()
 		s := fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n", tm, err.Error())
-		s = strings.Replace(s, GElasticURL, Redacted, -1)
+		if GElasticURL != "" {
+			s = strings.Replace(s, GElasticURL, Redacted, -1)
+		}
 		fmt.Fprintf(os.Stderr, "%s", s)
 		panic("stacktrace")
 	}
