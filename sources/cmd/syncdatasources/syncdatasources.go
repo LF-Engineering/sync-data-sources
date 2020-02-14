@@ -150,6 +150,10 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 		fixture.DataSources[index].MaxFreq = dur
 		lib.Printf("Data source %s/%s max sync frequency: %+v\n", fixture.Slug, dataSource.Slug, dataSource.MaxFreq)
 	}
+	fs := dataSource.Slug + dataSource.IndexSuffix
+	fs = strings.Replace(fs, "/", "-", -1)
+	dataSource.FullSlug = fs
+	fixture.DataSources[index].FullSlug = fs
 	for _, cfg := range dataSource.Config {
 		validateConfig(ctx, fixture, dataSource, &cfg)
 	}
@@ -197,7 +201,7 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	}
 	st := make(map[string]lib.DataSource)
 	for _, dataSource := range fixture.DataSources {
-		slug := dataSource.Slug
+		slug := dataSource.FullSlug
 		dataSource2, ok := st[slug]
 		if ok {
 			lib.Fatalf("Duplicate slug %s in data sources: %s and %s, fixture: %+v\n", slug, dataSource, dataSource2, fixture)
@@ -478,12 +482,13 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				tasks = append(
 					tasks,
 					lib.Task{
-						Endpoint: endpoint.Name,
-						Config:   dataSource.Config,
-						DsSlug:   dataSource.Slug,
-						FxSlug:   fixture.Slug,
-						FxFn:     fixture.Fn,
-						MaxFreq:  dataSource.MaxFreq,
+						Endpoint:   endpoint.Name,
+						Config:     dataSource.Config,
+						DsSlug:     dataSource.Slug,
+						DsFullSlug: dataSource.FullSlug,
+						FxSlug:     fixture.Slug,
+						FxFn:       fixture.Fn,
+						MaxFreq:    dataSource.MaxFreq,
 					},
 				)
 			}
@@ -562,7 +567,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		slug := fixture.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
 		for _, ds := range fixture.DataSources {
-			idxSlug := "sds-" + slug + "-" + ds.Slug
+			idxSlug := "sds-" + slug + "-" + ds.FullSlug
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			should[idxSlug] = struct{}{}
 			should[idxSlug+"-raw"] = struct{}{}
@@ -877,7 +882,7 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 	defer func() { _ = oFile.Close() }()
 	writer = csv.NewWriter(oFile)
 	defer writer.Flush()
-	hdr := []string{"timestamp", "project", "filename", "datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
+	hdr := []string{"timestamp", "project", "filename", "datasource", "full_datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
 	err = writer.Write(hdr)
 	if err != nil {
 		lib.Printf("CSV write header error: %+v\n", err)
@@ -885,10 +890,10 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 	}
 	sort.Slice(tasks, func(i, j int) bool {
 		if tasks[i].FxSlug == tasks[j].FxSlug {
-			if tasks[i].DsSlug == tasks[j].DsSlug {
+			if tasks[i].DsFullSlug == tasks[j].DsFullSlug {
 				return tasks[i].Endpoint < tasks[j].Endpoint
 			}
-			return tasks[i].DsSlug < tasks[j].DsSlug
+			return tasks[i].DsFullSlug < tasks[j].DsFullSlug
 		}
 		return tasks[i].FxSlug < tasks[j].FxSlug
 	})
@@ -1909,7 +1914,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 
 	// Handle DS slug
 	ds := task.DsSlug
-	idxSlug := "sds-" + task.FxSlug + "-" + ds
+	fds := task.DsFullSlug
+	idxSlug := "sds-" + task.FxSlug + "-" + fds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	commandLine := []string{
 		"p2o.py",

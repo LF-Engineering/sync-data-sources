@@ -63,8 +63,10 @@ type DataSource struct {
 	Config       []Config      `yaml:"config"`
 	MaxFrequency string        `yaml:"max_frequency"`
 	RawEndpoints []RawEndpoint `yaml:"endpoints"`
+	IndexSuffix  string        `yaml:"index_suffix"`
 	Endpoints    []Endpoint    `yaml:"-"`
 	MaxFreq      time.Duration `yaml:"-"`
+	FullSlug     string        `yaml:"-"`
 }
 
 // Configs - return redacted configs as a string
@@ -80,13 +82,15 @@ func (ds DataSource) Configs() string {
 func (ds DataSource) String() string {
 	configStr := ds.Configs()
 	return fmt.Sprintf(
-		"{Slug:%s,Config:%s,MaxFrequency:%s,RawEndpoints:%+v,Endpoints:%+v,MaxFreq:%+v}",
+		"{Slug:%s,Config:%s,MaxFrequency:%s,RawEndpoints:%+v,Endpoints:%+v,MaxFreq:%+v,IndexSuffix:%s,FullSlug:%s}",
 		ds.Slug,
 		configStr,
 		ds.MaxFrequency,
 		ds.RawEndpoints,
 		ds.Endpoints,
 		ds.MaxFreq,
+		ds.IndexSuffix,
+		ds.FullSlug,
 	)
 }
 
