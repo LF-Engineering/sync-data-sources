@@ -1,0 +1,25 @@
+---
+native:
+  slug: shared
+data_sources:
+- slug: dockerhub
+  endpoints:
+  - name: "lukaszgryglicki devstats-minimal-prod"
+  config:
+  - name: from-date
+    value: '2019-10-01'
+aliases:
+- from: shared/dockerhub
+  to:
+  - lukaszgryglicki/dockerhub
+  - devstats/dockerhub
+  - tuf/dockerhub
+- from: devstats/git-for-merge
+  to:
+  - shared/git
+- from: lukaszgryglicki/git-for-merge
+  to:
+  - shared/git
+- from: tuf/git-for-merge
+  to:
+  - shared/git
