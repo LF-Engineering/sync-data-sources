@@ -72,6 +72,9 @@ const Password string = "password"
 // Redacted - [redacted]
 const Redacted string = "[redacted]"
 
+// SDSMtx - sdsmtx
+const SDSMtx string = "sdsmtx"
+
 // Delete - DELETE
 const Delete string = "DELETE"
 
