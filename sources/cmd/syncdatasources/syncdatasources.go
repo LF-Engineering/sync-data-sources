@@ -453,7 +453,14 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	checkForSharedEndpoints(&fixtures)
 	// Drop unused indexes and aliases
 	if !ctx.SkipDropUnused {
+		// sdsmtx is an ES wide mutex-like index for blocking between concurrent nodes
+		lib.EnsureIndex(ctx, lib.SDSMtx, false)
+		// all nodes lock "rename" ES mutex, but only 1st node will unlock it (after all renames if any)
+		giantLock(ctx, "rename")
 		dropUnusedIndexes(ctx, &fixtures)
+		// now wait for 1st node to finish renames (if any)
+		lib.Printf("Waiting for 1st node to finish dropping/renaming indexes\n")
+		giantWait(ctx, "rename")
 		// Aliases
 		if !ctx.SkipAliases {
 			dropUnusedAliases(ctx, &fixtures)
@@ -556,13 +563,269 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 	}
 }
 
+func giantLock(ctx *lib.Ctx, mtx string) {
+	if ctx.Debug > 0 {
+		lib.Printf("giantLock(%s)\n", mtx)
+	}
+	mtxIndex := lib.SDSMtx
+	esQuery := fmt.Sprintf("mtx:\"%s\"", mtx)
+	_, ok, found := searchByQuery(ctx, mtxIndex, esQuery)
+	if !ok {
+		lib.Fatalf("cannot lock ES mtx: %s", mtx)
+	}
+	if found {
+		if ctx.Debug > 0 {
+			lib.Printf("%s is already locked\n", mtx)
+		}
+		return
+	}
+	if ctx.DryRun {
+		if !ctx.DryRunAllowMtx {
+			lib.Printf("Would lock ES mtx %s\n", mtx)
+			return
+		}
+	}
+	data := lib.EsMtxPayload{Mtx: mtx, Dt: time.Now()}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Fatalf("json marshall error: %+v for mtx: %s, data: %+v", err, mtx, data)
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc?refresh=wait_for", ctx.ElasticURL, mtxIndex)
+	rurl := fmt.Sprintf("/%s/_doc?refresh=wait_for", mtxIndex)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Fatalf("new request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Fatalf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 201 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Fatalf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		}
+		lib.Fatalf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+	}
+}
+
+func giantUnlock(ctx *lib.Ctx, mtx string) {
+	if ctx.Debug > 0 {
+		lib.Printf("giantUnlock(%s)\n", mtx)
+	}
+	mtxIndex := lib.SDSMtx
+	esQuery := fmt.Sprintf("mtx:\"%s\"", mtx)
+	_, ok, found := searchByQuery(ctx, mtxIndex, esQuery)
+	if !ok {
+		lib.Fatalf("cannot lock ES mtx: %s", mtx)
+	}
+	if !found {
+		if ctx.Debug > 0 {
+			lib.Printf("%s wasn't locked\n", mtx)
+		}
+		return
+	}
+	if ctx.DryRun {
+		if !ctx.DryRunAllowMtx {
+			lib.Printf("Would unlock ES mtx %s\n", mtx)
+			return
+		}
+	}
+	trials := 0
+	for {
+		deleted := deleteByQuery(ctx, mtxIndex, esQuery)
+		if deleted {
+			if trials > 0 {
+				lib.Printf("Unlocked %s mutex after %d/%d trials\n", mtx, trials, ctx.MaxDeleteTrials)
+			}
+			break
+		}
+		trials++
+		if trials == ctx.MaxDeleteTrials {
+			lib.Fatalf("Failed to unlock %s mutex, tried %d times\n", mtx, ctx.MaxDeleteTrials)
+		}
+		time.Sleep(time.Duration(10*trials) * time.Millisecond)
+	}
+}
+
+func giantWait(ctx *lib.Ctx, mtx string) {
+	if ctx.Debug > 0 {
+		lib.Printf("giantWait(%s)\n", mtx)
+	}
+	mtxIndex := lib.SDSMtx
+	esQuery := fmt.Sprintf("mtx:\"%s\"", mtx)
+	n := 0
+	for {
+		_, ok, found := searchByQuery(ctx, mtxIndex, esQuery)
+		if !ok {
+			lib.Fatalf("cannot wait for ES mtx: %s", mtx)
+		}
+		if !found {
+			if ctx.Debug > 0 || n > 0 {
+				lib.Printf("Waited for %s %d seconds...\n", mtx, n)
+			}
+			return
+		}
+		// Wait 1s for next retry
+		if ctx.Debug > 1 || n > 30 {
+			lib.Printf("Waiting for %s (already waited %ds)...\n", mtx, n)
+		}
+		time.Sleep(time.Duration(1000) * time.Millisecond)
+		n++
+	}
+}
+
+func renameIndex(ctx *lib.Ctx, from, to string) {
+	// Disable write to source index
+	indexBlocksWrite := true
+	data := lib.EsIndexSettingsPayload{Settings: lib.EsIndexSettings{IndexBlocksWrite: &indexBlocksWrite}}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for snapshot rename %s to %s: %+v\n", err, from, to, data)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Put
+	url := fmt.Sprintf("%s/%s/_settings", ctx.ElasticURL, from)
+	rurl := "/%s/_settings"
+	if ctx.DryRun {
+		if !ctx.DryRunAllowRename {
+			lib.Printf("Would execute: method:%s url:%s data:%+v\n", method, os.ExpandEnv(rurl), data)
+			return
+		}
+		lib.Printf("Dry run allowed rename index %s to %s\n", from, to)
+	}
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	// Clone source to dest
+	data = lib.EsIndexSettingsPayload{Settings: lib.EsIndexSettings{IndexBlocksWrite: nil}}
+	payloadBytes, err = json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for snapshot rename %s to %s: %+v\n", err, from, to, data)
+		return
+	}
+	payloadBody = bytes.NewReader(payloadBytes)
+	method = lib.Put
+	url = fmt.Sprintf("%s/%s/_clone/%s", ctx.ElasticURL, from, to)
+	rurl = fmt.Sprintf("/%s/_clone/%s", from, to)
+	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s data:%+v\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	// Wait for at least yeallow state on dest index
+	method = lib.Get
+	url = fmt.Sprintf("%s/_cluster/health/%s?wait_for_status=yellow&timeout=180s", ctx.ElasticURL, to)
+	rurl = fmt.Sprintf("/_cluster/health/%s?wait_for_status=yellow&timeout=180s", to)
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d \n%s\n", method, rurl, resp.StatusCode, body)
+		return
+	}
+	method = lib.Delete
+	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, from)
+	rurl = fmt.Sprintf("/%s", from)
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+		return
+	}
+	lib.Printf("Renamed %s to %s\n", from, to)
+}
+
 func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	fixtures := *pfixtures
 	if ctx.NodeIdx > 0 {
 		lib.Printf("Skipping dropping unused indexes, this only runs on 1st node\n")
 		return
 	}
+	// after dropping (and possibly renaming) indices we're unlocking "rename" ES mutex
+	defer func() {
+		giantUnlock(ctx, "rename")
+	}()
 	should := make(map[string]struct{})
+	fromFull := make(map[string]string)
+	toFull := make(map[string]string)
 	for _, fixture := range fixtures {
 		slug := fixture.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
@@ -571,6 +834,14 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			should[idxSlug] = struct{}{}
 			should[idxSlug+"-raw"] = struct{}{}
+			if ds.Slug != ds.FullSlug {
+				idx := "sds-" + slug + "-" + ds.Slug
+				idx = strings.Replace(idx, "/", "-", -1)
+				fromFull[idxSlug] = idx
+				fromFull[idxSlug+"-raw"] = idx + "-raw"
+				toFull[idx] = idxSlug
+				toFull[idx+"-raw"] = idxSlug + "-raw"
+			}
 		}
 	}
 	method := lib.Get
@@ -614,22 +885,73 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	missing := []string{}
 	extra := []string{}
-	for index := range should {
-		_, ok := got[index]
+	rename := make(map[string]string)
+	for fullIndex := range should {
+		_, ok := got[fullIndex]
 		if !ok {
-			missing = append(missing, index)
+			index := fromFull[fullIndex]
+			_, ok := got[index]
+			if ok {
+				rename[index] = fullIndex
+			} else {
+				missing = append(missing, fullIndex)
+			}
 		}
 	}
 	for index := range got {
 		_, ok := should[index]
 		if !ok {
-			extra = append(extra, index)
+			fullIndex, ok := rename[index]
+			if !ok {
+				extra = append(extra, index)
+			} else {
+				lib.Printf("NOTICE: Index %s will be renamed to %s\n", index, fullIndex)
+			}
 		}
 	}
 	sort.Strings(missing)
 	sort.Strings(extra)
 	if len(missing) > 0 {
 		lib.Printf("NOTICE: Missing indices (%d): %s\n", len(missing), strings.Join(missing, ", "))
+	}
+	if len(rename) > 0 {
+		lib.Printf("Indices to rename:\n")
+		for from, to := range rename {
+			lib.Printf("%s -> %s\n", from, to)
+		}
+		renameFunc := func(ch chan struct{}, ctx *lib.Ctx, from, to string) {
+			defer func() {
+				if ch != nil {
+					ch <- struct{}{}
+				}
+			}()
+			renameIndex(ctx, from, to)
+		}
+		thrN := lib.GetThreadsNum(ctx)
+		if thrN > 1 {
+			lib.Printf("Now processing %d renames using method MT%d version\n", len(rename), thrN)
+			ch := make(chan struct{})
+			nThreads := 0
+			for from, to := range rename {
+				go renameFunc(ch, ctx, from, to)
+				nThreads++
+				if nThreads == thrN {
+					<-ch
+					nThreads--
+				}
+			}
+			for nThreads > 0 {
+				<-ch
+				nThreads--
+			}
+		} else {
+			lib.Printf("Now processing %d renames using ST version\n", len(rename))
+			for from, to := range rename {
+				renameFunc(nil, ctx, from, to)
+			}
+		}
+	} else {
+		lib.Printf("No indices to rename\n")
 	}
 	if len(extra) == 0 {
 		lib.Printf("No indices to drop, environment clean\n")
@@ -1775,8 +2097,8 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, dataIndex)
-	rurl := fmt.Sprintf("/%s/_doc", dataIndex)
+	url := fmt.Sprintf("%s/%s/_doc?refresh=wait_for", ctx.ElasticURL, dataIndex)
+	rurl := fmt.Sprintf("/%s/_doc?refresh=wait_for", dataIndex)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)

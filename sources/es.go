@@ -45,6 +45,7 @@ type EsSearchResultSource struct {
 	Index    string    `json:"index"`
 	Endpoint string    `json:"endpoint"`
 	Type     string    `json:"type"`
+	Mtx      string    `json:"mtx"`
 	Dt       time.Time `json:"dt"`
 }
 
@@ -73,10 +74,26 @@ type EsLastRunPayload struct {
 	Dt       time.Time `json:"dt"`
 }
 
+// EsMtxPayload - ES mutex support (for locking concurrent nodes)
+type EsMtxPayload struct {
+	Mtx string    `json:"mtx"`
+	Dt  time.Time `json:"dt"`
+}
+
 // EsLogPayload - ES log single document
 type EsLogPayload struct {
 	Msg string    `json:"msg"`
 	Dt  time.Time `json:"dt"`
+}
+
+// EsIndexSettings - index settings
+type EsIndexSettings struct {
+	IndexBlocksWrite *bool `json:"index.blocks.write"`
+}
+
+// EsIndexSettingsPayload - index settings payload
+type EsIndexSettingsPayload struct {
+	Settings EsIndexSettings `json:"settings"`
 }
 
 // EnsureIndex - ensure that given index exists in ES
