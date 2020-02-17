@@ -785,6 +785,8 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 		lib.Printf("Method:%s url:%s status:%d \n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
+  // Delete source index (it will become an alias to source (with some other additional index in the same alias)
+  // if configured that way in fixtures
 	method = lib.Delete
 	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, from)
 	rurl = fmt.Sprintf("/%s", from)
