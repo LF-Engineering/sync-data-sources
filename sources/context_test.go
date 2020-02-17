@@ -56,6 +56,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipEsData:        in.SkipEsData,
 		SkipEsLog:         in.SkipEsLog,
 		MaxDeleteTrials:   in.MaxDeleteTrials,
+		MaxMtxWait:        in.MaxMtxWait,
 		TestMode:          in.TestMode,
 	}
 	return &out
@@ -216,6 +217,7 @@ func TestInit(t *testing.T) {
 		SkipEsData:        false,
 		SkipEsLog:         false,
 		MaxDeleteTrials:   10,
+		MaxMtxWait:        3600,
 		TestMode:          true,
 	}
 
@@ -273,6 +275,33 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"MaxDeleteTrials": 10},
+			),
+		},
+		{
+			"Setting max ES mutex wait (30 seconds)",
+			map[string]string{"SDS_MAX_MTX_WAIT": "30"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"MaxMtxWait": 30},
+			),
+		},
+		{
+			"Setting max ES mutex wait (0 seconds)",
+			map[string]string{"SDS_MAX_MTX_WAIT": "0"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"MaxMtxWait": 0},
+			),
+		},
+		{
+			"Setting max ES mutex wait (-1 seconds)",
+			map[string]string{"SDS_MAX_MTX_WAIT": "-1"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"MaxMtxWait": 3600},
 			),
 		},
 		{

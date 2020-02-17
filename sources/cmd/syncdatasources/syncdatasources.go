@@ -453,14 +453,20 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	checkForSharedEndpoints(&fixtures)
 	// Drop unused indexes and aliases
 	if !ctx.SkipDropUnused {
-		// sdsmtx is an ES wide mutex-like index for blocking between concurrent nodes
-		lib.EnsureIndex(ctx, lib.SDSMtx, false)
-		// all nodes lock "rename" ES mutex, but only 1st node will unlock it (after all renames if any)
-		giantLock(ctx, "rename")
+		if ctx.NodeNum > 1 {
+			// sdsmtx is an ES wide mutex-like index for blocking between concurrent nodes
+			lib.EnsureIndex(ctx, lib.SDSMtx, false)
+			// all nodes lock "rename" ES mutex, but only 1st node will unlock it (after all renames if any)
+			if ctx.NodeIdx > 0 {
+				giantLock(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx))
+			}
+		}
 		dropUnusedIndexes(ctx, &fixtures)
-		// now wait for 1st node to finish renames (if any)
-		lib.Printf("Waiting for 1st node to finish dropping/renaming indexes\n")
-		giantWait(ctx, "rename")
+		if ctx.NodeNum > 1 && ctx.NodeIdx > 0 {
+			// now wait for 1st node to finish renames (if any)
+			lib.Printf("Waiting for 1st node to finish dropping/renaming indexes\n")
+			giantWait(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx), "unlocked")
+		}
 		// Aliases
 		if !ctx.SkipAliases {
 			dropUnusedAliases(ctx, &fixtures)
@@ -654,9 +660,9 @@ func giantUnlock(ctx *lib.Ctx, mtx string) {
 	}
 }
 
-func giantWait(ctx *lib.Ctx, mtx string) {
+func giantWait(ctx *lib.Ctx, mtx, state string) {
 	if ctx.Debug > 0 {
-		lib.Printf("giantWait(%s)\n", mtx)
+		lib.Printf("giantWait(%s,%s)\n", mtx, state)
 	}
 	mtxIndex := lib.SDSMtx
 	esQuery := fmt.Sprintf("mtx:\"%s\"", mtx)
@@ -664,17 +670,20 @@ func giantWait(ctx *lib.Ctx, mtx string) {
 	for {
 		_, ok, found := searchByQuery(ctx, mtxIndex, esQuery)
 		if !ok {
-			lib.Fatalf("cannot wait for ES mtx: %s", mtx)
+			lib.Fatalf("cannot wait for ES mtx: %s to be %s", mtx, state)
 		}
-		if !found {
+		if ctx.MaxMtxWait > 0 && n > ctx.MaxMtxWait {
+			lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds", n, mtx, state, ctx.MaxMtxWait)
+		}
+		if (found && state == "locked") || (!found && state == "unlocked") {
 			if ctx.Debug > 0 || n > 0 {
-				lib.Printf("Waited for %s %d seconds...\n", mtx, n)
+				lib.Printf("Waited %d seconds for %s to be %s...\n", n, mtx, state)
 			}
 			return
 		}
 		// Wait 1s for next retry
 		if ctx.Debug > 1 || n > 30 {
-			lib.Printf("Waiting for %s (already waited %ds)...\n", mtx, n)
+			lib.Printf("Waiting for %s to be %s (already waited %ds)...\n", mtx, state, n)
 		}
 		time.Sleep(time.Duration(1000) * time.Millisecond)
 		n++
@@ -785,8 +794,8 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 		lib.Printf("Method:%s url:%s status:%d \n%s\n", method, rurl, resp.StatusCode, body)
 		return
 	}
-  // Delete source index (it will become an alias to source (with some other additional index in the same alias)
-  // if configured that way in fixtures
+	// Delete source index (it will become an alias to source (with some other additional index in the same alias)
+	// if configured that way in fixtures
 	method = lib.Delete
 	url = fmt.Sprintf("%s/%s", ctx.ElasticURL, from)
 	rurl = fmt.Sprintf("/%s", from)
@@ -823,7 +832,11 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	// after dropping (and possibly renaming) indices we're unlocking "rename" ES mutex
 	defer func() {
-		giantUnlock(ctx, "rename")
+		for i := 1; i < ctx.NodeNum; i++ {
+			mtx := fmt.Sprintf("rename-node-%d", i)
+			giantWait(ctx, mtx, "locked")
+			giantUnlock(ctx, mtx)
+		}
 	}()
 	should := make(map[string]struct{})
 	fromFull := make(map[string]string)

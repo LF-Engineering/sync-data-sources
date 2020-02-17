@@ -51,6 +51,7 @@ type Ctx struct {
 	SkipEsData        bool   // From SDS_SKIP_ES_DATA, will totally skip  anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog         bool   // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	MaxDeleteTrials   int    // From SDS_MAX_DELETE_TRIALS, default 10
+	MaxMtxWait        int    // From SDS_MAX_MTX_WAIT, in seconds, default 3600s
 	TestMode          bool   // True when running tests
 	ShUser            string // Sorting Hat database parameters
 	ShHost            string
@@ -302,6 +303,19 @@ func (ctx *Ctx) Init() {
 			ctx.MaxDeleteTrials = maxDeleteTrials
 		} else {
 			ctx.MaxDeleteTrials = 10
+		}
+	}
+
+	// Max wait for ES giant mutex in seconds, if you set to 0, it means infinity
+	if os.Getenv("SDS_MAX_MTX_WAIT") == "" {
+		ctx.MaxMtxWait = 3600
+	} else {
+		maxMtxWait, err := strconv.Atoi(os.Getenv("SDS_MAX_MTX_WAIT"))
+		FatalNoLog(err)
+		if maxMtxWait >= 0 {
+			ctx.MaxMtxWait = maxMtxWait
+		} else {
+			ctx.MaxMtxWait = 3600
 		}
 	}
 
