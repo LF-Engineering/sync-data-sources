@@ -682,7 +682,12 @@ func giantWait(ctx *lib.Ctx, mtx, state string) {
 			lib.Fatalf("cannot wait for ES mtx: %s to be %s", mtx, state)
 		}
 		if ctx.MaxMtxWait > 0 && n > ctx.MaxMtxWait {
-			lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds", n, mtx, state, ctx.MaxMtxWait)
+			if ctx.MaxMtxWaitFatal {
+				lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds, this is fatal", n, mtx, state, ctx.MaxMtxWait)
+			} else {
+				lib.Printf("WARNING: Waited %d seconds for %s to be %s, exceeded %ds, will proceed after next 30s", n, mtx, state, ctx.MaxMtxWait)
+				time.Sleep(time.Duration(30) * time.Second)
+			}
 		}
 		if (found && state == "locked") || (!found && state == "unlocked") {
 			if ctx.Debug >= 0 || n > 0 {
@@ -840,17 +845,21 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		return
 	}
 	// after dropping (and possibly renaming) indices we're unlocking "rename" ES mutex
-	defer func() {
-		for i := 1; i < ctx.NodeNum; i++ {
-			mtx := fmt.Sprintf("rename-node-%d", i)
-			lib.Printf("Master wait for %s to be locked by node\n", mtx)
-			giantWait(ctx, mtx, "locked")
-			lib.Printf("Master unlocking %s\n", mtx)
-			giantUnlock(ctx, mtx)
-			lib.Printf("Master unlocked %s\n", mtx)
-		}
-		lib.Printf("Master processing mutexes finished\n")
-	}()
+	if ctx.NodeNum > 1 {
+		defer func() {
+			lib.Printf("Waiting %ds for other node(s) to settle up\n", ctx.NodeSettleTime*ctx.NodeNum)
+			time.Sleep(time.Duration(ctx.NodeSettleTime*ctx.NodeNum) * time.Second)
+			for i := ctx.NodeNum - 1; i > 0; i-- {
+				mtx := fmt.Sprintf("rename-node-%d", i)
+				lib.Printf("Master wait for %s to be locked by node\n", mtx)
+				giantWait(ctx, mtx, "locked")
+				lib.Printf("Master unlocking %s\n", mtx)
+				giantUnlock(ctx, mtx)
+				lib.Printf("Master unlocked %s\n", mtx)
+			}
+			lib.Printf("Master processing mutexes finished\n")
+		}()
+	}
 	should := make(map[string]struct{})
 	fromFull := make(map[string]string)
 	toFull := make(map[string]string)

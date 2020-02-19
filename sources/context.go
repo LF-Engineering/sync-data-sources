@@ -24,6 +24,7 @@ type Ctx struct {
 	NodeHash          bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
 	NodeNum           int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
 	NodeIdx           int    // From SDS_NODE_IDX, set number of current node, so only hashes matching this node will run
+	NodeSettleTime    int    // From SDS_NODE_SETTLE_TIME, number of seconds that master gives nodes to start-up and wait for ES mutex9es) to sync with master node, default 10 (in seconds)
 	DryRun            bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
 	DryRunCode        int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
 	DryRunSeconds     int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
@@ -52,6 +53,7 @@ type Ctx struct {
 	SkipEsLog         bool   // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	MaxDeleteTrials   int    // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait        int    // From SDS_MAX_MTX_WAIT, in seconds, default 3600s
+	MaxMtxWaitFatal   bool   // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
 	TestMode          bool   // True when running tests
 	ShUser            string // Sorting Hat database parameters
 	ShHost            string
@@ -192,6 +194,15 @@ func (ctx *Ctx) Init() {
 			ctx.NodeIdx = nodeIdx
 		}
 	}
+	if os.Getenv("SDS_NODE_SETTLE_TIME") == "" {
+		ctx.NodeSettleTime = 10
+	} else {
+		nst, err := strconv.Atoi(os.Getenv("SDS_NODE_SETTLE_TIME"))
+		FatalNoLog(err)
+		if nst > 0 {
+			ctx.NodeSettleTime = nst
+		}
+	}
 
 	// Timeout
 	if os.Getenv("SDS_TIMEOUT_SECONDS") == "" {
@@ -318,6 +329,7 @@ func (ctx *Ctx) Init() {
 			ctx.MaxMtxWait = 3600
 		}
 	}
+	ctx.MaxMtxWaitFatal = os.Getenv("SDS_MAX_MTX_WAIT_FATAL") != ""
 
 	// Context out if requested
 	if ctx.CtxOut {
