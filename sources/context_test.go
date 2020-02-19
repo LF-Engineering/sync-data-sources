@@ -20,7 +20,6 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		ST:                in.ST,
 		NCPUs:             in.NCPUs,
 		CtxOut:            in.CtxOut,
-		NodeHash:          in.NodeHash,
 		DryRun:            in.DryRun,
 		DryRunCode:        in.DryRunCode,
 		DryRunSeconds:     in.DryRunSeconds,
@@ -31,6 +30,8 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		TimeoutSeconds:    in.TimeoutSeconds,
 		NodeIdx:           in.NodeIdx,
 		NodeNum:           in.NodeNum,
+		NodeHash:          in.NodeHash,
+		NodeSettleTime:    in.NodeSettleTime,
 		NLongest:          in.NLongest,
 		StripErrorSize:    in.StripErrorSize,
 		LogTime:           in.LogTime,
@@ -57,6 +58,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipEsLog:         in.SkipEsLog,
 		MaxDeleteTrials:   in.MaxDeleteTrials,
 		MaxMtxWait:        in.MaxMtxWait,
+		MaxMtxWaitFatal:   in.MaxMtxWaitFatal,
 		TestMode:          in.TestMode,
 	}
 	return &out
@@ -181,7 +183,6 @@ func TestInit(t *testing.T) {
 		ST:                false,
 		NCPUs:             0,
 		CtxOut:            false,
-		NodeHash:          false,
 		LatestItems:       false,
 		DryRun:            false,
 		DryRunCode:        0,
@@ -193,6 +194,8 @@ func TestInit(t *testing.T) {
 		TimeoutSeconds:    171900,
 		NodeIdx:           0,
 		NodeNum:           1,
+		NodeHash:          false,
+		NodeSettleTime:    10,
 		NLongest:          10,
 		StripErrorSize:    0x400,
 		LogTime:           true,
@@ -218,6 +221,7 @@ func TestInit(t *testing.T) {
 		SkipEsLog:         false,
 		MaxDeleteTrials:   10,
 		MaxMtxWait:        3600,
+		MaxMtxWaitFatal:   false,
 		TestMode:          true,
 	}
 
@@ -278,12 +282,18 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Setting max ES mutex wait (30 seconds)",
-			map[string]string{"SDS_MAX_MTX_WAIT": "30"},
+			"Setting max ES mutex wait (30 seconds) and set it as fatal",
+			map[string]string{
+				"SDS_MAX_MTX_WAIT":       "30",
+				"SDS_MAX_MTX_WAIT_FATAL": "yeah",
+			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"MaxMtxWait": 30},
+				map[string]interface{}{
+					"MaxMtxWait":      30,
+					"MaxMtxWaitFatal": true,
+				},
 			),
 		},
 		{
@@ -510,17 +520,19 @@ func TestInit(t *testing.T) {
 		{
 			"Setting node hash params",
 			map[string]string{
-				"SDS_NODE_HASH": "1",
-				"SDS_NODE_IDX":  "2",
-				"SDS_NODE_NUM":  "4",
+				"SDS_NODE_HASH":        "1",
+				"SDS_NODE_IDX":         "2",
+				"SDS_NODE_NUM":         "4",
+				"SDS_NODE_SETTLE_TIME": "30",
 			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{
-					"NodeHash": true,
-					"NodeIdx":  2,
-					"NodeNum":  4,
+					"NodeHash":       true,
+					"NodeIdx":        2,
+					"NodeNum":        4,
+					"NodeSettleTime": 30,
 				},
 			),
 		},
