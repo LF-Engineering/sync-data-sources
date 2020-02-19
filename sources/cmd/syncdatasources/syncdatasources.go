@@ -458,16 +458,19 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 			lib.EnsureIndex(ctx, lib.SDSMtx, false)
 			// all nodes lock "rename" ES mutex, but only 1st node will unlock it (after all renames if any)
 			if ctx.NodeIdx > 0 {
-				giantLock(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx))
+				mtx := fmt.Sprintf("rename-node-%d", ctx.NodeIdx)
+				lib.Printf("Node %d locking ES mutex: %s\n", ctx.NodeIdx, mtx)
+				giantLock(ctx, mtx)
 			}
 		}
 		dropUnusedIndexes(ctx, &fixtures)
 		if ctx.NodeNum > 1 && ctx.NodeIdx > 0 {
 			// now wait for 1st node to finish renames (if any)
-			lib.Printf("Waiting for 1st node to finish dropping/renaming indexes\n")
+			lib.Printf("Node %d waiting for master to finish dropping/renaming indexes\n", ctx.NodeIdx)
 			giantWait(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx), "unlocked")
+			lib.Printf("Node %d mutex processing finished\n", ctx.NodeIdx)
 		}
-		// Aliases
+		// Aliases (don't have to be inside mutex)
 		if !ctx.SkipAliases {
 			dropUnusedAliases(ctx, &fixtures)
 		}
@@ -580,7 +583,7 @@ func giantLock(ctx *lib.Ctx, mtx string) {
 		lib.Fatalf("cannot lock ES mtx: %s", mtx)
 	}
 	if found {
-		if ctx.Debug > 0 {
+		if ctx.Debug >= 0 {
 			lib.Printf("%s is already locked\n", mtx)
 		}
 		return
@@ -619,6 +622,9 @@ func giantLock(ctx *lib.Ctx, mtx string) {
 		}
 		lib.Fatalf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 	}
+	if ctx.Debug >= 0 {
+		lib.Printf("%s locked\n", mtx)
+	}
 }
 
 func giantUnlock(ctx *lib.Ctx, mtx string) {
@@ -632,7 +638,7 @@ func giantUnlock(ctx *lib.Ctx, mtx string) {
 		lib.Fatalf("cannot lock ES mtx: %s", mtx)
 	}
 	if !found {
-		if ctx.Debug > 0 {
+		if ctx.Debug >= 0 {
 			lib.Printf("%s wasn't locked\n", mtx)
 		}
 		return
@@ -658,6 +664,9 @@ func giantUnlock(ctx *lib.Ctx, mtx string) {
 		}
 		time.Sleep(time.Duration(10*trials) * time.Millisecond)
 	}
+	if ctx.Debug >= 0 {
+		lib.Printf("%s unlocked\n", mtx)
+	}
 }
 
 func giantWait(ctx *lib.Ctx, mtx, state string) {
@@ -676,13 +685,13 @@ func giantWait(ctx *lib.Ctx, mtx, state string) {
 			lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds", n, mtx, state, ctx.MaxMtxWait)
 		}
 		if (found && state == "locked") || (!found && state == "unlocked") {
-			if ctx.Debug > 0 || n > 0 {
+			if ctx.Debug >= 0 || n > 0 {
 				lib.Printf("Waited %d seconds for %s to be %s...\n", n, mtx, state)
 			}
 			return
 		}
 		// Wait 1s for next retry
-		if ctx.Debug > 1 || n > 30 {
+		if (ctx.Debug > 0 || n >= 30) && n%30 == 0 {
 			lib.Printf("Waiting for %s to be %s (already waited %ds)...\n", mtx, state, n)
 		}
 		time.Sleep(time.Duration(1000) * time.Millisecond)
@@ -834,9 +843,13 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	defer func() {
 		for i := 1; i < ctx.NodeNum; i++ {
 			mtx := fmt.Sprintf("rename-node-%d", i)
+			lib.Printf("Master wait for %s to be locked by node\n", mtx)
 			giantWait(ctx, mtx, "locked")
+			lib.Printf("Master unlocking %s\n", mtx)
 			giantUnlock(ctx, mtx)
+			lib.Printf("Master unlocked %s\n", mtx)
 		}
+		lib.Printf("Master processing mutexes finished\n")
 	}()
 	should := make(map[string]struct{})
 	fromFull := make(map[string]string)
