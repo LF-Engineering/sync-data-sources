@@ -191,8 +191,9 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	if slug == "" {
 		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
 	}
-	if len(fixture.DataSources) == 0 {
-		lib.Fatalf("Fixture file %s must have at least one data source defined in 'data_sources' key\n", fixtureFile)
+	if len(fixture.DataSources) == 0 && len(fixture.Aliases) == 0 {
+		lib.Fatalf("Fixture file %s must have at least one data source defined in 'data_sources' key or at least one alias defined in 'aliases' key\n", fixtureFile)
+		//lib.Printf("Fixture file %s has no datasources and no aliases\n", fixtureFile)
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
