@@ -452,7 +452,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
 	checkForSharedEndpoints(&fixtures)
-	// Drop unused indexes and aliases
+	// Drop unused indexes, rename indexes if needed, drop unused aliases
+	didRenames := false
 	if !ctx.SkipDropUnused {
 		if ctx.NodeNum > 1 {
 			// sdsmtx is an ES wide mutex-like index for blocking between concurrent nodes
@@ -464,7 +465,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				giantLock(ctx, mtx)
 			}
 		}
-		dropUnusedIndexes(ctx, &fixtures)
+		didRenames = processIndexes(ctx, &fixtures)
 		if ctx.NodeNum > 1 && ctx.NodeIdx > 0 {
 			// now wait for 1st node to finish renames (if any)
 			lib.Printf("Node %d waiting for master to finish dropping/renaming indexes\n", ctx.NodeIdx)
@@ -533,13 +534,19 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		ctx.ExecOutput = false
 		ctx.ExecOutputStderr = false
 	}()
-	rslt := processTasks(ctx, &tasks, dss)
-	if !ctx.SkipAliases {
-		if ctx.CleanupAliases {
-			processAliases(ctx, &fixtures, lib.Delete)
+	aliasesFunc := func() {
+		if !ctx.SkipAliases {
+			if ctx.CleanupAliases {
+				processAliases(ctx, &fixtures, lib.Delete)
+			}
+			processAliases(ctx, &fixtures, lib.Put)
 		}
-		processAliases(ctx, &fixtures, lib.Put)
 	}
+	if didRenames {
+		aliasesFunc()
+	}
+	rslt := processTasks(ctx, &tasks, dss)
+	aliasesFunc()
 	return rslt
 }
 
@@ -839,10 +846,11 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 	lib.Printf("Renamed %s to %s\n", from, to)
 }
 
-func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+// processIndexes - dropping unused indexes, renaming indexes that require this ('index_suffix' option), info about missing indexes
+func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	fixtures := *pfixtures
 	if ctx.NodeIdx > 0 {
-		lib.Printf("Skipping dropping unused indexes, this only runs on 1st node\n")
+		lib.Printf("Skipping processing indexes, this only runs on 1st node\n")
 		return
 	}
 	// after dropping (and possibly renaming) indices we're unlocking "rename" ES mutex
@@ -988,6 +996,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 				renameFunc(nil, ctx, from, to)
 			}
 		}
+		didRenames = true
 	} else {
 		lib.Printf("No indices to rename\n")
 	}
@@ -1026,6 +1035,7 @@ func dropUnusedIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		return
 	}
 	lib.Printf("%d indices dropped\n", len(extra))
+	return
 }
 
 func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
