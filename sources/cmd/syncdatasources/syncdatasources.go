@@ -324,7 +324,12 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 		}
 	}
 	for ai, alias := range fixture.Aliases {
-		idxSlug := "sds-" + alias.From
+		var idxSlug string
+		if strings.HasPrefix(alias.From, "bitergia-") {
+			idxSlug = alias.From
+		} else {
+			idxSlug = "sds-" + alias.From
+		}
 		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 		fixture.Aliases[ai].From = idxSlug
 		for ti, to := range alias.To {
@@ -1048,9 +1053,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	for _, fixture := range fixtures {
 		for _, alias := range fixture.Aliases {
 			for _, to := range alias.To {
-				aliasSlug := "sds-" + to
-				aliasSlug = strings.Replace(aliasSlug, "/", "-", -1)
-				should[to] = struct{}{}
+				should[strings.Replace(to, "/", "-", -1)] = struct{}{}
 			}
 		}
 	}
