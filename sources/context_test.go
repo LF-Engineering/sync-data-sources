@@ -220,7 +220,7 @@ func TestInit(t *testing.T) {
 		SkipEsData:        false,
 		SkipEsLog:         false,
 		MaxDeleteTrials:   10,
-		MaxMtxWait:        3600,
+		MaxMtxWait:        900,
 		MaxMtxWaitFatal:   false,
 		TestMode:          true,
 	}
@@ -311,7 +311,7 @@ func TestInit(t *testing.T) {
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"MaxMtxWait": 3600},
+				map[string]interface{}{"MaxMtxWait": 900},
 			),
 		},
 		{
