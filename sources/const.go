@@ -75,6 +75,12 @@ const Redacted string = "[redacted]"
 // SDSMtx - sdsmtx
 const SDSMtx string = "sdsmtx"
 
+// Locked - locked
+const Locked string = "locked"
+
+// Unlocked - unlocked
+const Unlocked string = "unlocked"
+
 // Delete - DELETE
 const Delete string = "DELETE"
 

@@ -474,7 +474,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		if ctx.NodeNum > 1 && ctx.NodeIdx > 0 {
 			// now wait for 1st node to finish renames (if any)
 			lib.Printf("Node %d waiting for master to finish dropping/renaming indexes\n", ctx.NodeIdx)
-			giantWait(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx), "unlocked")
+			giantWait(ctx, fmt.Sprintf("rename-node-%d", ctx.NodeIdx), lib.Unlocked)
 			lib.Printf("Node %d mutex processing finished\n", ctx.NodeIdx)
 		}
 		// Aliases (don't have to be inside mutex)
@@ -682,9 +682,9 @@ func giantUnlock(ctx *lib.Ctx, mtx string) {
 	}
 }
 
-func giantWait(ctx *lib.Ctx, mtx, state string) {
+func giantWait(ctx *lib.Ctx, mtx, waitForState string) {
 	if ctx.Debug > 0 {
-		lib.Printf("giantWait(%s,%s)\n", mtx, state)
+		lib.Printf("giantWait(%s,%s)\n", mtx, waitForState)
 	}
 	mtxIndex := lib.SDSMtx
 	esQuery := fmt.Sprintf("mtx:\"%s\"", mtx)
@@ -692,25 +692,29 @@ func giantWait(ctx *lib.Ctx, mtx, state string) {
 	for {
 		_, ok, found := searchByQuery(ctx, mtxIndex, esQuery)
 		if !ok {
-			lib.Fatalf("cannot wait for ES mtx: %s to be %s", mtx, state)
+			lib.Fatalf("cannot wait for ES mtx: %s to be %s", mtx, waitForState)
 		}
 		if ctx.MaxMtxWait > 0 && n > ctx.MaxMtxWait {
 			if ctx.MaxMtxWaitFatal {
-				lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds, this is fatal", n, mtx, state, ctx.MaxMtxWait)
+				lib.Fatalf("waited %d seconds for %s to be %s, exceeded %ds, this is fatal", n, mtx, waitForState, ctx.MaxMtxWait)
 			} else {
-				lib.Printf("WARNING: Waited %d seconds for %s to be %s, exceeded %ds, will proceed after next 30s", n, mtx, state, ctx.MaxMtxWait)
+				lib.Printf("WARNING: Waited %d seconds for %s to be %s, exceeded %ds, will proceed after next 30s\n", n, mtx, waitForState, ctx.MaxMtxWait)
 				time.Sleep(time.Duration(30) * time.Second)
+				if waitForState == lib.Unlocked {
+					giantUnlock(ctx, mtx)
+				}
+				return
 			}
 		}
-		if (found && state == "locked") || (!found && state == "unlocked") {
+		if (found && waitForState == lib.Locked) || (!found && waitForState == lib.Unlocked) {
 			if ctx.Debug >= 0 || n > 0 {
-				lib.Printf("Waited %d seconds for %s to be %s...\n", n, mtx, state)
+				lib.Printf("Waited %d seconds for %s to be %s...\n", n, mtx, waitForState)
 			}
 			return
 		}
 		// Wait 1s for next retry
 		if (ctx.Debug > 0 || n >= 30) && n%30 == 0 {
-			lib.Printf("Waiting for %s to be %s (already waited %ds)...\n", mtx, state, n)
+			lib.Printf("Waiting for %s to be %s (already waited %ds)...\n", mtx, waitForState, n)
 		}
 		time.Sleep(time.Duration(1000) * time.Millisecond)
 		n++
@@ -866,7 +870,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			for i := ctx.NodeNum - 1; i > 0; i-- {
 				mtx := fmt.Sprintf("rename-node-%d", i)
 				lib.Printf("Master wait for %s to be locked by node\n", mtx)
-				giantWait(ctx, mtx, "locked")
+				giantWait(ctx, mtx, lib.Locked)
 				lib.Printf("Master unlocking %s\n", mtx)
 				giantUnlock(ctx, mtx)
 				lib.Printf("Master unlocked %s\n", mtx)
