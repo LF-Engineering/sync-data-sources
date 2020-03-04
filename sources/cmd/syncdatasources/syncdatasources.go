@@ -844,9 +844,8 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					return
 				}
 			}
-			// FIXME: debugging this now, change to >0 later
-			if ctx.Debug >= 0 {
-				lib.Printf("External endpoint: %s\n", strings.Join(commandLine, " "))
+			if ctx.Debug > 0 {
+				lib.Printf("External endpoint: %s\n", rcl)
 			}
 			str, err := lib.ExecCommand(ctx, commandLine, nil)
 			if keyAdded && sshKeyMtx != nil {
