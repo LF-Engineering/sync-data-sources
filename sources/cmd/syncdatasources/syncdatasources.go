@@ -844,6 +844,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					return
 				}
 			}
+			// FIXME: debugging this now, change to >0 later
+			if ctx.Debug >= 0 {
+				lib.Printf("External endpoint: %s\n", strings.Join(commandLine, " "))
+			}
 			str, err := lib.ExecCommand(ctx, commandLine, nil)
 			if keyAdded && sshKeyMtx != nil {
 				sshKeyMtx.Unlock()
@@ -890,6 +894,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	allIndices := len(processedIndices)
 	lastTime := time.Now()
 	dtStart := lastTime
+	prefix := "(***external***) "
 	if thrN > 1 {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
 		ch := make(chan string)
@@ -905,7 +910,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				nThreads--
 				processedEndpoints++
 				// current task here (tsk) is approximate, actual finished task should be returned via channel but we're skipping this here
-				inf := tsk.ExternalIndex + ":" + tsk.Endpoint
+				inf := prefix + tsk.ExternalIndex + ":" + tsk.Endpoint
 				lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 			}
 		}
@@ -916,7 +921,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			}
 			nThreads--
 			processedEndpoints++
-			inf := fmt.Sprintf("wait for %d threads", nThreads)
+			inf := prefix + fmt.Sprintf("wait for %d threads", nThreads)
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	} else {
@@ -927,7 +932,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				lib.Printf("WARNING: %s\n", info)
 			}
 			processedEndpoints++
-			inf := tsk.ExternalIndex + ":" + tsk.Endpoint
+			inf := prefix + tsk.ExternalIndex + ":" + tsk.Endpoint
 			// Here info is accurate because this is from ST version
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
