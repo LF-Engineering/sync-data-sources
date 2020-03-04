@@ -11,6 +11,15 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Use: `` DOCKER_USER=docker-user BRANCH=test|prod [REPO_ACCESS="`cat repo_access.secret`"] ./docker-images/test_image_docker.sh [command] `` to test docker image locally. Then inside the container run: `./run.sh`.
 
 
+# Manual docker run example
+
+- Get SortingHat DB endpoint: `prodk.sh -n mariadb get svc mariadb-service-rw`.
+- Get SortingHat DB credentials: `for f in helm-charts/sds-helm/sds-helm/secrets/SH_*.prod.secret; do echo -n "$f: "; cat $f; echo ""; done`.
+- Get other env variables: `prodk.sh -n sds edit cj sds-0`.
+- Finally just run `./docker-images/manual_docker.sh prod`.
+- To see environment inside the container: `clear; env | sort | grep 'SDS\|SH_'`.
+
+
 # Kubernetes
 
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod ./kubernetes/test_image_kubernetes.sh [command]` to test docker image on kubernetes (without Helm chart). Then inside the container run: `./run.sh`.
