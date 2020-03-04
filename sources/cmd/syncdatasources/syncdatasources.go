@@ -552,10 +552,15 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		aliasesFunc()
 	}
 	// We *try* to enrich external indexes, but we don't care if that actually suceeded
-	enrichExternalIndexes(ctx, &fixtures, &tasks)
+	ch := make(chan struct{})
+	go func(ch chan struct{}) {
+		enrichExternalIndexes(ctx, &fixtures, &tasks)
+		ch <- struct{}{}
+	}(ch)
 	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
 	aliasesFunc()
+	<-ch
 	return rslt
 }
 
@@ -607,7 +612,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 	}
 	newTasks := []lib.Task{}
-	processed := make(map[string]struct{})
+	processedIndices := make(map[string]struct{})
 	for sdsIndex, bitergiaIndices := range manualEnrich {
 		sdsTask, ok := indexToTask[sdsIndex]
 		if !ok {
@@ -638,7 +643,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 							ExternalIndex: bitergiaIndex,
 						},
 					)
-					processed[bitergiaIndex] = struct{}{}
+					processedIndices[bitergiaIndex] = struct{}{}
 				}
 			}
 			continue
@@ -659,7 +664,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 						ExternalIndex: bitergiaIndex,
 					},
 				)
-				processed[bitergiaIndex] = struct{}{}
+				processedIndices[bitergiaIndex] = struct{}{}
 			}
 		}
 	}
@@ -880,8 +885,13 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 		return
 	}
+	processedEndpoints := 0
+	allEndpoints := len(newTasks)
+	allIndices := len(processedIndices)
+	lastTime := time.Now()
+	dtStart := lastTime
 	if thrN > 1 {
-		lib.Printf("Now processing %d external indices enrichments using method MT%d version\n", len(newTasks), thrN)
+		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
 		ch := make(chan string)
 		nThreads := 0
 		for _, tsk := range newTasks {
@@ -893,6 +903,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					lib.Printf("WARNING: %s\n", info)
 				}
 				nThreads--
+				processedEndpoints++
+				// current task here (tsk) is approximate, actual finished task should be returned via channel but we're skipping this here
+				inf := tsk.ExternalIndex + ":" + tsk.Endpoint
+				lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 			}
 		}
 		for nThreads > 0 {
@@ -901,18 +915,25 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				lib.Printf("WARNING: %s\n", info)
 			}
 			nThreads--
+			processedEndpoints++
+			inf := fmt.Sprintf("wait for %d threads", nThreads)
+			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	} else {
-		lib.Printf("Now processing %d external indices enrichments using ST version\n", len(newTasks))
+		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using ST version\n", allIndices, allEndpoints)
 		for _, tsk := range newTasks {
 			info := enrichExternal(nil, &tsk)
 			if info != "" {
 				lib.Printf("WARNING: %s\n", info)
 			}
+			processedEndpoints++
+			inf := tsk.ExternalIndex + ":" + tsk.Endpoint
+			// Here info is accurate because this is from ST version
+			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	}
 	en := time.Now()
-	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", len(processed), len(newTasks), en.Sub(st))
+	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", allIndices, allEndpoints, en.Sub(st))
 }
 
 func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []string) {
