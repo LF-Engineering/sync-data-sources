@@ -61,7 +61,8 @@ type EsSearchResultHits struct {
 
 // EsSearchResultPayload - search result payload
 type EsSearchResultPayload struct {
-	Hits EsSearchResultHits `json:"hits"`
+	Hits         EsSearchResultHits `json:"hits"`
+	Aggregations interface{}        `json:"aggregations"`
 }
 
 // ES last_run support in sdsdata index

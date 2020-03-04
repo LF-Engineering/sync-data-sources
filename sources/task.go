@@ -21,6 +21,7 @@ type Task struct {
 	Err                 error
 	Duration            time.Duration
 	DsFullSlug          string
+	ExternalIndex       string
 }
 
 // String - default string output for a task (generic)
@@ -31,8 +32,8 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v}",
-		t.Endpoint, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq,
+		"{Endpoint:%s DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v, ExternalIndex: %s}",
+		t.Endpoint, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex,
 	)
 }
 

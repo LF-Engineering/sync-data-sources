@@ -49,7 +49,7 @@ type Ctx struct {
 	ScrollWait        int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
 	ScrollSize        int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	SkipCheckFreq     bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
-	SkipEsData        bool   // From SDS_SKIP_ES_DATA, will totally skip  anything related to "sdsdata" index processing (storing SDS state)
+	SkipEsData        bool   // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog         bool   // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	MaxDeleteTrials   int    // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait        int    // From SDS_MAX_MTX_WAIT, in seconds, default 900s
