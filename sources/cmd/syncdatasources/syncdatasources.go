@@ -563,7 +563,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	if ctx.SkipSH || ctx.SkipAffs {
 		return
 	}
-	// If possible run on random non-master node, but if there is onl one node hen run on it
+	// If possible run on random non-master node, but if there is only one node then run on that node (master)
 	if ctx.NodeNum > 1 {
 		nodeIndex := rand.Intn(ctx.NodeNum-1) + 1
 		if ctx.NodeIdx != nodeIndex {
