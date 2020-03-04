@@ -449,6 +449,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	st := make(map[string]lib.Fixture)
 	for _, fixture := range fixtures {
 		slug := fixture.Native["slug"]
+		slug = strings.Replace(slug, "/", "-", -1)
 		fixture2, ok := st[slug]
 		if ok {
 			lib.Fatalf("Duplicate slug %s in fixtures: %+v and %+v\n", slug, fixture, fixture2)
@@ -550,9 +551,512 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	if didRenames {
 		aliasesFunc()
 	}
+	// We *try* to enrich external indexes, but we don't care if that actually suceeded
+	enrichExternalIndexes(ctx, &fixtures, &tasks)
+	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
 	aliasesFunc()
 	return rslt
+}
+
+func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
+	if ctx.SkipSH || ctx.SkipAffs {
+		return
+	}
+	// If possible run on random non-master node, but if there is onl one node hen run on it
+	if ctx.NodeNum > 1 {
+		nodeIndex := rand.Intn(ctx.NodeNum-1) + 1
+		if ctx.NodeIdx != nodeIndex {
+			return
+		}
+	}
+	st := time.Now()
+	fixtures := *pfixtures
+	tasks := *ptasks
+	manualEnrich := make(map[string][]string)
+	for _, fixture := range fixtures {
+		for _, aliasFrom := range fixture.Aliases {
+			if !strings.HasPrefix(aliasFrom.From, "bitergia-") {
+				continue
+			}
+			for _, aliasTo := range aliasFrom.To {
+				if !strings.HasSuffix(aliasTo, "-raw") {
+					ary, ok := manualEnrich[aliasTo]
+					if !ok {
+						manualEnrich[aliasTo] = []string{aliasFrom.From}
+					} else {
+						ary = append(ary, aliasFrom.From)
+						manualEnrich[aliasTo] = ary
+					}
+				}
+			}
+		}
+	}
+	indexToTask := make(map[string]*lib.Task)
+	dataSourceToTask := make(map[string]*lib.Task)
+	for i, task := range tasks {
+		idxSlug := "sds-" + task.FxSlug + "-" + task.DsSlug
+		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+		_, ok := indexToTask[idxSlug]
+		if !ok {
+			indexToTask[idxSlug] = &tasks[i]
+		}
+		_, ok = dataSourceToTask[task.DsSlug]
+		if !ok {
+			dataSourceToTask[task.DsSlug] = &tasks[i]
+		}
+	}
+	newTasks := []lib.Task{}
+	processed := make(map[string]struct{})
+	for sdsIndex, bitergiaIndices := range manualEnrich {
+		sdsTask, ok := indexToTask[sdsIndex]
+		if !ok {
+			lib.Printf("WARNING: External index/indices have no corresponding configuration in SDS: %+v\n", bitergiaIndices)
+			for _, bitergiaIndex := range bitergiaIndices {
+				dsSlug := figureOutDatasourceFromIndexName(bitergiaIndex)
+				if dsSlug == "" {
+					lib.Printf("ERROR(not fatal): External index %s: cannot guess data source type from index name\n", bitergiaIndex)
+					continue
+				}
+				randomSdsTask, ok := dataSourceToTask[dsSlug]
+				if !ok {
+					lib.Printf("ERROR(not fatal): External index %s: guessed data source type %s from index name: cannot find any SDS index of that type\n", bitergiaIndex, dsSlug)
+					continue
+				}
+				endpoints := figureOutEndpoints(ctx, bitergiaIndex, dsSlug)
+				for _, endpoint := range endpoints {
+					newTasks = append(
+						newTasks,
+						lib.Task{
+							Endpoint:      endpoint,
+							Config:        randomSdsTask.Config,
+							DsSlug:        randomSdsTask.DsSlug,
+							DsFullSlug:    randomSdsTask.DsFullSlug,
+							FxSlug:        "random:" + randomSdsTask.FxSlug,
+							FxFn:          "random:" + randomSdsTask.FxFn,
+							MaxFreq:       randomSdsTask.MaxFreq,
+							ExternalIndex: bitergiaIndex,
+						},
+					)
+					processed[bitergiaIndex] = struct{}{}
+				}
+			}
+			continue
+		}
+		for _, bitergiaIndex := range bitergiaIndices {
+			endpoints := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
+			for _, endpoint := range endpoints {
+				newTasks = append(
+					newTasks,
+					lib.Task{
+						Endpoint:      endpoint,
+						Config:        sdsTask.Config,
+						DsSlug:        sdsTask.DsSlug,
+						DsFullSlug:    sdsTask.DsFullSlug,
+						FxSlug:        sdsTask.FxSlug,
+						FxFn:          sdsTask.FxFn,
+						MaxFreq:       sdsTask.MaxFreq,
+						ExternalIndex: bitergiaIndex,
+					},
+				)
+				processed[bitergiaIndex] = struct{}{}
+			}
+		}
+	}
+	// Actual processing
+	thrN := lib.GetThreadsNum(ctx)
+	var sshKeyMtx *sync.Mutex
+	if thrN > 1 {
+		sshKeyMtx = &sync.Mutex{}
+	}
+	enrichExternal := func(ch chan string, tsk *lib.Task) (result string) {
+		defer func() {
+			if ch != nil {
+				ch <- result
+			}
+		}()
+		ds := tsk.DsSlug
+		idxSlug := tsk.ExternalIndex
+		commandLine := []string{
+			"p2o.py",
+			"--enrich",
+			"--index-enrich",
+			idxSlug,
+			"--only-enrich",
+			"--refresh-identities",
+			"--no_incremental",
+			"-e",
+			ctx.ElasticURL,
+		}
+		redactedCommandLine := make([]string, len(commandLine))
+		copy(redactedCommandLine, commandLine)
+		redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
+		// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
+		if !ctx.Silent {
+			commandLine = append(commandLine, "-g")
+			redactedCommandLine = append(redactedCommandLine, "-g")
+		}
+		// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
+		if ctx.CmdDebug > 0 {
+			commandLine = append(commandLine, "--debug")
+			redactedCommandLine = append(redactedCommandLine, "--debug")
+		}
+		if ctx.EsBulkSize > 0 {
+			commandLine = append(commandLine, "--bulk-size")
+			commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
+			redactedCommandLine = append(redactedCommandLine, "--bulk-size")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
+		}
+		if ctx.ScrollSize > 0 {
+			commandLine = append(commandLine, "--scroll-size")
+			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
+			redactedCommandLine = append(redactedCommandLine, "--scroll-size")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
+		}
+		if ctx.ScrollWait > 0 {
+			commandLine = append(commandLine, "--scroll-wait")
+			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
+			redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
+		}
+		commandLine = append(
+			commandLine,
+			[]string{
+				"--db-host",
+				ctx.ShHost,
+				"--db-sortinghat",
+				ctx.ShDB,
+				"--db-user",
+				ctx.ShUser,
+				"--db-password",
+				ctx.ShPass,
+			}...,
+		)
+		redactedCommandLine = append(
+			redactedCommandLine,
+			[]string{
+				"--db-host",
+				lib.Redacted,
+				"--db-sortinghat",
+				lib.Redacted,
+				"--db-user",
+				lib.Redacted,
+				"--db-password",
+				lib.Redacted,
+			}...,
+		)
+		if strings.Contains(ds, "/") {
+			ary := strings.Split(ds, "/")
+			if len(ary) != 2 {
+				result = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
+				return
+			}
+			commandLine = append(commandLine, ary[0])
+			commandLine = append(commandLine, "--category")
+			commandLine = append(commandLine, ary[1])
+			redactedCommandLine = append(redactedCommandLine, ary[0])
+			redactedCommandLine = append(redactedCommandLine, "--category")
+			redactedCommandLine = append(redactedCommandLine, ary[1])
+			ds = ary[0]
+		} else {
+			commandLine = append(commandLine, ds)
+			redactedCommandLine = append(redactedCommandLine, ds)
+		}
+
+		// Handle DS endpoint
+		eps := massageEndpoint(tsk.Endpoint, ds)
+		if len(eps) == 0 {
+			result = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
+			return
+		}
+		for _, ep := range eps {
+			commandLine = append(commandLine, ep)
+			redactedCommandLine = append(redactedCommandLine, ep)
+		}
+
+		// Handle DS config options
+		multiConfig, fail, keyAdded := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
+		if fail == true {
+			result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
+			return
+		}
+		for _, mcfg := range multiConfig {
+			if strings.HasPrefix(mcfg.Name, "-") {
+				commandLine = append(commandLine, mcfg.Name)
+			} else {
+				commandLine = append(commandLine, "--"+mcfg.Name)
+			}
+			for _, val := range mcfg.Value {
+				if val != "" {
+					commandLine = append(commandLine, val)
+				}
+			}
+			for _, val := range mcfg.RedactedValue {
+				if val != "" {
+					redactedCommandLine = append(redactedCommandLine, val)
+				}
+			}
+		}
+		rcl := strings.Join(redactedCommandLine, " ")
+		retries := 0
+		dtStart := time.Now()
+		for {
+			if ctx.DryRun {
+				if keyAdded {
+					if sshKeyMtx != nil {
+						sshKeyMtx.Lock()
+					}
+					fail := !makeCurrentSSHKey(ctx, idxSlug)
+					if fail == true {
+						if sshKeyMtx != nil {
+							sshKeyMtx.Unlock()
+						}
+						result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+						return
+					}
+				}
+				if ctx.DryRunSeconds > 0 {
+					time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+				}
+				if keyAdded && sshKeyMtx != nil {
+					sshKeyMtx.Unlock()
+				}
+				if ctx.DryRunCode != 0 {
+					result = fmt.Sprintf("error: %d", ctx.DryRunCode)
+				}
+				return
+			}
+			if keyAdded {
+				if sshKeyMtx != nil {
+					sshKeyMtx.Lock()
+				}
+				fail := !makeCurrentSSHKey(ctx, idxSlug)
+				if fail == true {
+					if sshKeyMtx != nil {
+						sshKeyMtx.Unlock()
+					}
+					result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+					return
+				}
+			}
+			str, err := lib.ExecCommand(ctx, commandLine, nil)
+			if keyAdded && sshKeyMtx != nil {
+				sshKeyMtx.Unlock()
+			}
+			str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
+			// p2o.py do not return error even if its backend execution fails
+			// we need to capture STDERR and check if there was python exception there
+			pyE := false
+			if strings.Contains(str, lib.PyException) {
+				pyE = true
+				err = fmt.Errorf("%s", str)
+			}
+			if err == nil {
+				if ctx.Debug > 0 {
+					dtEnd := time.Now()
+					lib.Printf("%+v: finished in %v, retries: %d\n", tsk, dtEnd.Sub(dtStart), retries)
+				}
+				break
+			}
+			retries++
+			if retries <= ctx.MaxRetry {
+				time.Sleep(time.Duration(retries) * time.Second)
+				continue
+			}
+			dtEnd := time.Now()
+			if pyE {
+				lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", rcl, dtEnd.Sub(dtStart), retries, err)
+			} else {
+				lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, str)
+				str += fmt.Sprintf(": %+v", err)
+			}
+			strLen := len(str)
+			if strLen > ctx.StripErrorSize {
+				sz := ctx.StripErrorSize / 2
+				str = str[0:sz] + "..." + str[strLen-sz:strLen]
+			}
+			result = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
+			return
+		}
+		return
+	}
+	if thrN > 1 {
+		lib.Printf("Now processing %d external indices enrichments using method MT%d version\n", len(newTasks), thrN)
+		ch := make(chan string)
+		nThreads := 0
+		for _, tsk := range newTasks {
+			go enrichExternal(ch, &tsk)
+			nThreads++
+			if nThreads == thrN {
+				info := <-ch
+				if info != "" {
+					lib.Printf("WARNING: %s\n", info)
+				}
+				nThreads--
+			}
+		}
+		for nThreads > 0 {
+			info := <-ch
+			if info != "" {
+				lib.Printf("WARNING: %s\n", info)
+			}
+			nThreads--
+		}
+	} else {
+		lib.Printf("Now processing %d external indices enrichments using ST version\n", len(newTasks))
+		for _, tsk := range newTasks {
+			info := enrichExternal(nil, &tsk)
+			if info != "" {
+				lib.Printf("WARNING: %s\n", info)
+			}
+		}
+	}
+	en := time.Now()
+	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", len(processed), len(newTasks), en.Sub(st))
+}
+
+func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []string) {
+	//lib.Printf("figureOutEndpoints(%s, %s)\n", index, dataSource)
+	//curl -H "Content-Type: application/json" URL/idx/_search -d'{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}'
+	data := `{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}`
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Get
+	url := fmt.Sprintf("%s/%s/_search", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_search", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%s\n%s\n", method, rurl, resp.StatusCode, data, body)
+	}
+	payload := lib.EsSearchResultPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	var m map[string]interface{}
+	m, ok := payload.Aggregations.(map[string]interface{})
+	if !ok {
+		lib.Printf("Cannot read aggregations from %+v\n", payload)
+		return
+	}
+	m, ok = m["origin"].(map[string]interface{})
+	if !ok {
+		lib.Printf("Cannot read origin from %+v\n", payload)
+		return
+	}
+	buckets, ok := m["buckets"].([]interface{})
+	if !ok {
+		lib.Printf("Cannot read buckets from %+v\n", payload)
+		return
+	}
+	origins := []string{}
+	for _, bucket := range buckets {
+		b, ok := bucket.(map[string]interface{})
+		if !ok {
+			lib.Printf("Cannot read bucket from %+v\n", bucket)
+			return
+		}
+		key, ok := b["key"]
+		if !ok {
+			lib.Printf("Origin %v do net have a key\n", b)
+		}
+		strKey, ok := key.(string)
+		if !ok {
+			lib.Printf("Origin key %v is not a string\n", key)
+		}
+		origins = append(origins, strKey)
+	}
+	if len(origins) == 0 {
+		lib.Printf("WARNING: No origins found for %s\n", index)
+	}
+	ary := strings.Split(dataSource, "/")
+	if len(ary) > 1 {
+		dataSource = ary[0]
+	}
+	switch dataSource {
+	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse:
+		endpoints = origins
+	case lib.MeetUp:
+		// FIXME: meetup we don't really have meetup config, the only one we have in SDS is disabled for CNCF/Prometheus 'SF-Prometheus-Meetup-Group'
+		// But there is one Bitergia index for meetup which has origin: 'https://meetup.com/' (perceval docs just say 'group'), so this may or may not work for meetup
+		lib.Printf("WARNING: dataSource: %s, origins: %+v, meetup transformation 1:1 from origins to endpoint may be wrong\n", dataSource, origins)
+		endpoints = origins
+	case lib.Slack, lib.GroupsIO:
+		// Slack: https://slack.com/C0417QHH7 --> C0417QHH7
+		// Groups.io: https://groups.io/g/OPNFV+opnfv-tech-discuss -> OPNFV+opnfv-tech-discuss
+		for _, origin := range origins {
+			origin = strings.TrimSpace(origin)
+			if strings.HasSuffix(origin, "/") {
+				origin = origin[:len(origin)-1]
+			}
+			ary := strings.Split(origin, "/")
+			origin = ary[len(ary)-1]
+			endpoints = append(endpoints, origin)
+		}
+	case lib.DockerHub:
+		// DockerHub: https://hub.docker.com/hyperledger/explorer-db -> "hyperledger explorer-db"
+		for _, origin := range origins {
+			origin = strings.TrimSpace(origin)
+			if strings.HasSuffix(origin, "/") {
+				origin = origin[:len(origin)-1]
+			}
+			ary := strings.Split(origin, "/")
+			if len(ary) >= 2 {
+				lAry := len(ary)
+				endpoints = append(endpoints, ary[lAry-2]+" "+ary[lAry-1])
+			}
+		}
+	default:
+		lib.Printf("ERROR(not fatal): dataSource: %s, origins: %+v, don't know how to transform them to endpoints\n", dataSource, origins)
+	}
+	return
+}
+
+func figureOutDatasourceFromIndexName(index string) (dataSource string) {
+	index = strings.ToLower(index)
+	known := []string{
+		lib.Git,
+		lib.GitHub,
+		lib.Confluence,
+		lib.Gerrit,
+		lib.Jira,
+		lib.Slack,
+		lib.GroupsIO,
+		lib.Pipermail,
+		lib.Discourse,
+		lib.Jenkins,
+		lib.DockerHub,
+		lib.Bugzilla,
+		lib.BugzillaRest,
+		lib.MeetUp,
+	}
+	for _, ds := range known {
+		if strings.Contains(index, strings.ToLower(ds)) {
+			return ds
+		}
+	}
+	return
 }
 
 func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
@@ -618,7 +1122,7 @@ func giantLock(ctx *lib.Ctx, mtx string) {
 	rurl := fmt.Sprintf("/%s/_doc?refresh=wait_for", mtxIndex)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
-		lib.Fatalf("new request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
+		lib.Fatalf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
@@ -733,7 +1237,7 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Put
 	url := fmt.Sprintf("%s/%s/_settings", ctx.ElasticURL, from)
-	rurl := "/%s/_settings"
+	rurl := fmt.Sprintf("%s/_settings", from)
 	if ctx.DryRun {
 		if !ctx.DryRunAllowRename {
 			lib.Printf("Would execute: method:%s url:%s data:%+v\n", method, os.ExpandEnv(rurl), data)
@@ -2462,11 +2966,15 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	dtStart := time.Now()
 	for {
 		if ctx.DryRun {
-			if keyAdded && tMtx.SSHKeyMtx != nil {
-				tMtx.SSHKeyMtx.Lock()
+			if keyAdded {
+				if tMtx.SSHKeyMtx != nil {
+					tMtx.SSHKeyMtx.Lock()
+				}
 				fail := !makeCurrentSSHKey(ctx, idxSlug)
 				if fail == true {
-					tMtx.SSHKeyMtx.Unlock()
+					if tMtx.SSHKeyMtx != nil {
+						tMtx.SSHKeyMtx.Unlock()
+					}
 					lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
 					result.Code[1] = 5
 					return
@@ -2488,11 +2996,15 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 			return
 		}
-		if keyAdded && tMtx.SSHKeyMtx != nil {
-			tMtx.SSHKeyMtx.Lock()
+		if keyAdded {
+			if tMtx.SSHKeyMtx != nil {
+				tMtx.SSHKeyMtx.Lock()
+			}
 			fail := !makeCurrentSSHKey(ctx, idxSlug)
 			if fail == true {
-				tMtx.SSHKeyMtx.Unlock()
+				if tMtx.SSHKeyMtx != nil {
+					tMtx.SSHKeyMtx.Unlock()
+				}
 				lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
 				result.Code[1] = 5
 				return
