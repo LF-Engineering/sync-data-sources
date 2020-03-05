@@ -547,6 +547,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	gKeyMtx = &sync.Mutex{}
 	gAliasesMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
+    lib.Printf("Processing aliases\n")
 		gAliasesMtx.Lock()
 		defer func() {
 			gAliasesMtx.Unlock()
