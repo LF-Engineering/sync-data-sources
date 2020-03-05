@@ -18,6 +18,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Get other env variables: `prodk.sh -n sds edit cj sds-0`.
 - Finally just run `[EXEC=1] ./docker-images/manual_docker.sh prod`. If you specify EXEC=1 you will get bash instead of runnign SDS, so you can call `./run.sh` manually.
 - To see environment inside the container: `clear; env | sort | grep 'SDS\|SH_'`.
+- Send info signal `` kill -SIGUSR1 `ps -ax | grep syncdatasources | head -n 1 | awk '{print $1}'` ``.
 - To shell into the running SDS: `./docker-images/shell_running_sds.sh`.
 
 
