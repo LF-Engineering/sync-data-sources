@@ -8,59 +8,60 @@ import (
 
 // Ctx - environment context packed in structure
 type Ctx struct {
-	Debug              int    // From SDS_DEBUG Debug level: 0-no, 1-info, 2-verbose
-	CmdDebug           int    // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
-	MaxRetry           int    // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3 (1 original and 2 more attempts).
-	ST                 bool   // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
-	NCPUs              int    // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
-	CtxOut             bool   // From SDS_CTXOUT output all context data (this struct), default false
-	LogTime            bool   // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
-	ExecFatal          bool   // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
-	ExecQuiet          bool   // default false, set this manually to true to have quiet exec failures
-	ExecOutput         bool   // default false, set to true to capture commands STDOUT
-	ExecOutputStderr   bool   // default false, set to true to capture commands STDOUT
-	ElasticURL         string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
-	EsBulkSize         int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified" (10000)
-	NodeHash           bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
-	NodeNum            int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
-	NodeIdx            int    // From SDS_NODE_IDX, set number of current node, so only hashes matching this node will run
-	NodeSettleTime     int    // From SDS_NODE_SETTLE_TIME, number of seconds that master gives nodes to start-up and wait for ES mutex9es) to sync with master node, default 10 (in seconds)
-	DryRun             bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
-	DryRunCode         int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
-	DryRunCodeRandom   bool   // From SDS_DRY_RUN_CODE_RANDOM, dry run exit code, will return random value from 0 to 5
-	DryRunSeconds      int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
-	DryRunAllowSSH     bool   // From SDS_DRY_RUN_ALLOW_SSH, if set it will allow setting SSH keys in dry run mode
-	DryRunAllowFreq    bool   // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
-	DryRunAllowMtx     bool   // From SDS_DRY_RUN_ALLOW_MTX, if set it will allow handling ES mutexes (for nodes concurrency support) in dry run mode
-	DryRunAllowRename  bool   // From SDS_DRY_RUN_ALLOW_RENAME, if set it will allow handling ES index renaming in dry run mode
-	DryRunAllowOrigins bool   // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices orignis list in dry run mode
-	TimeoutSeconds     int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
-	NLongest           int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
-	SkipSH             bool   // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
-	StripErrorSize     int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
-	GitHubOAuth        string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
-	LatestItems        bool   // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
-	CSVPrefix          string // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
-	Silent             bool   // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
-	SkipData           bool   // From SDS_SKIP_DATA, if set - it will not run incremental data sync
-	SkipAffs           bool   // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
-	SkipAliases        bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
-	SkipDropUnused     bool   // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
-	NoMultiAliases     bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
-	CleanupAliases     bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
-	ScrollWait         int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
-	ScrollSize         int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
-	SkipCheckFreq      bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
-	SkipEsData         bool   // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
-	SkipEsLog          bool   // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
-	MaxDeleteTrials    int    // From SDS_MAX_DELETE_TRIALS, default 10
-	MaxMtxWait         int    // From SDS_MAX_MTX_WAIT, in seconds, default 900s
-	MaxMtxWaitFatal    bool   // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
-	TestMode           bool   // True when running tests
-	ShUser             string // Sorting Hat database parameters
-	ShHost             string
-	ShPass             string
-	ShDB               string
+	Debug               int    // From SDS_DEBUG Debug level: 0-no, 1-info, 2-verbose
+	CmdDebug            int    // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
+	MaxRetry            int    // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 3 (1 original and 2 more attempts).
+	ST                  bool   // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
+	NCPUs               int    // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
+	CtxOut              bool   // From SDS_CTXOUT output all context data (this struct), default false
+	LogTime             bool   // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
+	ExecFatal           bool   // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
+	ExecQuiet           bool   // default false, set this manually to true to have quiet exec failures
+	ExecOutput          bool   // default false, set to true to capture commands STDOUT
+	ExecOutputStderr    bool   // default false, set to true to capture commands STDOUT
+	ElasticURL          string // From SDS_ES_URL, ElasticSearch URL, default http://127.0.0.1:9200
+	EsBulkSize          int    // From SDS_ES_BULKSIZE, ElasticSearch bulk size when enriching data, defaults to 0 which means "not specified" (10000)
+	NodeHash            bool   // From SDS_NODE_HASH, if set it will generate hashes for each task and only execute them when node number matches hash result
+	NodeNum             int    // From SDS_NODE_NUM, set number of nodes, so hashing function will return [0, ... n)
+	NodeIdx             int    // From SDS_NODE_IDX, set number of current node, so only hashes matching this node will run
+	NodeSettleTime      int    // From SDS_NODE_SETTLE_TIME, number of seconds that master gives nodes to start-up and wait for ES mutex9es) to sync with master node, default 10 (in seconds)
+	DryRun              bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
+	DryRunCode          int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
+	DryRunCodeRandom    bool   // From SDS_DRY_RUN_CODE_RANDOM, dry run exit code, will return random value from 0 to 5
+	DryRunSeconds       int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
+	DryRunSecondsRandom bool   // From SDS_DRY_RUN_SECONDS_RANDOM, make running time from 0 to SDS_DRY_RUN_SECONDS (in ms resolution)
+	DryRunAllowSSH      bool   // From SDS_DRY_RUN_ALLOW_SSH, if set it will allow setting SSH keys in dry run mode
+	DryRunAllowFreq     bool   // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
+	DryRunAllowMtx      bool   // From SDS_DRY_RUN_ALLOW_MTX, if set it will allow handling ES mutexes (for nodes concurrency support) in dry run mode
+	DryRunAllowRename   bool   // From SDS_DRY_RUN_ALLOW_RENAME, if set it will allow handling ES index renaming in dry run mode
+	DryRunAllowOrigins  bool   // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices orignis list in dry run mode
+	TimeoutSeconds      int    // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
+	NLongest            int    // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
+	SkipSH              bool   // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
+	StripErrorSize      int    // From SDS_STRIP_ERROR_SIZE, default 1024, error messages longer that this value will be stripped by half of this value from beginning and from end, so for 1024 error 4000 bytes long will be 512 bytes from the beginning ... 512 from the end
+	GitHubOAuth         string // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
+	LatestItems         bool   // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
+	CSVPrefix           string // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
+	Silent              bool   // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
+	SkipData            bool   // From SDS_SKIP_DATA, if set - it will not run incremental data sync
+	SkipAffs            bool   // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
+	SkipAliases         bool   // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
+	SkipDropUnused      bool   // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
+	NoMultiAliases      bool   // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
+	CleanupAliases      bool   // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
+	ScrollWait          int    // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
+	ScrollSize          int    // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
+	SkipCheckFreq       bool   // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
+	SkipEsData          bool   // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
+	SkipEsLog           bool   // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
+	MaxDeleteTrials     int    // From SDS_MAX_DELETE_TRIALS, default 10
+	MaxMtxWait          int    // From SDS_MAX_MTX_WAIT, in seconds, default 900s
+	MaxMtxWaitFatal     bool   // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
+	TestMode            bool   // True when running tests
+	ShUser              string // Sorting Hat database parameters
+	ShHost              string
+	ShPass              string
+	ShDB                string
 }
 
 // Init - get context from environment variables
@@ -129,6 +130,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowRename = os.Getenv("SDS_DRY_RUN_ALLOW_RENAME") != ""
 	ctx.DryRunAllowOrigins = os.Getenv("SDS_DRY_RUN_ALLOW_ORIGINS") != ""
 	ctx.DryRunCodeRandom = os.Getenv("SDS_DRY_RUN_CODE_RANDOM") != ""
+	ctx.DryRunSecondsRandom = os.Getenv("SDS_DRY_RUN_SECONDS_RANDOM") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {

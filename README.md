@@ -29,7 +29,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 # Locally
 
-- Use: `cd sources; make; ./dry_run.sh` even if you don't have correct `p2o.py` stack installed.
+- Use: `cd sources; make; ./dry_run.sh prod` even if you don't have correct `p2o.py` stack installed.
 
 
 # Helm
