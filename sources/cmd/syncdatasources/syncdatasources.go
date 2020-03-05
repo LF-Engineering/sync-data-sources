@@ -683,12 +683,46 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	if thrN > 1 {
 		sshKeyMtx = &sync.Mutex{}
 	}
-	enrichExternal := func(ch chan string, tsk *lib.Task) (result string) {
+	remainingTasks := make(map[[2]string]struct{})
+	processingTasks := make(map[[2]string]struct{})
+	processedTasks := make(map[[2]string]struct{})
+	succeededTasks := make(map[[2]string]struct{})
+	erroredTasks := make(map[[2]string]struct{})
+	for _, task := range newTasks {
+		key := [2]string{task.ExternalIndex, task.Endpoint}
+		remainingTasks[key] = struct{}{}
+	}
+	infoMtx := &sync.Mutex{}
+	updateInfo := func(in bool, result [3]string) {
+		key := [2]string{result[0], result[1]}
+		if in {
+			infoMtx.Lock()
+			delete(remainingTasks, key)
+			processingTasks[key] = struct{}{}
+			infoMtx.Unlock()
+			return
+		}
+		ok := result[2] == ""
+		infoMtx.Lock()
+		delete(processingTasks, key)
+		processedTasks[key] = struct{}{}
+		if ok {
+			succeededTasks[key] = struct{}{}
+		} else {
+			erroredTasks[key] = struct{}{}
+		}
+		infoMtx.Unlock()
+	}
+	enrichExternal := func(ch chan [3]string, tsk *lib.Task) (result [3]string) {
 		defer func() {
+			updateInfo(false, result)
 			if ch != nil {
 				ch <- result
 			}
 		}()
+		result[0] = tsk.ExternalIndex
+		result[1] = tsk.Endpoint
+		updateInfo(true, result)
 		ds := tsk.DsSlug
 		idxSlug := tsk.ExternalIndex
 		commandLine := []string{
@@ -762,7 +796,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		if strings.Contains(ds, "/") {
 			ary := strings.Split(ds, "/")
 			if len(ary) != 2 {
-				result = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
+				result[2] = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
 				return
 			}
 			commandLine = append(commandLine, ary[0])
@@ -780,7 +814,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		// Handle DS endpoint
 		eps := massageEndpoint(tsk.Endpoint, ds)
 		if len(eps) == 0 {
-			result = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
+			result[2] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
 		}
 		for _, ep := range eps {
@@ -791,7 +825,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		// Handle DS config options
 		multiConfig, fail, keyAdded := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
 		if fail == true {
-			result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
+			result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
 			return
 		}
 		for _, mcfg := range multiConfig {
@@ -827,7 +861,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 						if sshKeyMtx != nil {
 							sshKeyMtx.Unlock()
 						}
-						result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+						result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
 						return
 					}
 				}
@@ -841,7 +875,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					}
 				}
 				if ctx.DryRunCode != 0 {
-					result = fmt.Sprintf("error: %d", ctx.DryRunCode)
+					result[2] = fmt.Sprintf("error: %d", ctx.DryRunCode)
 				}
 				return
 			}
@@ -856,7 +890,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					if sshKeyMtx != nil {
 						sshKeyMtx.Unlock()
 					}
-					result = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+					result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
 					return
 				}
 			}
@@ -902,7 +936,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				sz := ctx.StripErrorSize / 2
 				str = str[0:sz] + "..." + str[strLen-sz:strLen]
 			}
-			result = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
+			result[2] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
 			return
 		}
 		return
@@ -915,43 +949,41 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	prefix := "(***external***) "
 	if thrN > 1 {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
-		ch := make(chan string)
+		ch := make(chan [3]string)
 		nThreads := 0
 		for _, tsk := range newTasks {
 			go enrichExternal(ch, &tsk)
 			nThreads++
 			if nThreads == thrN {
-				info := <-ch
-				if info != "" {
-					lib.Printf("WARNING: %s\n", info)
+				ary := <-ch
+				if ary[2] != "" {
+					lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 				}
 				nThreads--
 				processedEndpoints++
-				// current task here (tsk) is approximate, actual finished task should be returned via channel but we're skipping this here
-				inf := prefix + tsk.ExternalIndex + ":" + tsk.Endpoint
+				inf := prefix + strings.Join(ary[:2], ":")
 				lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 			}
 		}
 		for nThreads > 0 {
-			info := <-ch
-			if info != "" {
-				lib.Printf("WARNING: %s\n", info)
+			ary := <-ch
+			if ary[2] != "" {
+				lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 			}
 			nThreads--
 			processedEndpoints++
-			inf := prefix + fmt.Sprintf("wait for %d threads", nThreads)
+			inf := prefix + strings.Join(ary[:2], ":") + ":" + fmt.Sprintf("wait for %d threads", nThreads)
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	} else {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using ST version\n", allIndices, allEndpoints)
 		for _, tsk := range newTasks {
-			info := enrichExternal(nil, &tsk)
-			if info != "" {
-				lib.Printf("WARNING: %s\n", info)
+			ary := enrichExternal(nil, &tsk)
+			if ary[2] != "" {
+				lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 			}
 			processedEndpoints++
-			inf := prefix + tsk.ExternalIndex + ":" + tsk.Endpoint
-			// Here info is accurate because this is from ST version
+			inf := prefix + strings.Join(ary[:2], ":")
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	}
