@@ -927,8 +927,15 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 						sshKeyMtx.Unlock()
 					}
 				}
-				if ctx.DryRunCode != 0 {
-					result[2] = fmt.Sprintf("error: %d", ctx.DryRunCode)
+				if ctx.DryRunCodeRandom {
+					rslt := rand.Intn(6)
+					if rslt > 0 {
+						result[2] = fmt.Sprintf("error: %d", rslt)
+					}
+				} else {
+					if ctx.DryRunCode != 0 {
+						result[2] = fmt.Sprintf("error: %d", ctx.DryRunCode)
+					}
 				}
 				return
 			}
@@ -3134,10 +3141,19 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 					tMtx.SSHKeyMtx.Unlock()
 				}
 			}
-			result.Code[1] = ctx.DryRunCode
-			if ctx.DryRunCode != 0 {
-				result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
-				result.Retries = rand.Intn(ctx.MaxRetry)
+			if ctx.DryRunCodeRandom {
+				rslt := rand.Intn(6)
+				result.Code[1] = rslt
+				if rslt > 0 {
+					result.Err = fmt.Errorf("error: %d", rslt)
+					result.Retries = rand.Intn(ctx.MaxRetry)
+				}
+			} else {
+				result.Code[1] = ctx.DryRunCode
+				if ctx.DryRunCode != 0 {
+					result.Err = fmt.Errorf("error: %d", ctx.DryRunCode)
+					result.Retries = rand.Intn(ctx.MaxRetry)
+				}
 			}
 			if !ctx.SkipEsData && !affs {
 				_ = setLastRun(ctx, tMtx, idxSlug, sEp)

@@ -27,6 +27,7 @@ type Ctx struct {
 	NodeSettleTime    int    // From SDS_NODE_SETTLE_TIME, number of seconds that master gives nodes to start-up and wait for ES mutex9es) to sync with master node, default 10 (in seconds)
 	DryRun            bool   // From SDS_DRY_RUN, if set it will do everything excluding actual grimoire stack execution (will report success for all commands instead)
 	DryRunCode        int    // From SDS_DRY_RUN_CODE, dry run exit code, default 0 which means success, possible values 1, 2, 3, 4
+	DryRunCodeRandom  bool   // From SDS_DRY_RUN_CODE_RANDOM, dry run exit code, will return random value from 0 to 5
 	DryRunSeconds     int    // From SDS_DRY_RUN_SECONDS, simulate each dry run command taking some time to execute
 	DryRunAllowSSH    bool   // From SDS_DRY_RUN_ALLOW_SSH, if set it will allow setting SSH keys in dry run mode
 	DryRunAllowFreq   bool   // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
@@ -125,6 +126,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowFreq = os.Getenv("SDS_DRY_RUN_ALLOW_FREQ") != ""
 	ctx.DryRunAllowMtx = os.Getenv("SDS_DRY_RUN_ALLOW_MTX") != ""
 	ctx.DryRunAllowRename = os.Getenv("SDS_DRY_RUN_ALLOW_RENAME") != ""
+	ctx.DryRunCodeRandom = os.Getenv("SDS_DRY_RUN_CODE_RANDOM") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
