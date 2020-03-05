@@ -2101,7 +2101,12 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if thrN > 1 {
 		stTime := time.Now()
 		lib.Printf("Final %d threads join\n", nThreads)
+		earlyAliasesProcessed := false
 		for nThreads > 0 {
+			if !earlyAliasesProcessed {
+				gAliasesFunc()
+				earlyAliasesProcessed = true
+			}
 			result := <-ch
 			res := result.Code
 			taffs := result.Affs
