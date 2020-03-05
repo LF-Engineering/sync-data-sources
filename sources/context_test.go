@@ -22,6 +22,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		CtxOut:            in.CtxOut,
 		DryRun:            in.DryRun,
 		DryRunCode:        in.DryRunCode,
+		DryRunCodeRandom:  in.DryRunCodeRandom,
 		DryRunSeconds:     in.DryRunSeconds,
 		DryRunAllowSSH:    in.DryRunAllowSSH,
 		DryRunAllowFreq:   in.DryRunAllowFreq,
@@ -186,6 +187,7 @@ func TestInit(t *testing.T) {
 		LatestItems:       false,
 		DryRun:            false,
 		DryRunCode:        0,
+		DryRunCodeRandom:  false,
 		DryRunSeconds:     0,
 		DryRunAllowSSH:    false,
 		DryRunAllowFreq:   false,
@@ -497,6 +499,7 @@ func TestInit(t *testing.T) {
 			map[string]string{
 				"SDS_DRY_RUN":              "1",
 				"SDS_DRY_RUN_CODE":         "4",
+				"SDS_DRY_RUN_CODE_RANDOM":  "yep",
 				"SDS_DRY_RUN_SECONDS":      "2",
 				"SDS_DRY_RUN_ALLOW_SSH":    "1",
 				"SDS_DRY_RUN_ALLOW_FREQ":   "y",
@@ -509,6 +512,7 @@ func TestInit(t *testing.T) {
 				map[string]interface{}{
 					"DryRun":            true,
 					"DryRunCode":        4,
+					"DryRunCodeRandom":  true,
 					"DryRunSeconds":     2,
 					"DryRunAllowSSH":    true,
 					"DryRunAllowFreq":   true,
