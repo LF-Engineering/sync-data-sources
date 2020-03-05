@@ -26,6 +26,8 @@ import (
 
 var (
 	randInitOnce sync.Once
+	gAliasesFunc func()
+	gAliasesMtx  *sync.Mutex
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
@@ -540,7 +542,12 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		ctx.ExecOutput = false
 		ctx.ExecOutputStderr = false
 	}()
-	aliasesFunc := func() {
+	gAliasesMtx = &sync.Mutex{}
+	gAliasesFunc := func() {
+		gAliasesMtx.Lock()
+		defer func() {
+			gAliasesMtx.Unlock()
+		}()
 		if !ctx.SkipAliases {
 			if ctx.CleanupAliases {
 				processAliases(ctx, &fixtures, lib.Delete)
@@ -549,7 +556,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		}
 	}
 	if didRenames {
-		aliasesFunc()
+		gAliasesFunc()
 	}
 	// We *try* to enrich external indexes, but we don't care if that actually suceeded
 	ch := make(chan struct{})
@@ -559,7 +566,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}(ch)
 	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
-	aliasesFunc()
+	gAliasesFunc()
 	<-ch
 	return rslt
 }
@@ -1973,6 +1980,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				os.Exit(1)
 			} else if sig == syscall.SIGALRM {
 				lib.Printf("Timeout after %d seconds\n", ctx.TimeoutSeconds)
+				lib.Printf("Ensuring aliases are created\n")
+				gAliasesFunc()
+				lib.Printf("Aliases processed after timeout\n")
 				os.Exit(2)
 			}
 		}
