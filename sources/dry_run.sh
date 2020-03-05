@@ -1,4 +1,9 @@
 #!/bin/bash
+if [ -z "$1" ]
+then
+  echo "$0: you need to specify env: test, prod"
+  exit 1
+fi
 #export SDS_SKIPTIME=1
 #export SDS_SKIP_SH=1
 #export SDS_SKIP_DATA=1
@@ -17,7 +22,7 @@ export SDS_DRY_RUN_SECONDS=1
 #export SDS_DRY_RUN_ALLOW_MTX=1
 #export SDS_DRY_RUN_ALLOW_RENAME=1
 export SDS_DRY_RUN_ALLOW_ORIGINS=1
-export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.prod.secret`
+export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
 export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 export SH_HOST=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_HOST.$1.secret`
 export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
