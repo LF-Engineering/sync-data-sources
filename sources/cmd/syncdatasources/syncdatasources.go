@@ -2432,10 +2432,6 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
-		_, ok := m["no-verify"]
-		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}, RedactedValue: []string{}})
-		}
 	} else if ds == lib.Pipermail {
 		for _, cfg := range *config {
 			name := cfg.Name
@@ -2446,10 +2442,6 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
-		}
-		_, ok := m["no-verify"]
-		if !ok {
-			c = append(c, lib.MultiConfig{Name: "no-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Discourse {
 		for _, cfg := range *config {
