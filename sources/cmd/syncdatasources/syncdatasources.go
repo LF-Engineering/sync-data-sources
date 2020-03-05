@@ -28,6 +28,7 @@ var (
 	randInitOnce sync.Once
 	gAliasesFunc func()
 	gAliasesMtx  *sync.Mutex
+	gKeyMtx      *sync.Mutex
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
@@ -542,6 +543,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 		ctx.ExecOutput = false
 		ctx.ExecOutputStderr = false
 	}()
+	gKeyMtx = &sync.Mutex{}
 	gAliasesMtx = &sync.Mutex{}
 	gAliasesFunc := func() {
 		gAliasesMtx.Lock()
@@ -818,8 +820,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					if sshKeyMtx != nil {
 						sshKeyMtx.Lock()
 					}
+					gKeyMtx.Lock()
 					fail := !makeCurrentSSHKey(ctx, idxSlug)
 					if fail == true {
+						gKeyMtx.Unlock()
 						if sshKeyMtx != nil {
 							sshKeyMtx.Unlock()
 						}
@@ -830,8 +834,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				if ctx.DryRunSeconds > 0 {
 					time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
 				}
-				if keyAdded && sshKeyMtx != nil {
-					sshKeyMtx.Unlock()
+				if keyAdded {
+					gKeyMtx.Unlock()
+					if sshKeyMtx != nil {
+						sshKeyMtx.Unlock()
+					}
 				}
 				if ctx.DryRunCode != 0 {
 					result = fmt.Sprintf("error: %d", ctx.DryRunCode)
@@ -842,8 +849,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				if sshKeyMtx != nil {
 					sshKeyMtx.Lock()
 				}
+				gKeyMtx.Lock()
 				fail := !makeCurrentSSHKey(ctx, idxSlug)
 				if fail == true {
+					gKeyMtx.Unlock()
 					if sshKeyMtx != nil {
 						sshKeyMtx.Unlock()
 					}
@@ -855,8 +864,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				lib.Printf("External endpoint: %s\n", rcl)
 			}
 			str, err := lib.ExecCommand(ctx, commandLine, nil)
-			if keyAdded && sshKeyMtx != nil {
-				sshKeyMtx.Unlock()
+			if keyAdded {
+				gKeyMtx.Unlock()
+				if sshKeyMtx != nil {
+					sshKeyMtx.Unlock()
+				}
 			}
 			str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 			// p2o.py do not return error even if its backend execution fails
@@ -3010,8 +3022,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				if tMtx.SSHKeyMtx != nil {
 					tMtx.SSHKeyMtx.Lock()
 				}
+				gKeyMtx.Lock()
 				fail := !makeCurrentSSHKey(ctx, idxSlug)
 				if fail == true {
+					gKeyMtx.Unlock()
 					if tMtx.SSHKeyMtx != nil {
 						tMtx.SSHKeyMtx.Unlock()
 					}
@@ -3023,8 +3037,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			if ctx.DryRunSeconds > 0 {
 				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
 			}
-			if keyAdded && tMtx.SSHKeyMtx != nil {
-				tMtx.SSHKeyMtx.Unlock()
+			if keyAdded {
+				gKeyMtx.Unlock()
+				if tMtx.SSHKeyMtx != nil {
+					tMtx.SSHKeyMtx.Unlock()
+				}
 			}
 			result.Code[1] = ctx.DryRunCode
 			if ctx.DryRunCode != 0 {
@@ -3040,8 +3057,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			if tMtx.SSHKeyMtx != nil {
 				tMtx.SSHKeyMtx.Lock()
 			}
+			gKeyMtx.Lock()
 			fail := !makeCurrentSSHKey(ctx, idxSlug)
 			if fail == true {
+				gKeyMtx.Unlock()
 				if tMtx.SSHKeyMtx != nil {
 					tMtx.SSHKeyMtx.Unlock()
 				}
@@ -3051,8 +3070,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 		}
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
-		if keyAdded && tMtx.SSHKeyMtx != nil {
-			tMtx.SSHKeyMtx.Unlock()
+		if keyAdded {
+			gKeyMtx.Unlock()
+			if tMtx.SSHKeyMtx != nil {
+				tMtx.SSHKeyMtx.Unlock()
+			}
 		}
 		str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 		// p2o.py do not return error even if its backend execution fails
