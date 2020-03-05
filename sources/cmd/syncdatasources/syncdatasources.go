@@ -759,11 +759,14 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		infoMtx.Unlock()
 		msg = strings.TrimSpace(msg)
 		msgs := strings.Split(msg, "\n")
+		if len(msgs) > 0 {
+			lib.Printf("External indices enrichment info:\n")
+		}
 		for _, line := range msgs {
 			lib.Printf("%s\n", line)
 		}
 	}
-	enrichExternal := func(ch chan [3]string, tsk *lib.Task) (result [3]string) {
+	enrichExternal := func(ch chan [3]string, tsk lib.Task) (result [3]string) {
 		defer func() {
 			updateInfo(false, result)
 			if ch != nil {
@@ -1010,10 +1013,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	prefix := "(***external***) "
 	if thrN > 1 {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
+		gInfoExternal()
 		ch := make(chan [3]string)
 		nThreads := 0
 		for _, tsk := range newTasks {
-			go enrichExternal(ch, &tsk)
+			go enrichExternal(ch, tsk)
 			nThreads++
 			if nThreads == thrN {
 				ary := <-ch
@@ -1038,8 +1042,9 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 	} else {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using ST version\n", allIndices, allEndpoints)
+		gInfoExternal()
 		for _, tsk := range newTasks {
-			ary := enrichExternal(nil, &tsk)
+			ary := enrichExternal(nil, tsk)
 			if ary[2] != "" {
 				lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 			}
@@ -1162,9 +1167,9 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []str
 			if strings.HasSuffix(origin, "/") {
 				origin = origin[:len(origin)-1]
 			}
-			ary := strings.Split(origin, "/")
-			if len(ary) >= 2 {
-				lAry := len(ary)
+			ary := strings.Split(strings.TrimSpace(origin), "/")
+			lAry := len(ary)
+			if lAry >= 2 {
 				endpoints = append(endpoints, ary[lAry-2]+" "+ary[lAry-1])
 			}
 		}
@@ -2336,6 +2341,9 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 				}
 			}
 			lAry := len(nAry)
+			if lAry < 2 {
+				return
+			}
 			repo := nAry[lAry-1]
 			if strings.HasSuffix(repo, ".git") {
 				lRepo := len(repo)
@@ -2361,6 +2369,9 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 				}
 			}
 			lAry := len(nAry)
+			if lAry < 2 {
+				return
+			}
 			e = append(e, nAry[lAry-2])
 			e = append(e, nAry[lAry-1])
 		} else {
