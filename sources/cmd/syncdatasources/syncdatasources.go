@@ -759,7 +759,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		lib.Printf("%s\n", msg)
 	}
 	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR1)
+	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGINT)
 	go func() {
 		for {
 			<-sigs
