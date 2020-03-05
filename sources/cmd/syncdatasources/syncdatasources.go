@@ -25,11 +25,11 @@ import (
 )
 
 var (
-	randInitOnce sync.Once
-	gAliasesFunc func()
-	gAliasesMtx  *sync.Mutex
-	gKeyMtx      *sync.Mutex
-	gInfoMtx     *sync.Mutex
+	randInitOnce  sync.Once
+	gInfoExternal func()
+	gAliasesFunc  func()
+	gAliasesMtx   *sync.Mutex
+	gKeyMtx       *sync.Mutex
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
@@ -546,7 +546,6 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}()
 	gKeyMtx = &sync.Mutex{}
 	gAliasesMtx = &sync.Mutex{}
-	gInfoMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
 		gAliasesMtx.Lock()
 		defer func() {
@@ -694,7 +693,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		key := [2]string{task.ExternalIndex, task.Endpoint}
 		remainingTasks[key] = struct{}{}
 	}
-	infoMtx := &sync.RWMutex{}
+	infoMtx := &sync.Mutex{}
 	updateInfo := func(in bool, result [3]string) {
 		key := [2]string{result[0], result[1]}
 		if in {
@@ -715,57 +714,55 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 		infoMtx.Unlock()
 	}
-	infoExternal := func() {
-		infoMtx.RLock()
-		gInfoMtx.Lock()
-		defer func() {
-			gInfoMtx.Unlock()
-		}()
+	gInfoExternal = func() {
+		infoMtx.Lock()
 		msg := ""
 		if len(processingTasks) > 0 {
-			msg += "Processing:\n"
+			msg += fmt.Sprintf("Processing: %d\n", len(processingTasks))
 			ary := []string{}
 			for task := range processingTasks {
 				ary = append(ary, task[0]+":"+task[1])
 			}
 			sort.Strings(ary)
-			msg += strings.Join(ary, "\n")
+			msg += strings.Join(ary, "\n") + "\n"
 		}
 		if len(processedTasks) > 0 {
 			msg += fmt.Sprintf("Processed: %d\n", len(processedTasks))
 		}
 		if len(succeededTasks) > 0 {
-			msg += "Succeeded:\n"
+			msg += fmt.Sprintf("Succeeded: %d\n", len(succeededTasks))
 			ary := []string{}
 			for task := range succeededTasks {
 				ary = append(ary, task[0]+":"+task[1])
 			}
 			sort.Strings(ary)
-			msg += strings.Join(ary, "\n")
+			msg += strings.Join(ary, "\n") + "\n"
 		}
 		if len(erroredTasks) > 0 {
-			msg += "Errored:\n"
+			msg += fmt.Sprintf("Errored: %d\n", len(erroredTasks))
 			ary := []string{}
 			for task := range erroredTasks {
 				ary = append(ary, task[0]+":"+task[1])
 			}
 			sort.Strings(ary)
-			msg += strings.Join(ary, "\n")
+			msg += strings.Join(ary, "\n") + "\n"
 		}
 		if len(remainingTasks) > 0 {
 			msg += fmt.Sprintf("Remaining: %d\n", len(remainingTasks))
+			ary := []string{}
+			for task := range remainingTasks {
+				ary = append(ary, task[0]+":"+task[1])
+			}
+			sort.Strings(ary)
+			msg += strings.Join(ary, "\n") + "\n"
 		}
-		infoMtx.RUnlock()
-		lib.Printf("%s\n", msg)
+		infoMtx.Unlock()
+		msg = strings.TrimSpace(msg)
+		msgs := strings.Split(msg, "\n")
+		for _, line := range msgs {
+			lib.Printf("%s\n", line)
+		}
 	}
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGUSR1, syscall.SIGINT)
-	go func() {
-		for {
-			<-sigs
-			infoExternal()
-		}
-	}()
 	enrichExternal := func(ch chan [3]string, tsk *lib.Task) (result [3]string) {
 		defer func() {
 			updateInfo(false, result)
@@ -919,7 +916,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					}
 				}
 				if ctx.DryRunSeconds > 0 {
-					time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+					if ctx.DryRunSecondsRandom {
+						time.Sleep(time.Duration(rand.Intn(ctx.DryRunSeconds*1000)) * time.Millisecond)
+					} else {
+						time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+					}
 				}
 				if keyAdded {
 					gKeyMtx.Unlock()
@@ -1007,7 +1008,6 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	lastTime := time.Now()
 	dtStart := lastTime
 	prefix := "(***external***) "
-	infoExternal()
 	if thrN > 1 {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
 		ch := make(chan [3]string)
@@ -1048,7 +1048,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	}
-	infoExternal()
+	gInfoExternal()
 	en := time.Now()
 	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", allIndices, allEndpoints, en.Sub(st))
 }
@@ -1989,9 +1989,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	mtx := &sync.RWMutex{}
 	info := func() {
 		mtx.RLock()
-		gInfoMtx.Lock()
 		defer func() {
-			gInfoMtx.Unlock()
 			mtx.RUnlock()
 		}()
 		if len(processing) > 0 {
@@ -2088,6 +2086,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		for {
 			sig := <-sigs
 			info()
+			gInfoExternal()
 			if sig == syscall.SIGINT {
 				lib.Printf("Exiting due to SIGINT\n")
 				os.Exit(1)
@@ -3136,7 +3135,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				}
 			}
 			if ctx.DryRunSeconds > 0 {
-				time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+				if ctx.DryRunSecondsRandom {
+					time.Sleep(time.Duration(rand.Intn(ctx.DryRunSeconds*1000)) * time.Millisecond)
+				} else {
+					time.Sleep(time.Duration(ctx.DryRunSeconds) * time.Second)
+				}
 			}
 			if keyAdded {
 				gKeyMtx.Unlock()
