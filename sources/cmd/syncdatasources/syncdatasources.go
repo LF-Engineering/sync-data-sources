@@ -1054,6 +1054,9 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 }
 
 func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []string) {
+	if ctx.DryRun && !ctx.DryRunAllowOrigins {
+		return
+	}
 	//lib.Printf("figureOutEndpoints(%s, %s)\n", index, dataSource)
 	//curl -H "Content-Type: application/json" URL/idx/_search -d'{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}'
 	data := `{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}`

@@ -27,6 +27,11 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod ./kubernetes/test_image_kubernetes.sh [command]` to test docker image on kubernetes (without Helm chart). Then inside the container run: `./run.sh`.
 
 
+# Locally
+
+- Use: `cd sources; make; ./dry_run.sh` even if you don't have correct `p2o.py` stack installed.
+
+
 # Helm
 
 - Go to `helm-charts/sds-helm` and follow instructions from `README.md` file in that derectory. Helm chart contains everything needed to run entire stack.
