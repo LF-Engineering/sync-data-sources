@@ -2424,9 +2424,9 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
 		}
-		_, ok = m["verify"]
+		_, ok = m["no-ssl-verify"]
 		if !ok {
-			c = append(c, lib.MultiConfig{Name: "verify", Value: []string{"False"}, RedactedValue: []string{"False"}})
+			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Slack {
 		for _, cfg := range *config {
@@ -2464,6 +2464,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
 		}
+		_, ok := m["no-ssl-verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
+		}
 	} else if ds == lib.Pipermail {
 		for _, cfg := range *config {
 			name := cfg.Name
@@ -2474,6 +2478,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
+		}
+		_, ok := m["no-ssl-verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else if ds == lib.Discourse {
 		for _, cfg := range *config {
