@@ -547,7 +547,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	gKeyMtx = &sync.Mutex{}
 	gAliasesMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
-    lib.Printf("Processing aliases\n")
+		lib.Printf("Processing aliases\n")
 		gAliasesMtx.Lock()
 		defer func() {
 			gAliasesMtx.Unlock()
@@ -646,7 +646,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 						lib.Task{
 							Endpoint:      endpoint,
 							Config:        randomSdsTask.Config,
-							DsSlug:        randomSdsTask.DsSlug,
+							DsSlug:        dsSlug,
 							DsFullSlug:    randomSdsTask.DsFullSlug,
 							FxSlug:        "random:" + randomSdsTask.FxSlug,
 							FxFn:          "random:" + randomSdsTask.FxFn,
@@ -685,18 +685,18 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	if thrN > 1 {
 		sshKeyMtx = &sync.Mutex{}
 	}
-	remainingTasks := make(map[[2]string]struct{})
-	processingTasks := make(map[[2]string]struct{})
-	processedTasks := make(map[[2]string]struct{})
-	succeededTasks := make(map[[2]string]struct{})
-	erroredTasks := make(map[[2]string]struct{})
+	remainingTasks := make(map[[3]string]struct{})
+	processingTasks := make(map[[3]string]struct{})
+	processedTasks := make(map[[3]string]struct{})
+	succeededTasks := make(map[[3]string]struct{})
+	erroredTasks := make(map[[3]string]struct{})
 	for _, task := range newTasks {
-		key := [2]string{task.ExternalIndex, task.Endpoint}
+		key := [3]string{task.ExternalIndex, task.DsSlug, task.Endpoint}
 		remainingTasks[key] = struct{}{}
 	}
 	infoMtx := &sync.Mutex{}
-	updateInfo := func(in bool, result [3]string) {
-		key := [2]string{result[0], result[1]}
+	updateInfo := func(in bool, result [4]string) {
+		key := [3]string{result[0], result[1], result[2]}
 		if in {
 			infoMtx.Lock()
 			delete(remainingTasks, key)
@@ -704,7 +704,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			infoMtx.Unlock()
 			return
 		}
-		ok := result[2] == ""
+		ok := result[3] == ""
 		infoMtx.Lock()
 		delete(processingTasks, key)
 		processedTasks[key] = struct{}{}
@@ -722,7 +722,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			msg += fmt.Sprintf("Processing: %d\n", len(processingTasks))
 			ary := []string{}
 			for task := range processingTasks {
-				ary = append(ary, task[0]+":"+task[1])
+				ary = append(ary, task[0]+":"+task[1]+":"+task[2])
 			}
 			sort.Strings(ary)
 			msg += strings.Join(ary, "\n") + "\n"
@@ -734,7 +734,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			msg += fmt.Sprintf("Succeeded: %d\n", len(succeededTasks))
 			ary := []string{}
 			for task := range succeededTasks {
-				ary = append(ary, task[0]+":"+task[1])
+				ary = append(ary, task[0]+":"+task[1]+":"+task[2])
 			}
 			sort.Strings(ary)
 			msg += strings.Join(ary, "\n") + "\n"
@@ -743,7 +743,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			msg += fmt.Sprintf("Errored: %d\n", len(erroredTasks))
 			ary := []string{}
 			for task := range erroredTasks {
-				ary = append(ary, task[0]+":"+task[1])
+				ary = append(ary, task[0]+":"+task[1]+":"+task[2])
 			}
 			sort.Strings(ary)
 			msg += strings.Join(ary, "\n") + "\n"
@@ -752,7 +752,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			msg += fmt.Sprintf("Remaining: %d\n", len(remainingTasks))
 			ary := []string{}
 			for task := range remainingTasks {
-				ary = append(ary, task[0]+":"+task[1])
+				ary = append(ary, task[0]+":"+task[1]+":"+task[2])
 			}
 			sort.Strings(ary)
 			msg += strings.Join(ary, "\n") + "\n"
@@ -767,7 +767,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			lib.Printf("%s\n", line)
 		}
 	}
-	enrichExternal := func(ch chan [3]string, tsk lib.Task) (result [3]string) {
+	enrichExternal := func(ch chan [4]string, tsk lib.Task) (result [4]string) {
 		defer func() {
 			updateInfo(false, result)
 			if ch != nil {
@@ -775,7 +775,8 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			}
 		}()
 		result[0] = tsk.ExternalIndex
-		result[1] = tsk.Endpoint
+		result[1] = tsk.DsSlug
+		result[2] = tsk.Endpoint
 		updateInfo(true, result)
 		ds := tsk.DsSlug
 		idxSlug := tsk.ExternalIndex
@@ -850,7 +851,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		if strings.Contains(ds, "/") {
 			ary := strings.Split(ds, "/")
 			if len(ary) != 2 {
-				result[2] = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
+				result[3] = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
 				return
 			}
 			commandLine = append(commandLine, ary[0])
@@ -868,7 +869,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		// Handle DS endpoint
 		eps := massageEndpoint(tsk.Endpoint, ds)
 		if len(eps) == 0 {
-			result[2] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
+			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
 		}
 		for _, ep := range eps {
@@ -879,7 +880,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		// Handle DS config options
 		multiConfig, fail, keyAdded := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
 		if fail == true {
-			result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
+			result[3] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
 			return
 		}
 		for _, mcfg := range multiConfig {
@@ -915,7 +916,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 						if sshKeyMtx != nil {
 							sshKeyMtx.Unlock()
 						}
-						result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+						result[3] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
 						return
 					}
 				}
@@ -935,11 +936,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				if ctx.DryRunCodeRandom {
 					rslt := rand.Intn(6)
 					if rslt > 0 {
-						result[2] = fmt.Sprintf("error: %d", rslt)
+						result[3] = fmt.Sprintf("error: %d", rslt)
 					}
 				} else {
 					if ctx.DryRunCode != 0 {
-						result[2] = fmt.Sprintf("error: %d", ctx.DryRunCode)
+						result[3] = fmt.Sprintf("error: %d", ctx.DryRunCode)
 					}
 				}
 				return
@@ -955,7 +956,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					if sshKeyMtx != nil {
 						sshKeyMtx.Unlock()
 					}
-					result[2] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
+					result[3] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[5])
 					return
 				}
 			}
@@ -1001,7 +1002,7 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 				sz := ctx.StripErrorSize / 2
 				str = str[0:sz] + "..." + str[strLen-sz:strLen]
 			}
-			result[2] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
+			result[3] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
 			return
 		}
 		return
@@ -1015,30 +1016,30 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 	if thrN > 1 {
 		lib.Printf("Now processing %d external indices enrichments (%d endpoints) using method MT%d version\n", allIndices, allEndpoints, thrN)
 		gInfoExternal()
-		ch := make(chan [3]string)
+		ch := make(chan [4]string)
 		nThreads := 0
 		for _, tsk := range newTasks {
 			go enrichExternal(ch, tsk)
 			nThreads++
 			if nThreads == thrN {
 				ary := <-ch
-				if ary[2] != "" {
+				if ary[3] != "" {
 					lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 				}
 				nThreads--
 				processedEndpoints++
-				inf := prefix + strings.Join(ary[:2], ":")
+				inf := prefix + strings.Join(ary[:3], ":")
 				lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 			}
 		}
 		for nThreads > 0 {
 			ary := <-ch
-			if ary[2] != "" {
+			if ary[3] != "" {
 				lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 			}
 			nThreads--
 			processedEndpoints++
-			inf := prefix + strings.Join(ary[:2], ":") + ":" + fmt.Sprintf("wait for %d threads", nThreads)
+			inf := prefix + strings.Join(ary[:3], ":") + ":" + fmt.Sprintf("wait for %d threads", nThreads)
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	} else {
@@ -1046,11 +1047,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		gInfoExternal()
 		for _, tsk := range newTasks {
 			ary := enrichExternal(nil, tsk)
-			if ary[2] != "" {
+			if ary[3] != "" {
 				lib.Printf("WARNING: %s\n", strings.Join(ary[:], ":"))
 			}
 			processedEndpoints++
-			inf := prefix + strings.Join(ary[:2], ":")
+			inf := prefix + strings.Join(ary[:3], ":")
 			lib.ProgressInfo(processedEndpoints, allEndpoints, dtStart, &lastTime, time.Duration(1)*time.Minute, inf)
 		}
 	}
@@ -2398,6 +2399,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			redactedValue := value
 			if lib.IsRedacted(name) {
 				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
 			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
@@ -2407,6 +2409,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 					for _, key := range ary {
 						key = strings.Replace(key, "[", "", -1)
 						key = strings.Replace(key, "]", "", -1)
+						lib.AddRedacted(key, true)
 						vals = append(vals, key)
 					}
 					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
@@ -2432,6 +2435,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			redactedValue := value
 			if lib.IsRedacted(name) {
 				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -2449,6 +2453,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			redactedValue := value
 			if lib.IsRedacted(name) {
 				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -2463,6 +2468,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			if name == "ssh-key" {
@@ -2489,6 +2495,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2514,6 +2521,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2533,6 +2541,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2555,6 +2564,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			redactedValue := value
 			if lib.IsRedacted(name) {
 				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -2569,6 +2579,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2579,6 +2590,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 						rand.Seed(time.Now().UnixNano())
 					})
 					idx := rand.Intn(len(ary))
+					lib.AddRedacted(ary[idx], true)
 					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{ary[idx]}, RedactedValue: []string{lib.Redacted}})
 				} else {
 					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
@@ -2600,6 +2612,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2625,6 +2638,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			redactedValue := value
 			if lib.IsRedacted(name) {
 				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
 			}
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -2639,6 +2653,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2660,6 +2675,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
@@ -2683,6 +2699,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}

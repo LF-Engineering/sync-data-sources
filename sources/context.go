@@ -76,7 +76,7 @@ func (ctx *Ctx) Init() {
 	if ctx.ElasticURL == "" {
 		ctx.ElasticURL = "http://127.0.0.1:9200"
 	}
-	GElasticURL = ctx.ElasticURL
+	AddRedacted(ctx.ElasticURL, false)
 
 	// Debug
 	if os.Getenv("SDS_DEBUG") == "" {
@@ -158,6 +158,10 @@ func (ctx *Ctx) Init() {
 	ctx.ShHost = os.Getenv("SH_HOST")
 	ctx.ShPass = os.Getenv("SH_PASS")
 	ctx.ShDB = os.Getenv("SH_DB")
+	AddRedacted(ctx.ShUser, false)
+	AddRedacted(ctx.ShHost, false)
+	AddRedacted(ctx.ShPass, false)
+	AddRedacted(ctx.ShDB, false)
 
 	if !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
@@ -251,6 +255,7 @@ func (ctx *Ctx) Init() {
 
 	// GitHub OAuth
 	ctx.GitHubOAuth = os.Getenv("SDS_GITHUB_OAUTH")
+	AddRedacted(ctx.GitHubOAuth, false)
 
 	// Latest items p2o.py backend flag support
 	ctx.LatestItems = os.Getenv("SDS_LATEST_ITEMS") != ""

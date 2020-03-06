@@ -60,6 +60,9 @@ const BackendUser string = "backend-user"
 // BackendPassword - backend-password
 const BackendPassword string = "backend-password"
 
+// User - user
+const User string = "user"
+
 // Email - email
 const Email string = "email"
 
