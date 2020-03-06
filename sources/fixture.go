@@ -39,7 +39,7 @@ func (c Config) RedactedString() string {
 
 // IsRedacted - returns whatever "name" config option should be redacted or not
 func IsRedacted(name string) bool {
-	if name == APIToken || name == Email || name == "user" || name == SSHKey || name == BackendUser || name == BackendPassword || name == "password" {
+	if name == APIToken || name == Email || name == User || name == SSHKey || name == BackendUser || name == BackendPassword || name == Password {
 		return true
 	}
 	return false

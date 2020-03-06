@@ -2,7 +2,6 @@ package syncdatasources
 
 import (
 	"fmt"
-	"strings"
 	"sync"
 	"time"
 )
@@ -22,13 +21,9 @@ func newLogContext() *Ctx {
 	return &ctx
 }
 
-// PrintfRedacted is a wrapper around Printf(...) that supports logging.
+// PrintfRedacted is a wrapper around fmt.Printf(...) that supports logging.
 func PrintfRedacted(format string, args ...interface{}) (n int, err error) {
-	msg := fmt.Sprintf(format, args...)
-	if GElasticURL != "" {
-		msg = strings.Replace(msg, GElasticURL, Redacted, -1)
-	}
-	return fmt.Printf("%s", msg)
+	return fmt.Printf("%s", FilterRedacted(fmt.Sprintf(format, args...)))
 }
 
 // Printf is a wrapper around Printf(...) that supports logging.
@@ -44,9 +39,7 @@ func Printf(format string, args ...interface{}) (n int, err error) {
 	} else {
 		msg = fmt.Sprintf(format, args...)
 	}
-	if GElasticURL != "" {
-		msg = strings.Replace(msg, GElasticURL, Redacted, -1)
-	}
+	msg = FilterRedacted(msg)
 	n, err = fmt.Printf("%s", msg)
 	if logCtx.SkipEsLog {
 		return

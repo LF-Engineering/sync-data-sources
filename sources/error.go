@@ -4,23 +4,16 @@ import (
 	"fmt"
 	"os"
 	"runtime/debug"
-	"strings"
 	"time"
 )
-
-// GElasticURL - needed to be global, to redact it from error logs
-var GElasticURL string
 
 // FatalOnError displays error message (if error present) and exits program
 func FatalOnError(err error) string {
 	if err != nil {
 		tm := time.Now()
-		s := fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n%s\n", tm, err.Error(), string(debug.Stack()))
-		if GElasticURL != "" {
-			s = strings.Replace(s, GElasticURL, Redacted, -1)
-		}
-		Printf("%s", s)
-		fmt.Fprintf(os.Stderr, "%s", s)
+		msg := FilterRedacted(fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n%s\n", tm, err.Error(), string(debug.Stack())))
+		Printf("%s", msg)
+		fmt.Fprintf(os.Stderr, "%s", msg)
 		panic("stacktrace")
 	}
 	return OK
@@ -35,11 +28,7 @@ func Fatalf(f string, a ...interface{}) {
 func FatalNoLog(err error) string {
 	if err != nil {
 		tm := time.Now()
-		s := fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n", tm, err.Error())
-		if GElasticURL != "" {
-			s = strings.Replace(s, GElasticURL, Redacted, -1)
-		}
-		fmt.Fprintf(os.Stderr, "%s", s)
+		fmt.Fprintf(os.Stderr, "%s", FilterRedacted(fmt.Sprintf("Error(time=%+v):\nError: '%s'\nStacktrace:\n", tm, err.Error())))
 		panic("stacktrace")
 	}
 	return OK
