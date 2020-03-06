@@ -62,6 +62,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		MaxDeleteTrials:     in.MaxDeleteTrials,
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
+		EnrichExternalFreq:  in.EnrichExternalFreq,
 		TestMode:            in.TestMode,
 	}
 	return &out
@@ -115,6 +116,14 @@ func dynamicSetFields(t *testing.T, ctx *lib.Ctx, fields map[string]interface{})
 			// Check if types match
 			fieldType := field.Type()
 			if fieldType != reflect.TypeOf(time.Now()) {
+				t.Errorf("trying to set value %v, type %T for field \"%s\", type %v", interfaceValue, interfaceValue, fieldName, fieldKind)
+				return ctx
+			}
+			field.Set(reflect.ValueOf(fieldValue))
+		case time.Duration:
+			// Check if types match
+			fieldType := field.Type()
+			if fieldType != reflect.TypeOf(time.Now().Sub(time.Now())) {
 				t.Errorf("trying to set value %v, type %T for field \"%s\", type %v", interfaceValue, interfaceValue, fieldName, fieldKind)
 				return ctx
 			}
@@ -228,6 +237,7 @@ func TestInit(t *testing.T) {
 		MaxDeleteTrials:     10,
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
+		EnrichExternalFreq:  time.Duration(48) * time.Hour,
 		TestMode:            true,
 	}
 
@@ -300,6 +310,15 @@ func TestInit(t *testing.T) {
 					"MaxMtxWait":      30,
 					"MaxMtxWaitFatal": true,
 				},
+			),
+		},
+		{
+			"Setting maximum enrich external indices frequency",
+			map[string]string{"SDS_ENRICH_EXTERNAL_FREQ": "12h"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"EnrichExternalFreq": time.Duration(12) * time.Hour},
 			),
 		},
 		{

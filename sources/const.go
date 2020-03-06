@@ -84,6 +84,12 @@ const Locked string = "locked"
 // Unlocked - unlocked
 const Unlocked string = "unlocked"
 
+// Bitergia - bitergia
+const Bitergia string = "bitergia"
+
+// External - external
+const External string = "external"
+
 // Delete - DELETE
 const Delete string = "DELETE"
 
