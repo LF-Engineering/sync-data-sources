@@ -1,7 +1,6 @@
 package syncdatasources
 
 import (
-	"fmt"
 	"strings"
 	"sync"
 )
@@ -10,7 +9,7 @@ var (
 	// GRedactedStrings - need to be global, to redact them from error logs
 	GRedactedStrings map[string]struct{}
 	// GRedactedMtx - guard access to this map while in MT
-	GRedactedMtx *sync.Mutex
+	GRedactedMtx *sync.RWMutex
 	redactedOnce sync.Once
 )
 
@@ -19,7 +18,7 @@ func AddRedacted(newRedacted string, useMutex bool) {
 	// Initialize map & mutex once
 	redactedOnce.Do(func() {
 		GRedactedStrings = make(map[string]struct{})
-		GRedactedMtx = &sync.Mutex{}
+		GRedactedMtx = &sync.RWMutex{}
 	})
 	if useMutex {
 		GRedactedMtx.Lock()
@@ -28,18 +27,32 @@ func AddRedacted(newRedacted string, useMutex bool) {
 		}()
 	}
 	if len(newRedacted) > 3 {
-		_, ok := GRedactedStrings[newRedacted]
-		if !ok {
-			fmt.Printf("Adding redacted %d\n", len(newRedacted))
-		}
 		GRedactedStrings[newRedacted] = struct{}{}
 	}
 }
 
 // FilterRedacted - filter out all known redacted starings
 func FilterRedacted(str string) string {
+	GRedactedMtx.RLock()
+	defer func() {
+		GRedactedMtx.RUnlock()
+	}()
 	for redacted := range GRedactedStrings {
 		str = strings.Replace(str, redacted, Redacted, -1)
 	}
 	return str
+}
+
+// GetRedacted - get redacted
+func GetRedacted() (str string) {
+	GRedactedMtx.RLock()
+	defer func() {
+		GRedactedMtx.RUnlock()
+	}()
+	str = "["
+	for redacted := range GRedactedStrings {
+		str += redacted + " "
+	}
+	str += "]"
+	return
 }
