@@ -587,6 +587,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 	}
 	st := time.Now()
+	freqOK := checkSyncFreq(ctx, nil, lib.Bitergia, lib.External, ctx.EnrichExternalFreq)
+	if !freqOK {
+		return
+	}
 	fixtures := *pfixtures
 	tasks := *ptasks
 	manualEnrich := make(map[string][]string)
@@ -1084,6 +1088,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 	}
 	gInfoExternal()
+	updated := setLastRun(ctx, nil, lib.Bitergia, lib.External)
+	if !updated {
+		lib.Printf("failed to set last sync date for bitergia/external\n")
+	}
 	en := time.Now()
 	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", allIndices, allEndpoints, en.Sub(st))
 }
@@ -2899,7 +2907,7 @@ func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 
 func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
-	if tMtx.SyncFreqMtx != nil {
+	if tMtx != nil && tMtx.SyncFreqMtx != nil {
 		tMtx.SyncFreqMtx.Lock()
 		defer func() {
 			tMtx.SyncFreqMtx.Unlock()
@@ -2934,9 +2942,13 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 				lib.Printf("Failed to delete sync record for %s/%s, tried %d times\n", index, ep, ctx.MaxDeleteTrials)
 				return false
 			}
-			tMtx.SyncFreqMtx.Unlock()
+			if tMtx != nil {
+				tMtx.SyncFreqMtx.Unlock()
+			}
 			time.Sleep(time.Duration(10*trials) * time.Millisecond)
-			tMtx.SyncFreqMtx.Lock()
+			if tMtx != nil {
+				tMtx.SyncFreqMtx.Lock()
+			}
 		}
 	} else {
 		if ctx.Debug > 0 {
@@ -2959,7 +2971,7 @@ func setLastRun(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string) bool {
 
 func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.Duration) bool {
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\" AND type:\"last_sync\"", index, ep)
-	if tMtx.SyncFreqMtx != nil {
+	if tMtx != nil && tMtx.SyncFreqMtx != nil {
 		tMtx.SyncFreqMtx.RLock()
 		defer func() {
 			tMtx.SyncFreqMtx.RUnlock()
