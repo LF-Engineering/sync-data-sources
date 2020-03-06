@@ -608,18 +608,36 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			}
 		}
 	}
-	indexToTask := make(map[string]*lib.Task)
-	dataSourceToTask := make(map[string]*lib.Task)
+	indexToTask := make(map[string]lib.Task)
+	dataSourceToTask := make(map[string]lib.Task)
+	dsToCategory := make(map[string]map[string]struct{})
 	for i, task := range tasks {
 		idxSlug := "sds-" + task.FxSlug + "-" + task.DsSlug
 		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 		_, ok := indexToTask[idxSlug]
 		if !ok {
-			indexToTask[idxSlug] = &tasks[i]
+			indexToTask[idxSlug] = tasks[i]
 		}
-		_, ok = dataSourceToTask[task.DsSlug]
+		ds := task.DsSlug
+		_, ok = dataSourceToTask[ds]
 		if !ok {
-			dataSourceToTask[task.DsSlug] = &tasks[i]
+			dataSourceToTask[ds] = tasks[i]
+		}
+		if strings.Contains(ds, "/") {
+			ary := strings.Split(ds, "/")
+			strippedDs := ary[0]
+			category := ary[1]
+			_, ok = dataSourceToTask[strippedDs]
+			if !ok {
+				dataSourceToTask[strippedDs] = tasks[i]
+			}
+			categories, ok := dsToCategory[strippedDs]
+			if !ok {
+				dsToCategory[strippedDs] = map[string]struct{}{category: {}}
+			} else {
+				categories[category] = struct{}{}
+				dsToCategory[strippedDs] = categories
+			}
 		}
 	}
 	newTasks := []lib.Task{}
@@ -634,27 +652,37 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					lib.Printf("ERROR(not fatal): External index %s: cannot guess data source type from index name\n", bitergiaIndex)
 					continue
 				}
-				randomSdsTask, ok := dataSourceToTask[dsSlug]
+				categories, ok := dsToCategory[dsSlug]
 				if !ok {
-					lib.Printf("ERROR(not fatal): External index %s: guessed data source type %s from index name: cannot find any SDS index of that type\n", bitergiaIndex, dsSlug)
-					continue
+					categories = map[string]struct{}{"": {}}
 				}
-				endpoints := figureOutEndpoints(ctx, bitergiaIndex, dsSlug)
-				for _, endpoint := range endpoints {
-					newTasks = append(
-						newTasks,
-						lib.Task{
-							Endpoint:      endpoint,
-							Config:        randomSdsTask.Config,
-							DsSlug:        dsSlug,
-							DsFullSlug:    randomSdsTask.DsFullSlug,
-							FxSlug:        "random:" + randomSdsTask.FxSlug,
-							FxFn:          "random:" + randomSdsTask.FxFn,
-							MaxFreq:       randomSdsTask.MaxFreq,
-							ExternalIndex: bitergiaIndex,
-						},
-					)
-					processedIndices[bitergiaIndex] = struct{}{}
+				for category := range categories {
+					ds := dsSlug
+					if category != "" {
+						ds += "/" + category
+					}
+					randomSdsTask, ok := dataSourceToTask[dsSlug]
+					if !ok {
+						lib.Printf("ERROR(not fatal): External index %s: guessed data source type %s from index name: cannot find any SDS index of that type\n", bitergiaIndex, ds)
+						continue
+					}
+					endpoints := figureOutEndpoints(ctx, bitergiaIndex, ds)
+					for _, endpoint := range endpoints {
+						newTasks = append(
+							newTasks,
+							lib.Task{
+								Endpoint:      endpoint,
+								Config:        randomSdsTask.Config,
+								DsSlug:        ds,
+								DsFullSlug:    randomSdsTask.DsFullSlug,
+								FxSlug:        "random:" + randomSdsTask.FxSlug,
+								FxFn:          "random:" + randomSdsTask.FxFn,
+								MaxFreq:       randomSdsTask.MaxFreq,
+								ExternalIndex: bitergiaIndex,
+							},
+						)
+						processedIndices[bitergiaIndex] = struct{}{}
+					}
 				}
 			}
 			continue
@@ -1199,6 +1227,9 @@ func figureOutDatasourceFromIndexName(index string) (dataSource string) {
 		lib.BugzillaRest,
 		lib.MeetUp,
 	}
+	sort.Slice(known, func(i, j int) bool {
+		return len(known[i]) > len(known[j])
+	})
 	for _, ds := range known {
 		if strings.Contains(index, strings.ToLower(ds)) {
 			return ds
@@ -3288,4 +3319,5 @@ func main() {
 	}
 	dtEnd := time.Now()
 	lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
+	//fmt.Printf("%s\n", lib.GetRedacted())
 }
