@@ -575,7 +575,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	return rslt
 }
 
-func dedupEndpoints(first, second []string) (shared, onlyFirst []string) {
+func dedupOrigins(first, second []string) (shared, onlyFirst []string) {
 	sharedMap := make(map[string]struct{})
 	for _, f := range first {
 		hit := false
@@ -739,7 +739,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 						lib.Printf("ERROR(not fatal): External index %s: guessed data source type %s from index name: cannot find any SDS index of that type\n", bitergiaIndex, ds)
 						continue
 					}
-					endpoints := figureOutEndpoints(ctx, bitergiaIndex, ds)
+					endpoints, _ := figureOutEndpoints(ctx, bitergiaIndex, ds)
 					for _, endpoint := range endpoints {
 						newTasks = append(
 							newTasks,
@@ -761,31 +761,31 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			continue
 		}
 		for _, bitergiaIndex := range bitergiaIndices {
-			bitergiaEndpoints := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
+			bitergiaEndpoints, bitergiaOrigins := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
 			endpoints := []string{}
 			if ctx.SkipDedup {
 				endpoints = bitergiaEndpoints
 			} else {
 				sdsIndex := "sds-" + sdsTask.FxSlug + "-" + sdsTask.DsSlug
 				sdsIndex = strings.Replace(sdsIndex, "/", "-", -1)
-				sdsEndpoints := figureOutEndpoints(ctx, sdsIndex, sdsTask.DsSlug)
-				endpointsShared, endpointsOnlyBitergia := dedupEndpoints(bitergiaEndpoints, sdsEndpoints)
+				_, sdsOrigins := figureOutEndpoints(ctx, sdsIndex, sdsTask.DsSlug)
+				originsShared, originsOnlyBitergia := dedupOrigins(bitergiaOrigins, sdsOrigins)
 				if ctx.Debug > 0 {
-					lib.Printf("=========> %s vs. %s\nBITE %+v\nSDS  %+v\nSHAR %+v\nONLY %+v\n", bitergiaIndex, sdsIndex, bitergiaEndpoints, sdsEndpoints, endpointsShared, endpointsOnlyBitergia)
+					lib.Printf("=========> %s vs. %s\nBITE %+v\nSDS  %+v\nSHAR %+v\nONLY %+v\n", bitergiaIndex, sdsIndex, bitergiaOrigins, sdsOrigins, originsShared, originsOnlyBitergia)
 				}
-				if len(endpointsShared) > 0 {
-					lib.Printf("Bitergia origins %s:%+v share at least one origin with SDS origins: %s:%+v\n", bitergiaIndex, bitergiaEndpoints, sdsIndex, sdsEndpoints)
-					lib.Printf("Deleting Bitergia/SDS shared origins %s:%+v, bitergia index will only contain origins not present in %s SDS index: %+v\n", bitergiaIndex, endpointsShared, sdsIndex, endpointsOnlyBitergia)
-					if len(endpointsOnlyBitergia) == 0 {
+				if len(originsShared) > 0 {
+					lib.Printf("Bitergia origins %s:%+v share at least one origin with SDS origins: %s:%+v\n", bitergiaIndex, bitergiaOrigins, sdsIndex, sdsOrigins)
+					lib.Printf("Deleting Bitergia/SDS shared origins %s:%+v, bitergia index will only contain origins not present in %s SDS index: %+v\n", bitergiaIndex, originsShared, sdsIndex, originsOnlyBitergia)
+					if len(originsOnlyBitergia) == 0 {
 						lib.Printf("NOTICE: bitergia index %s is fully duplicated in SDS, so it basically can be removed from config fixtures\n", bitergiaIndex)
 					}
 					// We don't do this in multiple threads because deleting data from ES is a very heavy operation and doing that in multiple threads
 					// will not make it any faster. It will only result in more parallel timeouts.
-					if !dropOrigins(ctx, bitergiaIndex, endpointsShared) {
-						lib.Printf("Failed to delete %+v origins from %s\n", endpointsShared, bitergiaIndex)
+					if !dropOrigins(ctx, bitergiaIndex, originsShared) {
+						lib.Printf("Failed to delete %+v origins from %s\n", originsShared, bitergiaIndex)
 					}
 				}
-				endpoints = endpointsOnlyBitergia
+				endpoints, _ = figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
 			}
 			for _, endpoint := range endpoints {
 				newTasks = append(
@@ -1192,7 +1192,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", allIndices, allEndpoints, en.Sub(st))
 }
 
-func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []string) {
+func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, origins []string) {
 	if ctx.DryRun && !ctx.DryRunAllowOrigins {
 		return
 	}
@@ -1250,7 +1250,6 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints []str
 		lib.Printf("Cannot read buckets from %+v\n", payload)
 		return
 	}
-	origins := []string{}
 	for _, bucket := range buckets {
 		b, ok := bucket.(map[string]interface{})
 		if !ok {
