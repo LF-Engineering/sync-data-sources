@@ -774,8 +774,11 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					lib.Printf("=========> %s vs. %s\nBITE %+v\nSDS  %+v\nSHAR %+v\nONLY %+v\n", bitergiaIndex, sdsIndex, bitergiaEndpoints, sdsEndpoints, endpointsShared, endpointsOnlyBitergia)
 				}
 				if len(endpointsShared) > 0 {
-					lib.Printf("Bitergia origins %+v share at least one origin with SDS origins: %+v\n", bitergiaEndpoints, sdsEndpoints)
-					lib.Printf("Deleting Bitergia/SDS shared origins %+v, bitergia index will only contain origins not present in SDS: %+v\n", endpointsShared, endpointsOnlyBitergia)
+					lib.Printf("Bitergia origins %s:%+v share at least one origin with SDS origins: %s:%+v\n", bitergiaIndex, bitergiaEndpoints, sdsIndex, sdsEndpoints)
+					lib.Printf("Deleting Bitergia/SDS shared origins %s:%+v, bitergia index will only contain origins not present in %s SDS index: %+v\n", bitergiaIndex, endpointsShared, sdsIndex, endpointsOnlyBitergia)
+					if len(endpointsOnlyBitergia) == 0 {
+						lib.Printf("NOTICE: bitergia index %s is fully duplicated in SDS, so it basically can be removed from config fixtures\n", bitergiaIndex)
+					}
 					// We don't do this in multiple threads because deleting data from ES is a very heavy operation and doing that in multiple threads
 					// will not make it any faster. It will only result in more parallel timeouts.
 					if !dropOrigins(ctx, bitergiaIndex, endpointsShared) {
