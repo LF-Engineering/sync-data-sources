@@ -577,19 +577,26 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 
 func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
 	if ctx.SkipSH || ctx.SkipAffs {
+		lib.Printf("Skip SH or Skip affs is set, skipping enriching external indices\n")
 		return
 	}
+	st := time.Now()
+	lib.Printf("Enrich external indices: check node\n")
 	// If possible run on random non-master node, but if there is only one node then run on that node (master)
 	if ctx.NodeNum > 1 {
-		nodeIndex := rand.Intn(ctx.NodeNum-1) + 1
+		_, _, day := time.Now().Date()
+		nodeIndex := (day % (ctx.NodeNum - 1)) + 1
 		if ctx.NodeIdx != nodeIndex {
+			lib.Printf("This will only run on #%d node on %d day of month\n", nodeIndex, day)
 			return
 		}
 	}
-	st := time.Now()
-	freqOK := checkSyncFreq(ctx, nil, lib.Bitergia, lib.External, ctx.EnrichExternalFreq)
-	if !freqOK {
-		return
+	if !ctx.SkipEsData && !ctx.SkipCheckFreq {
+		lib.Printf("Enrich external indices: check last run\n")
+		freqOK := checkSyncFreq(ctx, nil, lib.Bitergia, lib.External, ctx.EnrichExternalFreq)
+		if !freqOK {
+			return
+		}
 	}
 	fixtures := *pfixtures
 	tasks := *ptasks
@@ -1088,9 +1095,11 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 		}
 	}
 	gInfoExternal()
-	updated := setLastRun(ctx, nil, lib.Bitergia, lib.External)
-	if !updated {
-		lib.Printf("failed to set last sync date for bitergia/external\n")
+	if !ctx.SkipEsData {
+		updated := setLastRun(ctx, nil, lib.Bitergia, lib.External)
+		if !updated {
+			lib.Printf("failed to set last sync date for bitergia/external\n")
+		}
 	}
 	en := time.Now()
 	lib.Printf("Processed %d external indices (%d endpoints) took: %v\n", allIndices, allEndpoints, en.Sub(st))
