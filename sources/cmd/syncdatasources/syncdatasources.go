@@ -565,7 +565,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	// We *try* to enrich external indexes, but we don't care if that actually suceeded
 	ch := make(chan struct{})
 	go func(ch chan struct{}) {
-		enrichExternalIndexes(ctx, &fixtures, &tasks)
+		enrichAndDedupExternalIndexes(ctx, &fixtures, &tasks)
 		ch <- struct{}{}
 	}(ch)
 	// Most important work
@@ -575,7 +575,69 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	return rslt
 }
 
-func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
+func dedupEndpoints(first, second []string) (shared, onlyFirst []string) {
+	sharedMap := make(map[string]struct{})
+	for _, f := range first {
+		hit := false
+		for _, s := range second {
+			if strings.Contains(f, s) || strings.Contains(s, f) {
+				sharedMap[f] = struct{}{}
+				sharedMap[s] = struct{}{}
+				hit = true
+			}
+		}
+		if !hit {
+			onlyFirst = append(onlyFirst, f)
+		}
+	}
+	for s := range sharedMap {
+		shared = append(shared, s)
+	}
+	return
+}
+
+func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
+	nOrigins := len(origins)
+	if nOrigins < 1 {
+		return
+	}
+	query := "origin:("
+	lastI := nOrigins - 1
+	for i, origin := range origins {
+		query += "\"" + origin + "\""
+		if i < lastI {
+			query += " OR "
+		} else {
+			query += ")"
+		}
+	}
+	if ctx.DryRun {
+		if !ctx.DryRunAllowDedup {
+			lib.Printf("Would dedup bitergia index %s via delete: %s\n", index, query)
+			return
+		}
+		lib.Printf("Dry run allowed dedup bitergia index %s via delete: %s\n", index, query)
+	}
+	trials := 0
+	for {
+		deleted := deleteByQuery(ctx, index, query)
+		if deleted {
+			if trials > 0 {
+				lib.Printf("Deleted from %s:%s after %d/%d trials\n", index, query, trials, ctx.MaxDeleteTrials)
+			}
+			break
+		}
+		trials++
+		if trials == ctx.MaxDeleteTrials {
+			lib.Fatalf("Failed to delete from %s:%s, tried %d times\n", index, query, ctx.MaxDeleteTrials)
+		}
+		time.Sleep(time.Duration(10*trials) * time.Millisecond)
+	}
+	ok = true
+	return
+}
+
+func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
 	if ctx.SkipSH || ctx.SkipAffs {
 		lib.Printf("Skip SH or Skip affs is set, skipping enriching external indices\n")
 		return
@@ -699,7 +761,25 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			continue
 		}
 		for _, bitergiaIndex := range bitergiaIndices {
-			endpoints := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
+			bitergiaEndpoints := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
+			endpoints := []string{}
+			if ctx.SkipDedup {
+				endpoints = bitergiaEndpoints
+			} else {
+				sdsIndex := "sds-" + sdsTask.FxSlug + "-" + sdsTask.DsSlug
+				sdsIndex = strings.Replace(sdsIndex, "/", "-", -1)
+				sdsEndpoints := figureOutEndpoints(ctx, sdsIndex, sdsTask.DsSlug)
+				endpointsShared, endpointsOnlyBitergia := dedupEndpoints(bitergiaEndpoints, sdsEndpoints)
+				if ctx.Debug > 0 {
+					lib.Printf("=========> %s vs. %s\nBITE %+v\nSDS  %+v\nSHAR %+v\nONLY %+v\n", bitergiaIndex, sdsIndex, bitergiaEndpoints, sdsEndpoints, endpointsShared, endpointsOnlyBitergia)
+				}
+				if len(endpointsShared) > 0 {
+					if !dropOrigins(ctx, bitergiaIndex, endpointsShared) {
+						lib.Printf("Failed to delete %+v origins from %s\n", endpointsShared, bitergiaIndex)
+					}
+				}
+				endpoints = endpointsOnlyBitergia
+			}
 			for _, endpoint := range endpoints {
 				newTasks = append(
 					newTasks,
