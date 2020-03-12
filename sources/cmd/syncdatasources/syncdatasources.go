@@ -596,9 +596,13 @@ func dedupOrigins(first, second []string) (shared, onlyFirst []string) {
 	return
 }
 
-func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
+func dropOriginsInternal(ctx *lib.Ctx, index string, origins []string) (ok bool) {
 	nOrigins := len(origins)
 	if nOrigins < 1 {
+		return
+	}
+	if nOrigins > 500 {
+		lib.Printf("Too many origins to delete, maximum is 500: %+v\n", origins)
 		return
 	}
 	query := "origin:("
@@ -629,11 +633,33 @@ func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
 		}
 		trials++
 		if trials == ctx.MaxDeleteTrials {
-			lib.Fatalf("Failed to delete from %s:%s, tried %d times\n", index, query, ctx.MaxDeleteTrials)
+			lib.Printf("ERROR: Failed to delete from %s:%s, tried %d times\n", index, query, ctx.MaxDeleteTrials)
+			return
 		}
 		time.Sleep(time.Duration(10*trials) * time.Millisecond)
 	}
 	ok = true
+	return
+}
+
+func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
+	nOrigins := len(origins)
+	bucketSize := 500
+	failed := false
+	nBuckets := (nOrigins / bucketSize) + 1
+	for i := 0; i < nBuckets; i++ {
+		from := i * bucketSize
+		to := from + bucketSize
+		if to > nOrigins {
+			to = nOrigins
+		}
+		deleted := dropOriginsInternal(ctx, index, origins[from:to])
+		if !deleted {
+			failed = true
+			lib.Printf("dropOrigins: bucket #%d/%d failed (%d origins), continuying\n", i+1, nBuckets, nOrigins)
+		}
+	}
+	ok = !failed
 	return
 }
 
