@@ -776,6 +776,8 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				if len(endpointsShared) > 0 {
 					lib.Printf("Bitergia origins %+v share at least one origin with SDS origins: %+v\n", bitergiaEndpoints, sdsEndpoints)
 					lib.Printf("Deleting Bitergia/SDS shared origins %+v, bitergia index will only contain origins not present in SDS: %+v\n", endpointsShared, endpointsOnlyBitergia)
+					// We don't do this in multiple threads because deleting data from ES is a very heavy operation and doing that in multiple threads
+					// will not make it any faster. It will only result in more parallel timeouts.
 					if !dropOrigins(ctx, bitergiaIndex, endpointsShared) {
 						lib.Printf("Failed to delete %+v origins from %s\n", endpointsShared, bitergiaIndex)
 					}
@@ -2923,8 +2925,8 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_delete_by_query?conflicts=proceed&refresh=true", ctx.ElasticURL, index)
-	rurl := fmt.Sprintf("/%s/_delete_by_query?conflicts=proceed&refresh=true", index)
+	url := fmt.Sprintf("%s/%s/_delete_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_delete_by_query?conflicts=proceed&refresh=true&timeout=20m", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
