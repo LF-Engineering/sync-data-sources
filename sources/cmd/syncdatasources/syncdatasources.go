@@ -1002,13 +1002,18 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 					sshKeyMtx.Unlock()
 				}
 			}
-			str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
+			// str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 			// p2o.py do not return error even if its backend execution fails
 			// we need to capture STDERR and check if there was python exception there
 			pyE := false
+			strippedStr := str
+			strLen := len(str)
+			if strLen > ctx.StripErrorSize {
+				strippedStr = str[0:ctx.StripErrorSize] + "\n(...)\n" + str[strLen-ctx.StripErrorSize:strLen]
+			}
 			if strings.Contains(str, lib.PyException) {
 				pyE = true
-				err = fmt.Errorf("%s", str)
+				err = fmt.Errorf("%s", strippedStr)
 			}
 			if err == nil {
 				if ctx.Debug > 0 {
@@ -1026,15 +1031,10 @@ func enrichExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib
 			if pyE {
 				lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", rcl, dtEnd.Sub(dtStart), retries, err)
 			} else {
-				lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, str)
+				lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
 				str += fmt.Sprintf(": %+v", err)
 			}
-			strLen := len(str)
-			if strLen > ctx.StripErrorSize {
-				sz := ctx.StripErrorSize / 2
-				str = str[0:sz] + "..." + str[strLen-sz:strLen]
-			}
-			result[3] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
+			result[3] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
 			return
 		}
 		return
@@ -3261,13 +3261,18 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				tMtx.SSHKeyMtx.Unlock()
 			}
 		}
-		str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
+		// str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 		// p2o.py do not return error even if its backend execution fails
 		// we need to capture STDERR and check if there was python exception there
 		pyE := false
+		strippedStr := str
+		strLen := len(str)
+		if strLen > ctx.StripErrorSize {
+			strippedStr = str[0:ctx.StripErrorSize] + "\n(...)\n" + str[strLen-ctx.StripErrorSize:strLen]
+		}
 		if strings.Contains(str, lib.PyException) {
 			pyE = true
-			err = fmt.Errorf("%s", str)
+			err = fmt.Errorf("%s", strippedStr)
 		}
 		if err == nil {
 			if ctx.Debug > 0 {
@@ -3285,16 +3290,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if pyE {
 			lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
 		} else {
-			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, str)
+			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
 			str += fmt.Sprintf(": %+v", err)
 		}
 		result.Code[1] = 4
-		strLen := len(str)
-		if strLen > ctx.StripErrorSize {
-			sz := ctx.StripErrorSize / 2
-			str = str[0:sz] + "..." + str[strLen-sz:strLen]
-		}
-		result.Err = fmt.Errorf("last retry took %v: %+v", dtEnd.Sub(dtStart), str)
+		result.Err = fmt.Errorf("last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
 		result.Retries = retries
 		return
 	}
