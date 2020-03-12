@@ -774,6 +774,8 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					lib.Printf("=========> %s vs. %s\nBITE %+v\nSDS  %+v\nSHAR %+v\nONLY %+v\n", bitergiaIndex, sdsIndex, bitergiaEndpoints, sdsEndpoints, endpointsShared, endpointsOnlyBitergia)
 				}
 				if len(endpointsShared) > 0 {
+					lib.Printf("Bitergia origins %+v share at least one origin with SDS origins: %+v\n", bitergiaEndpoints, sdsEndpoints)
+					lib.Printf("Deleting Bitergia/SDS shared origins %+v, bitergia index will only contain origins not present in SDS: %+v\n", endpointsShared, endpointsOnlyBitergia)
 					if !dropOrigins(ctx, bitergiaIndex, endpointsShared) {
 						lib.Printf("Failed to delete %+v origins from %s\n", endpointsShared, bitergiaIndex)
 					}
