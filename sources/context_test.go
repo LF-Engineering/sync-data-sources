@@ -30,6 +30,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowMtx:      in.DryRunAllowMtx,
 		DryRunAllowRename:   in.DryRunAllowRename,
 		DryRunAllowOrigins:  in.DryRunAllowOrigins,
+		DryRunAllowDedup:    in.DryRunAllowDedup,
 		TimeoutSeconds:      in.TimeoutSeconds,
 		NodeIdx:             in.NodeIdx,
 		NodeNum:             in.NodeNum,
@@ -59,6 +60,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipCheckFreq:       in.SkipCheckFreq,
 		SkipEsData:          in.SkipEsData,
 		SkipEsLog:           in.SkipEsLog,
+		SkipDedup:           in.SkipDedup,
 		MaxDeleteTrials:     in.MaxDeleteTrials,
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
@@ -206,6 +208,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowMtx:      false,
 		DryRunAllowRename:   false,
 		DryRunAllowOrigins:  false,
+		DryRunAllowDedup:    false,
 		TimeoutSeconds:      171900,
 		NodeIdx:             0,
 		NodeNum:             1,
@@ -234,6 +237,7 @@ func TestInit(t *testing.T) {
 		SkipCheckFreq:       false,
 		SkipEsData:          false,
 		SkipEsLog:           false,
+		SkipDedup:           false,
 		MaxDeleteTrials:     10,
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
@@ -530,6 +534,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_MTX":      "t",
 				"SDS_DRY_RUN_ALLOW_RENAME":   "x",
 				"SDS_DRY_RUN_ALLOW_ORIGINS":  "1",
+				"SDS_DRY_RUN_ALLOW_DEDUP":    "t",
 			},
 			dynamicSetFields(
 				t,
@@ -545,6 +550,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowMtx":      true,
 					"DryRunAllowRename":   true,
 					"DryRunAllowOrigins":  true,
+					"DryRunAllowDedup":    true,
 				},
 			),
 		},
@@ -637,6 +643,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipEsLog": true,
+				},
+			),
+		},
+		{
+			"Set skip dedup",
+			map[string]string{
+				"SDS_SKIP_DEDUP": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipDedup": true,
 				},
 			),
 		},
