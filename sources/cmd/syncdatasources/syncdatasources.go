@@ -810,10 +810,10 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					if !dropOrigins(ctx, bitergiaIndex, originsShared) {
 						lib.Printf("Failed to delete %+v origins from %s\n", originsShared, bitergiaIndex)
 					}
-				  endpoints, _ = figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
+					endpoints, _ = figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
 				} else {
-				  endpoints = bitergiaEndpoints
-        }
+					endpoints = bitergiaEndpoints
+				}
 			}
 			for _, endpoint := range endpoints {
 				newTasks = append(

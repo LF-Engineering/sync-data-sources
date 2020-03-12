@@ -215,7 +215,7 @@ func TestInit(t *testing.T) {
 		NodeHash:            false,
 		NodeSettleTime:      10,
 		NLongest:            10,
-		StripErrorSize:      0x400,
+		StripErrorSize:      2048,
 		LogTime:             true,
 		ExecFatal:           true,
 		ExecQuiet:           false,
@@ -482,7 +482,7 @@ func TestInit(t *testing.T) {
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"StripErrorSize": 1024},
+				map[string]interface{}{"StripErrorSize": 2048},
 			),
 		},
 		{
@@ -491,7 +491,7 @@ func TestInit(t *testing.T) {
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"StripErrorSize": 1024},
+				map[string]interface{}{"StripErrorSize": 2048},
 			),
 		},
 		{
@@ -500,7 +500,7 @@ func TestInit(t *testing.T) {
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"StripErrorSize": 1024},
+				map[string]interface{}{"StripErrorSize": 2048},
 			),
 		},
 		{
