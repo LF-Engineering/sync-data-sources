@@ -1198,12 +1198,12 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 	}
 	//lib.Printf("figureOutEndpoints(%s, %s)\n", index, dataSource)
 	//curl -H "Content-Type: application/json" URL/idx/_search -d'{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}'
-	data := `{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}`
+	data := `{"aggs":{"origin":{"terms":{"field":"origin","size":2147483647}}}}`
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Get
-	url := fmt.Sprintf("%s/%s/_search", ctx.ElasticURL, index)
-	rurl := fmt.Sprintf("/%s/_search", index)
+	url := fmt.Sprintf("%s/%s/_search?size=1", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_search?size=1", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
