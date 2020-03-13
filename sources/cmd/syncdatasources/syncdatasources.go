@@ -2062,9 +2062,9 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 	lib.Printf("Processed %d aliases using method %s took: %v\n", len(pairs), method, en.Sub(st))
 }
 
-func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
+func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool) {
 	var writer *csv.Writer
-	csvFile := fmt.Sprintf("/root/.perceval/%s_%d_%d.csv", ctx.CSVPrefix, ctx.NodeIdx, ctx.NodeNum)
+	csvFile := fmt.Sprintf("/root/.perceval/%s_%s_%d_%d.csv", ctx.CSVPrefix, when, ctx.NodeIdx, ctx.NodeNum)
 	oFile, err := os.Create(csvFile)
 	if err != nil {
 		lib.Printf("CSV create error: %+v\n", err)
@@ -2089,7 +2089,11 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 		return tasks[i].FxSlug < tasks[j].FxSlug
 	})
 	for _, task := range tasks {
-		err = writer.Write(task.ToCSV())
+		f := task.ToCSV
+		if !redacted {
+			f = task.ToCSVNotRedacted
+		}
+		err = writer.Write(f())
 		if err != nil {
 			lib.Printf("CSV write row (%+v) error: %+v\n", task, err)
 			return
@@ -2098,9 +2102,19 @@ func saveCSV(ctx *lib.Ctx, tasks []lib.Task) {
 	lib.Printf("CSV file %s written\n", csvFile)
 }
 
+func saveCSV(ctx *lib.Ctx, tasks []lib.Task, when string) {
+	ch := make(chan struct{})
+	go func() {
+		saveCSVInternal(ctx, tasks, "redacted_"+when, true)
+		ch <- struct{}{}
+	}()
+	saveCSVInternal(ctx, tasks, when, false)
+	<-ch
+}
+
 func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	tasks := *ptasks
-	saveCSV(ctx, tasks)
+	saveCSV(ctx, tasks, "init")
 	thrN := lib.GetThreadsNum(ctx)
 	tMtx := lib.TaskMtx{}
 	if thrN > 1 {
@@ -2156,7 +2170,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	endTimes := make(map[int]time.Time)
 	durations := make(map[int]time.Duration)
 	mtx := &sync.RWMutex{}
-	info := func() {
+	info := func(when string) {
 		mtx.RLock()
 		defer func() {
 			mtx.RUnlock()
@@ -2249,12 +2263,12 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		if out {
 			lib.Printf("Processed %d/%d (%.2f%%), failed: %d (%.2f%%)\n", processed, all, (float64(processed)*100.0)/float64(all), len(failed), (float64(len(failed))*100.0)/float64(all))
 		}
-		saveCSV(ctx, tasks)
+		saveCSV(ctx, tasks, when)
 	}
 	go func() {
 		for {
 			sig := <-sigs
-			info()
+			info("signal")
 			gInfoExternal()
 			if sig == syscall.SIGINT {
 				lib.Printf("Exiting due to SIGINT\n")
@@ -2434,7 +2448,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		enTime := time.Now()
 		lib.Printf("Pass (threads join) finished in %v\n", enTime.Sub(stTime))
 	}
-	info()
+	info("final")
 	return nil
 }
 
