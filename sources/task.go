@@ -62,6 +62,32 @@ func (t Task) ShortStringCmd(ctx *Ctx) string {
 	return s
 }
 
+// ToCSVNotRedacted - outputs array of string for CSV output of this task (without redacting sensitive data)
+func (t Task) ToCSVNotRedacted() []string {
+	confAry := []string{}
+	for _, config := range t.Config {
+		confAry = append(confAry, config.String())
+	}
+	err := ""
+	if t.Err != nil {
+		err = fmt.Sprintf("%+v", t.Err)
+	}
+	return []string{
+		fmt.Sprintf("%+v", time.Now()),
+		t.FxSlug,
+		t.FxFn,
+		t.DsSlug,
+		t.DsFullSlug,
+		t.Endpoint,
+		"{" + strings.Join(confAry, ", ") + "}",
+		t.CommandLine,
+		t.Duration.String(),
+		fmt.Sprintf("%.3f", t.Duration.Seconds()),
+		fmt.Sprintf("%d", t.Retries),
+		err,
+	}
+}
+
 // ToCSV - outputs array of string for CSV output of this task
 func (t Task) ToCSV() []string {
 	confAry := []string{}
