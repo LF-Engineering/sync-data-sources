@@ -1226,7 +1226,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 	}
 	//lib.Printf("figureOutEndpoints(%s, %s)\n", index, dataSource)
 	//curl -H "Content-Type: application/json" URL/idx/_search -d'{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}'
-	data := `{"aggs":{"origin":{"terms":{"field":"origin","size":2147483647}}}}`
+	data := `{"size":0,"aggs":{"origin":{"terms":{"field":"origin","size":2147483647}}}}`
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Get
