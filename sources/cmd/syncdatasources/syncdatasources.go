@@ -2285,9 +2285,10 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	lastTime := time.Now()
 	dtStart := lastTime
 	modes := []bool{false, true}
+	modesStr := []string{"data", "affs"}
 	nThreads := 0
 	ch := make(chan lib.TaskResult)
-	for _, affs := range modes {
+	for modeIdx, affs := range modes {
 		stTime := time.Now()
 		lib.Printf("Affiliations mode: %+v\n", affs)
 		if affs == false && ctx.SkipData {
@@ -2392,6 +2393,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		}
 		enTime := time.Now()
 		lib.Printf("Pass (affiliations: %+v) finished in %v (excluding pending %d threads)\n", affs, enTime.Sub(stTime), nThreads)
+		info(modesStr[modeIdx])
 	}
 	if thrN > 1 {
 		stTime := time.Now()
