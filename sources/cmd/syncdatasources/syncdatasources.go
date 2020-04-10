@@ -1945,6 +1945,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	}
 	extras = append(extras, curr)
 	for _, indices := range extras {
+		lib.Printf("Deleting indices: %s\n", indices)
 		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, indices)
 		rurl = fmt.Sprintf("/%s", indices)
 		if ctx.DryRun {
@@ -1961,11 +1962,9 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
 		if resp.StatusCode != 200 {
 			body, err := ioutil.ReadAll(resp.Body)
+			_ = resp.Body.Close()
 			if err != nil {
 				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 				return
@@ -1973,6 +1972,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 			return
 		}
+		_ = resp.Body.Close()
 		lib.Printf("%d indices dropped\n", len(strings.Split(indices, ",")))
 	}
 	return
@@ -2072,9 +2072,10 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		}
 	}
 	extras = append(extras, curr)
-	for _, indices := range extras {
-		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, indices)
-		rurl = fmt.Sprintf("/_all/_alias/%s", indices)
+	for _, aliases := range extras {
+		lib.Printf("Deleting aliases: %s\n", aliases)
+		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, aliases)
+		rurl = fmt.Sprintf("/_all/_alias/%s", aliases)
 		if ctx.DryRun {
 			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
 			return
@@ -2089,11 +2090,9 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 			return
 		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
 		if resp.StatusCode != 200 {
 			body, err := ioutil.ReadAll(resp.Body)
+			_ = resp.Body.Close()
 			if err != nil {
 				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
 				return
@@ -2101,7 +2100,8 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 			return
 		}
-		lib.Printf("%d aliases dropped\n", len(strings.Split(indices, ",")))
+		_ = resp.Body.Close()
+		lib.Printf("%d aliases dropped\n", len(strings.Split(aliases, ",")))
 	}
 }
 
