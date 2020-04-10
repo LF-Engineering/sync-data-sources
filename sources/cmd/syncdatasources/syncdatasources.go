@@ -3257,7 +3257,9 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	if project == "" || origin == "" {
 		return
 	}
-	lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
+	if ctx.Debug >= 0 {
+		lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
+	}
 	inline := "ctx._source.project=\"" + project + "\""
 	data := lib.EsUpdateByQuery{
 		Script: lib.EsScript{
@@ -3301,12 +3303,20 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 		return
 	}
-	body, err := ioutil.ReadAll(resp.Body)
+	payload := lib.EsUpdateByQueryPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
-		lib.Printf("ReadAll2 request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		body, err2 := ioutil.ReadAll(resp.Body)
+		if err2 != nil {
+			lib.Printf("ReadAll request error when parsing response: %+v/%+v for %s url: %s, data: %+v", err, err2, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 		return
 	}
-	lib.Printf(">>> %s", body)
+	if ctx.Debug >= 0 {
+		lib.Printf("Setting project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
+	}
 }
 
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {

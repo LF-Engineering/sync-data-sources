@@ -65,6 +65,11 @@ type EsSearchResultPayload struct {
 	Aggregations interface{}        `json:"aggregations"`
 }
 
+// EsUpdateByQueryPayload - update by query result payload
+type EsUpdateByQueryPayload struct {
+	Updated int64 `json:"updated"`
+}
+
 // ES last_run support in sdsdata index
 
 // EsLastRunPayload - last run support
