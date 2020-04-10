@@ -30,6 +30,7 @@ var (
 	gAliasesFunc  func()
 	gAliasesMtx   *sync.Mutex
 	gKeyMtx       *sync.Mutex
+	gCSVMtx       *sync.Mutex
 )
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
@@ -634,6 +635,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	}()
 	gKeyMtx = &sync.Mutex{}
 	gAliasesMtx = &sync.Mutex{}
+	gCSVMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
 		lib.Printf("Processing aliases\n")
 		gAliasesMtx.Lock()
@@ -2176,6 +2178,7 @@ func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool)
 		lib.Printf("CSV write header error: %+v\n", err)
 		return
 	}
+	gCSVMtx.Lock()
 	sort.SliceStable(tasks, func(i, j int) bool {
 		if tasks[i].FxSlug == tasks[j].FxSlug {
 			if tasks[i].DsFullSlug == tasks[j].DsFullSlug {
@@ -2185,6 +2188,7 @@ func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool)
 		}
 		return tasks[i].FxSlug < tasks[j].FxSlug
 	})
+	gCSVMtx.Unlock()
 	for _, task := range tasks {
 		f := task.ToCSV
 		if !redacted {
@@ -3653,5 +3657,4 @@ func main() {
 	}
 	dtEnd := time.Now()
 	lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
-	//fmt.Printf("%s\n", lib.GetRedacted())
 }
