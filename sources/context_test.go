@@ -31,6 +31,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowRename:   in.DryRunAllowRename,
 		DryRunAllowOrigins:  in.DryRunAllowOrigins,
 		DryRunAllowDedup:    in.DryRunAllowDedup,
+		DryRunAllowProject:  in.DryRunAllowProject,
 		TimeoutSeconds:      in.TimeoutSeconds,
 		NodeIdx:             in.NodeIdx,
 		NodeNum:             in.NodeNum,
@@ -61,6 +62,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipEsData:          in.SkipEsData,
 		SkipEsLog:           in.SkipEsLog,
 		SkipDedup:           in.SkipDedup,
+		SkipProject:         in.SkipProject,
 		MaxDeleteTrials:     in.MaxDeleteTrials,
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
@@ -209,6 +211,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowRename:   false,
 		DryRunAllowOrigins:  false,
 		DryRunAllowDedup:    false,
+		DryRunAllowProject:  false,
 		TimeoutSeconds:      171900,
 		NodeIdx:             0,
 		NodeNum:             1,
@@ -238,6 +241,7 @@ func TestInit(t *testing.T) {
 		SkipEsData:          false,
 		SkipEsLog:           false,
 		SkipDedup:           false,
+		SkipProject:         false,
 		MaxDeleteTrials:     10,
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
@@ -535,6 +539,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_RENAME":   "x",
 				"SDS_DRY_RUN_ALLOW_ORIGINS":  "1",
 				"SDS_DRY_RUN_ALLOW_DEDUP":    "t",
+				"SDS_DRY_RUN_ALLOW_PROJECT":  "x",
 			},
 			dynamicSetFields(
 				t,
@@ -551,6 +556,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowRename":   true,
 					"DryRunAllowOrigins":  true,
 					"DryRunAllowDedup":    true,
+					"DryRunAllowProject":  true,
 				},
 			),
 		},
@@ -656,6 +662,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipDedup": true,
+				},
+			),
+		},
+		{
+			"Set skip project",
+			map[string]string{
+				"SDS_SKIP_PROJECT": "x",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipProject": true,
 				},
 			),
 		},

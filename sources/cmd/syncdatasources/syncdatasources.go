@@ -2451,7 +2451,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						tMtx.TaskOrderMtx.Unlock()
 					}
 					if result.Err == nil && result.SetProject[0] != "" {
-						go setProject(result.SetProject)
+						setProject(ctx, result.Index, result.SetProject)
 					}
 				}
 			}
@@ -2490,7 +2490,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 				if result.Err == nil && result.SetProject[0] != "" {
-					setProject(result.SetProject)
+					setProject(ctx, result.Index, result.SetProject)
 				}
 			}
 		}
@@ -2548,6 +2548,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tMtx.OrderMtx[tIdx] = tmtx
 				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
 				tMtx.TaskOrderMtx.Unlock()
+			}
+			if result.Err == nil && result.SetProject[0] != "" {
+				setProject(ctx, result.Index, result.SetProject)
 			}
 		}
 		enTime := time.Now()
@@ -3245,14 +3248,65 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 	return allowed
 }
 
-func setProject(data [2]string) {
-	project := data[0]
-	origin := data[1]
+func setProject(ctx *lib.Ctx, index string, conf [2]string) {
+	if ctx.SkipProject || (ctx.DryRun && !ctx.DryRunAllowProject) {
+		return
+	}
+	project := conf[0]
+	origin := conf[1]
 	if project == "" || origin == "" {
 		return
 	}
-	lib.Printf("Setting project '%s' on '%s' origin\n", project, origin)
-	// xxx
+	lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
+	inline := "ctx._source.project=\"" + project + "\""
+	data := lib.EsUpdateByQuery{
+		Script: lib.EsScript{
+			Inline: inline,
+		},
+		Query: lib.EsQueryTerm{
+			Term: lib.EsTermOrigin{
+				Origin: origin,
+			},
+		},
+	}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for update_by_query: %s: %+v\n", err, index, data)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_update_by_query", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_update_by_query", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		lib.Printf("ReadAll2 request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	lib.Printf(">>> %s", body)
 }
 
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
@@ -3271,12 +3325,12 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if !task.ProjectP2O && task.Project != "" {
 		result.SetProject = [2]string{task.Project, task.Endpoint}
 	}
-
 	// Handle DS slug
 	ds := task.DsSlug
 	fds := task.DsFullSlug
 	idxSlug := "sds-" + task.FxSlug + "-" + fds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+	result.Index = idxSlug
 	commandLine := []string{
 		"p2o.py",
 		"--enrich",

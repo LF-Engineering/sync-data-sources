@@ -37,6 +37,7 @@ type Ctx struct {
 	DryRunAllowRename   bool          // From SDS_DRY_RUN_ALLOW_RENAME, if set it will allow handling ES index renaming in dry run mode
 	DryRunAllowOrigins  bool          // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices orignis list in dry run mode
 	DryRunAllowDedup    bool          // From SDS_DRY_RUN_ALLOW_DEDUP, if set it will allow dedup bitergia data by deleting origins shared with existing SDS indices
+	DryRunAllowProject  bool          // From SDS_DRY_RUN_ALLOW_PROJECT, if set it will allow running set project by SDS (on endpoints with project set and p2o mode set to false)
 	TimeoutSeconds      int           // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest            int           // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH              bool          // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
@@ -57,6 +58,7 @@ type Ctx struct {
 	SkipEsData          bool          // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog           bool          // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	SkipDedup           bool          // From SDS_SKIP_DEDUP, will skip attemting to dedup data shared on existing SDS index and external bitergia index (by deleting shared origin data from the external Bitergia index)
+	SkipProject         bool          // From SDS_SKIP_PROJECT, will skip adding column "project": "project name" on all documents where origin = endpoint name
 	MaxDeleteTrials     int           // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait          int           // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal     bool          // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
@@ -134,6 +136,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowRename = os.Getenv("SDS_DRY_RUN_ALLOW_RENAME") != ""
 	ctx.DryRunAllowOrigins = os.Getenv("SDS_DRY_RUN_ALLOW_ORIGINS") != ""
 	ctx.DryRunAllowDedup = os.Getenv("SDS_DRY_RUN_ALLOW_DEDUP") != ""
+	ctx.DryRunAllowProject = os.Getenv("SDS_DRY_RUN_ALLOW_PROJECT") != ""
 	ctx.DryRunCodeRandom = os.Getenv("SDS_DRY_RUN_CODE_RANDOM") != ""
 	ctx.DryRunSecondsRandom = os.Getenv("SDS_DRY_RUN_SECONDS_RANDOM") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
@@ -322,6 +325,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip dedup
 	ctx.SkipDedup = os.Getenv("SDS_SKIP_DEDUP") != ""
+
+	// Skip project
+	ctx.SkipProject = os.Getenv("SDS_SKIP_PROJECT") != ""
 
 	// Max delete by query attempts - this can fail due to version conflicts
 	if os.Getenv("SDS_MAX_DELETE_TRIALS") == "" {

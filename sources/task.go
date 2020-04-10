@@ -134,6 +134,7 @@ type TaskResult struct {
 	Retries             int
 	Affs                bool
 	Err                 error
+	Index               string
 	SetProject          [2]string
 }
 
