@@ -236,7 +236,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				name := rawEndpoint.Name
 				if projP2O != nil && *projP2O {
-					name = proj + ":::" + name
+					name += ":::" + proj
 				}
 				fixture.DataSources[i].RawEndpoints = append(
 					fixture.DataSources[i].RawEndpoints,
@@ -256,8 +256,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				p2o = *(rawEndpoint.ProjectP2O)
 			}
 			name := rawEndpoint.Name
-			if p2o {
-				name = rawEndpoint.Project + ":::" + name
+			if p2o && rawEndpoint.Project != "" {
+				name += ":::" + rawEndpoint.Project
 			}
 			if !ok {
 				fixture.DataSources[i].Endpoints = append(
@@ -317,8 +317,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				for _, repo := range repos {
 					name := repo
-					if p2o {
-						name = rawEndpoint.Project + ":::" + name
+					if p2o && rawEndpoint.Project != "" {
+						name += ":::" + rawEndpoint.Project
 					}
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
@@ -375,8 +375,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				for _, repo := range repos {
 					name := repo
-					if p2o {
-						name = rawEndpoint.Project + ":::" + name
+					if p2o && rawEndpoint.Project != "" {
+						name += ":::" + rawEndpoint.Project
 					}
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
@@ -390,8 +390,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			default:
 				lib.Printf("Warning: unknown raw endpoint type: %s\n", epType)
 				name := rawEndpoint.Name
-				if p2o {
-					name = rawEndpoint.Project + ":::" + name
+				if p2o && rawEndpoint.Project != "" {
+					name += ":::" + rawEndpoint.Project
 				}
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
