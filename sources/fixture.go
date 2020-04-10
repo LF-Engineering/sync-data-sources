@@ -59,14 +59,14 @@ type Endpoint struct {
 type RawEndpoint struct {
 	Name       string            `yaml:"name"`
 	Flags      map[string]string `yaml:"flags"`
-	Project    string            //  See Endpoint
-	ProjectP2O bool
+	Project    string            `yaml:"project"`
+	ProjectP2O *bool             `yaml:"p2o"`
 }
 
 // Project holds project data and list of endpoints
 type Project struct {
 	Name         string        `yaml:"name"`
-	P2O          bool          `yaml:"p2o"`
+	P2O          *bool         `yaml:"p2o"`
 	RawEndpoints []RawEndpoint `yaml:"endpoints"`
 }
 
