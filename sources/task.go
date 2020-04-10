@@ -134,6 +134,7 @@ type TaskResult struct {
 	Retries             int
 	Affs                bool
 	Err                 error
+	SetProject          [2]string
 }
 
 // TaskMtx - holds are mutexes used in task processing

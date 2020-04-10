@@ -2450,6 +2450,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
 						tMtx.TaskOrderMtx.Unlock()
 					}
+					if result.Err == nil && result.SetProject[0] != "" {
+						go setProject(result.SetProject)
+					}
 				}
 			}
 		} else {
@@ -2486,6 +2489,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				processed++
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+				if result.Err == nil && result.SetProject[0] != "" {
+					setProject(result.SetProject)
+				}
 			}
 		}
 		enTime := time.Now()
@@ -3239,6 +3245,16 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 	return allowed
 }
 
+func setProject(data [2]string) {
+	project := data[0]
+	origin := data[1]
+	if project == "" || origin == "" {
+		return
+	}
+	lib.Printf("Setting project '%s' on '%s' origin\n", project, origin)
+	// xxx
+}
+
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
@@ -3252,6 +3268,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	result.Code[0] = idx
 	result.Affs = affs
+	if !task.ProjectP2O && task.Project != "" {
+		result.SetProject = [2]string{task.Project, task.Endpoint}
+	}
 
 	// Handle DS slug
 	ds := task.DsSlug
