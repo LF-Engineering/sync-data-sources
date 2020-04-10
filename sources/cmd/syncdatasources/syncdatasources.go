@@ -1118,7 +1118,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				}
 			}
 		}
-		// Handle project
+		// Handle DS project
 		if tsk.ProjectP2O && tsk.Project != "" {
 			commandLine = append(commandLine, "--project", tsk.Project)
 			redactedCommandLine = append(redactedCommandLine, "--project", tsk.Project)
@@ -1427,7 +1427,7 @@ func figureOutDatasourceFromIndexName(index string) (dataSource string) {
 		lib.BugzillaRest,
 		lib.MeetUp,
 	}
-	sort.Slice(known, func(i, j int) bool {
+	sort.SliceStable(known, func(i, j int) bool {
 		return len(known[i]) > len(known[j])
 	})
 	for _, ds := range known {
@@ -2148,7 +2148,7 @@ func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool)
 		lib.Printf("CSV write header error: %+v\n", err)
 		return
 	}
-	sort.Slice(tasks, func(i, j int) bool {
+	sort.SliceStable(tasks, func(i, j int) bool {
 		if tasks[i].FxSlug == tasks[j].FxSlug {
 			if tasks[i].DsFullSlug == tasks[j].DsFullSlug {
 				return tasks[i].Endpoint < tasks[j].Endpoint
@@ -2263,7 +2263,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				durs[dur] = idx
 				dursAry = append(dursAry, dur)
 			}
-			sort.Slice(dursAry, func(i, j int) bool {
+			sort.SliceStable(dursAry, func(i, j int) bool {
 				return dursAry[j] < dursAry[i]
 			})
 			n := ctx.NLongest
@@ -2283,7 +2283,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					durs[dur] = idx
 					dursAry = append(dursAry, dur)
 				}
-				sort.Slice(dursAry, func(i, j int) bool {
+				sort.SliceStable(dursAry, func(i, j int) bool {
 					return dursAry[j] < dursAry[i]
 				})
 				n := ctx.NLongest
@@ -3023,7 +3023,7 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 	}
 	if len(dts) > 0 {
 		found = true
-		sort.Slice(dts, func(i, j int) bool {
+		sort.SliceStable(dts, func(i, j int) bool {
 			return dts[i].After(dts[j])
 		})
 		dt = dts[0]
@@ -3322,7 +3322,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		commandLine = append(commandLine, ds)
 		redactedCommandLine = append(redactedCommandLine, ds)
 	}
-
 	// Handle DS endpoint
 	eps := massageEndpoint(task.Endpoint, ds)
 	if len(eps) == 0 {
@@ -3344,7 +3343,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 		}
 	}
-
 	// Handle DS config options
 	multiConfig, fail, keyAdded := massageConfig(ctx, &(task.Config), ds, idxSlug)
 	if fail == true {
@@ -3368,6 +3366,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				redactedCommandLine = append(redactedCommandLine, val)
 			}
 		}
+	}
+	// Handle DS project
+	if task.ProjectP2O && task.Project != "" {
+		commandLine = append(commandLine, "--project", task.Project)
+		redactedCommandLine = append(redactedCommandLine, "--project", task.Project)
 	}
 	result.CommandLine = strings.Join(commandLine, " ")
 	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
