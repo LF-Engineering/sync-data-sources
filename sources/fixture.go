@@ -47,14 +47,27 @@ func IsRedacted(name string) bool {
 
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
-	Name string
+	Name       string // Endpoint name
+	Project    string // optional project (allows groupping endpoints), for example "Project value"
+	ProjectP2O bool   // if true SDS will pass `--project "Project value"` to p2o.py
+	// if false, SDS will post-process index and will add `"project": "Project value"`
+	// column where `"origin": "Endpoint name"`
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
 // flags can be "type: github_org/github_user" which means that we need to get actual repository list from github org/user
 type RawEndpoint struct {
-	Name  string            `yaml:"name"`
-	Flags map[string]string `yaml:"flags"`
+	Name       string            `yaml:"name"`
+	Flags      map[string]string `yaml:"flags"`
+	Project    string            //  See Endpoint
+	ProjectP2O bool
+}
+
+// Project holds project data and list of endpoints
+type Project struct {
+	Name         string        `yaml:"name"`
+	P2O          bool          `yaml:"p2o"`
+	RawEndpoints []RawEndpoint `yaml:"endpoints"`
 }
 
 // DataSource contains data source spec from dev-analytics-api
@@ -62,6 +75,7 @@ type DataSource struct {
 	Slug         string        `yaml:"slug"`
 	Config       []Config      `yaml:"config"`
 	MaxFrequency string        `yaml:"max_frequency"`
+	Projects     []Project     `yaml:"projects"`
 	RawEndpoints []RawEndpoint `yaml:"endpoints"`
 	IndexSuffix  string        `yaml:"index_suffix"`
 	Endpoints    []Endpoint    `yaml:"-"`
