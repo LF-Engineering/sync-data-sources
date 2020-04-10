@@ -218,11 +218,48 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
 	hint := -1
 	cache := make(map[string][]string)
-	for i := range fixture.DataSources {
+	for i, dataSource := range fixture.DataSources {
+		for _, projectData := range dataSource.Projects {
+			project := projectData.Name
+			projectP2O := projectData.P2O
+			if project == "" {
+				lib.Fatalf("Empty project name entry in %+v, data source %+v, fixture %+v\n", projectData, dataSource, fixture)
+			}
+			for _, rawEndpoint := range projectData.RawEndpoints {
+				proj := project
+				if rawEndpoint.Project != "" {
+					proj = rawEndpoint.Project
+				}
+				projP2O := projectP2O
+				if rawEndpoint.ProjectP2O != nil {
+					projP2O = rawEndpoint.ProjectP2O
+				}
+				fixture.DataSources[i].RawEndpoints = append(
+					fixture.DataSources[i].RawEndpoints,
+					lib.RawEndpoint{
+						Name:       rawEndpoint.Name,
+						Flags:      rawEndpoint.Flags,
+						Project:    proj,
+						ProjectP2O: projP2O,
+					},
+				)
+			}
+		}
 		for _, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
 			epType, ok := rawEndpoint.Flags["type"]
+			p2o := false
+			if rawEndpoint.ProjectP2O != nil {
+				p2o = *(rawEndpoint.ProjectP2O)
+			}
 			if !ok {
-				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: rawEndpoint.Name})
+				fixture.DataSources[i].Endpoints = append(
+					fixture.DataSources[i].Endpoints,
+					lib.Endpoint{
+						Name:       rawEndpoint.Name,
+						Project:    rawEndpoint.Project,
+						ProjectP2O: p2o,
+					},
+				)
 				continue
 			}
 			switch epType {
@@ -271,7 +308,14 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
-					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:       repo,
+							Project:    rawEndpoint.Project,
+							ProjectP2O: p2o,
+						},
+					)
 				}
 			case "github_user":
 				if hint < 0 {
@@ -318,11 +362,25 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
-					fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: repo})
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:       repo,
+							Project:    rawEndpoint.Project,
+							ProjectP2O: p2o,
+						},
+					)
 				}
 			default:
 				lib.Printf("Warning: unknown raw endpoint type: %s\n", epType)
-				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: rawEndpoint.Name})
+				fixture.DataSources[i].Endpoints = append(
+					fixture.DataSources[i].Endpoints,
+					lib.Endpoint{
+						Name:       rawEndpoint.Name,
+						Project:    rawEndpoint.Project,
+						ProjectP2O: p2o,
+					},
+				)
 				continue
 			}
 		}
@@ -510,6 +568,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 				tasks = append(
 					tasks,
 					lib.Task{
+						Project:    endpoint.Project,
+						ProjectP2O: endpoint.ProjectP2O,
 						Endpoint:   endpoint.Name,
 						Config:     dataSource.Config,
 						DsSlug:     dataSource.Slug,
@@ -770,6 +830,8 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 						newTasks = append(
 							newTasks,
 							lib.Task{
+								Project:       "",
+								ProjectP2O:    false,
 								Endpoint:      endpoint,
 								Config:        randomSdsTask.Config,
 								DsSlug:        ds,
@@ -819,6 +881,8 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				newTasks = append(
 					newTasks,
 					lib.Task{
+						Project:       "",
+						ProjectP2O:    false,
 						Endpoint:      endpoint,
 						Config:        sdsTask.Config,
 						DsSlug:        sdsTask.DsSlug,
@@ -1053,6 +1117,11 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					redactedCommandLine = append(redactedCommandLine, val)
 				}
 			}
+		}
+		// Handle project
+		if tsk.ProjectP2O && tsk.Project != "" {
+			commandLine = append(commandLine, "--project", tsk.Project)
+			redactedCommandLine = append(redactedCommandLine, "--project", tsk.Project)
 		}
 		rcl := strings.Join(redactedCommandLine, " ")
 		retries := 0
