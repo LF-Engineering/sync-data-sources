@@ -1932,6 +1932,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	curr := ""
 	maxSize := 0x800
 	for _, ex := range extra {
+		ex = lib.SafeString(ex)
 		if curr == "" {
 			curr = ex
 		} else {
@@ -2060,6 +2061,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	curr := ""
 	maxSize := 0x800
 	for _, ex := range extra {
+		ex = lib.SafeString(ex)
 		if curr == "" {
 			curr = ex
 		} else {
