@@ -1,0 +1,183 @@
+---
+#disabled: true
+native:
+  slug: lf/sds
+data_sources:
+- slug: git
+  endpoints: &github_endpoints
+  - name: https://github.com/cncf/devstats
+  projects: &github_projects
+  - name: TUF
+    endpoints:
+    - name: https://github.com/theupdateframework
+      flags:
+        type: github_org
+  - name: lg
+    endpoints:
+    - name: https://github.com/lukaszgryglicki
+      flags:
+        type: github_user
+  config:
+  - name: from-date
+    value: '2019-10-01'
+  index_suffix: '-for-merge'
+- slug: github/issue
+  projects: *github_projects
+  endpoints: *github_endpoints
+  config: &github_config
+  - name: api-token
+    value: "[token1,token2,...,tokenN]"
+  - name: from-date
+    value: '2020-01-01'
+  - name: to-date
+    value: '2020-04-01'
+- slug: github/pull_request
+  projects: *github_projects
+  endpoints: *github_endpoints
+  config: *github_config
+- slug: github/repository
+  projects: *github_projects
+  endpoints: *github_endpoints
+  config: *github_config
+- slug: confluence
+  endpoints:
+  - name: https://wiki.zowe.org
+  config:
+  - name: from-date
+    value: '2019-10-01'
+- slug: gerrit
+  endpoints:
+  - name: gerrit.akraino.org
+  config:
+  - name: from-date
+    value: '2019-10-01'
+  - name: user
+    value: username
+  - name: ssh-key # '<,'>s/[0-9a-zA-Z+/]/0/g
+    value: |
+      -----BEGIN RSA PRIVATE KEY-----
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000000000000000
+      0000000000000000000000000000000000000000000000000000
+      -----END RSA PRIVATE KEY-----
+- slug: jira
+  projects:
+  - name: CE
+    p2o: true
+    endpoints:
+    - name: https://jira.hyperledger.org
+  - name: Example-XYZ
+    p2o: true
+    endpoints:
+    - name: https://jira.hyperledger.org
+  - name: Example-ABC
+    p2o: true
+    endpoints:
+    - name: https://jira.hyperledger.org
+  config:
+  - name: from-date
+    value: '2019-10-01'
+  - name: backend-user
+    value: username
+  - name: backend-password
+    value: password-value
+- slug: slack
+  endpoints:
+  - name: C5CDK9S1X
+  config:
+  - name: api-token
+    value: token-value
+  - name: from-date
+    value: '2019-10-01'
+- slug: pipermail
+  endpoints:
+  - name: https://mails.dpdk.org/archives/users/
+  config:
+  - name: from-date
+    value: '2019-10-01'
+- slug: discourse
+  endpoints:
+  - name: https://edgex.discourse.group
+  config: *github_config
+- slug: jenkins
+  endpoints:
+  - name: https://jenkins.zowe.org
+  config:
+  - name: from-date
+    value: '2019-10-01'
+- slug: dockerhub
+  endpoints:
+  - name: "envoyproxy envoy"
+  config:
+  - name: from-date
+    value: '2019-10-01'
+- slug: bugzillarest
+  endpoints:
+  - name: https://bugs.dpdk.org/
+  config:
+  - name: backend-user
+    value: username
+  - name: backend-password
+    value: password-value
+  - name: from-date
+    value: '2019-10-01'
+- slug: bugzilla
+  endpoints:
+  - name: https://bugzilla.yoctoproject.org/
+  config:
+  - name: backend-user
+    value: username
+  - name: backend-password
+    value: password-value
+- slug: meetup
+  endpoints:
+  - name: SF-Prometheus-Meetup-Group
+  config:
+  - name: api-token
+    value: token-value
+  - name: from-date
+    value: '2019-10-01'
+- slug: groupsio
+  endpoints:
+  - name: OPNFV
+  config:
+  - name: email
+    value: email-address
+  - name: password
+    value: password-value
+  - name: from-date
+    value: '2019-10-01'
+  max_frequency: "24h"
+aliases:
+- from: lf/sds/github/issue
+  to:
+  - lf/sds-alias1/github/issue
+  - lf/sds-alias2/github/issue
+- from: lf/sds/git-for-merge
+  to:
+  - lf/sds/git
+- from: bitergia-external-data
+  to:
+  - lf/sds/git

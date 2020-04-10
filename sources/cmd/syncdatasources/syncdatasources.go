@@ -234,13 +234,17 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				if rawEndpoint.ProjectP2O != nil {
 					projP2O = rawEndpoint.ProjectP2O
 				}
+				name := rawEndpoint.Name
+				if projP2O != nil && *projP2O {
+					name = proj + ":::" + name
+				}
 				fixture.DataSources[i].RawEndpoints = append(
 					fixture.DataSources[i].RawEndpoints,
 					lib.RawEndpoint{
-						Name:       rawEndpoint.Name,
-						Flags:      rawEndpoint.Flags,
+						Name:       name,
 						Project:    proj,
 						ProjectP2O: projP2O,
+						Flags:      rawEndpoint.Flags,
 					},
 				)
 			}
@@ -251,11 +255,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			if rawEndpoint.ProjectP2O != nil {
 				p2o = *(rawEndpoint.ProjectP2O)
 			}
+			name := rawEndpoint.Name
+			if p2o {
+				name = rawEndpoint.Project + ":::" + name
+			}
 			if !ok {
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       rawEndpoint.Name,
+						Name:       name,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
 					},
@@ -308,10 +316,14 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
+					name := repo
+					if p2o {
+						name = rawEndpoint.Project + ":::" + name
+					}
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       repo,
+							Name:       name,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
 						},
@@ -362,10 +374,14 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
+					name := repo
+					if p2o {
+						name = rawEndpoint.Project + ":::" + name
+					}
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       repo,
+							Name:       name,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
 						},
@@ -373,10 +389,14 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			default:
 				lib.Printf("Warning: unknown raw endpoint type: %s\n", epType)
+				name := rawEndpoint.Name
+				if p2o {
+					name = rawEndpoint.Project + ":::" + name
+				}
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       rawEndpoint.Name,
+						Name:       name,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
 					},
@@ -430,6 +450,9 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 		return
 	}
 	postprocessFixture(gctx, gc, ctx, &fixture)
+	if ctx.Debug > 0 {
+		lib.Printf("Post-processed %s fixture: %+v\n", fixtureFile, fixture)
+	}
 	validateFixture(ctx, &fixture, fixtureFile)
 	return
 }
@@ -565,12 +588,17 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 						continue
 					}
 				}
+				name := endpoint.Name
+				if endpoint.ProjectP2O {
+					ary := strings.Split(name, ":::")
+					name = ary[0]
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
 						Project:    endpoint.Project,
 						ProjectP2O: endpoint.ProjectP2O,
-						Endpoint:   endpoint.Name,
+						Endpoint:   name,
 						Config:     dataSource.Config,
 						DsSlug:     dataSource.Slug,
 						DsFullSlug: dataSource.FullSlug,

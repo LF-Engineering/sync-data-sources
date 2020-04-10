@@ -4,16 +4,17 @@ then
   echo "$0: you need to specify env: test, prod"
   exit 1
 fi
+export SDS_DEBUG=1
 export SDS_SKIPTIME=1
-#export SDS_SKIP_SH=1
-#export SDS_SKIP_DATA=1
-#export SDS_SKIP_AFFS=1
-#export SDS_SKIP_ALIASES=1
-#export SDS_SKIP_DROP_UNUSED=1
-#export SDS_SKIP_CHECK_FREQ=1
+export SDS_SKIP_SH=1
+export SDS_SKIP_DATA=1
+export SDS_SKIP_AFFS=1
+export SDS_SKIP_ALIASES=1
+export SDS_SKIP_DROP_UNUSED=1
+export SDS_SKIP_CHECK_FREQ=1
 export SDS_SKIP_ES_DATA=1
 export SDS_SKIP_ES_LOG=1
-#export SDS_SKIP_DEDUP=1
+export SDS_SKIP_DEDUP=1
 export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_CODE=3
 #export SDS_DRY_RUN_CODE_RANDOM=1
@@ -31,5 +32,5 @@ export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
 export SH_DB=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_DB.$1.secret`
 export SH_USER=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_USER.$1.secret`
 export SH_PASS=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PASS.$1.secret`
-#export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
+export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 ./syncdatasources
