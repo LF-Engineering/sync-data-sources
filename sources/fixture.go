@@ -96,10 +96,11 @@ func (ds DataSource) Configs() string {
 func (ds DataSource) String() string {
 	configStr := ds.Configs()
 	return fmt.Sprintf(
-		"{Slug:%s,Config:%s,MaxFrequency:%s,RawEndpoints:%+v,Endpoints:%+v,MaxFreq:%+v,IndexSuffix:%s,FullSlug:%s}",
+		"{Slug:%s,Config:%s,MaxFrequency:%s,Projects:%+v,RawEndpoints:%+v,Endpoints:%+v,MaxFreq:%+v,IndexSuffix:%s,FullSlug:%s}",
 		ds.Slug,
 		configStr,
 		ds.MaxFrequency,
+		ds.Projects,
 		ds.RawEndpoints,
 		ds.Endpoints,
 		ds.MaxFreq,

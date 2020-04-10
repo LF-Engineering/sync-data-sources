@@ -2073,7 +2073,7 @@ func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool)
 	defer func() { _ = oFile.Close() }()
 	writer = csv.NewWriter(oFile)
 	defer writer.Flush()
-	hdr := []string{"timestamp", "project", "filename", "datasource", "full_datasource", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
+	hdr := lib.CSVHeader()
 	err = writer.Write(hdr)
 	if err != nil {
 		lib.Printf("CSV write header error: %+v\n", err)

@@ -22,6 +22,8 @@ type Task struct {
 	Duration            time.Duration
 	DsFullSlug          string
 	ExternalIndex       string
+	Project             string
+	ProjectP2O          bool
 }
 
 // String - default string output for a task (generic)
@@ -32,19 +34,19 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v, ExternalIndex: %s}",
-		t.Endpoint, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex,
+		"{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v, ExternalIndex: %s}",
+		t.Endpoint, t.Project, t.ProjectP2O, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex,
 	)
 }
 
 // ShortString - output quick endpoint info (usually used for non finished tasks)
 func (t Task) ShortString() string {
-	return fmt.Sprintf("%s: %s / %s", t.FxSlug, t.DsFullSlug, t.Endpoint)
+	return fmt.Sprintf("%s:%s / %s:%s", t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint)
 }
 
 // ShortStringCmd - output quick endpoint info (with command line)
 func (t Task) ShortStringCmd(ctx *Ctx) string {
-	s := fmt.Sprintf("%s: %s / %s [%s]: ", t.FxSlug, t.DsFullSlug, t.Endpoint, t.RedactedCommandLine)
+	s := fmt.Sprintf("%s:%s / %s:%s [%s]: ", t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint, t.RedactedCommandLine)
 	if t.Err == nil {
 		s += "succeeded"
 		if t.Retries > 0 {
@@ -60,6 +62,11 @@ func (t Task) ShortStringCmd(ctx *Ctx) string {
 		}
 	}
 	return s
+}
+
+// CSVHeader - CSV header fields
+func CSVHeader() []string {
+	return []string{"timestamp", "project", "filename", "datasource", "full_datasource", "project", "project_p2o", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
 }
 
 // ToCSVNotRedacted - outputs array of string for CSV output of this task (without redacting sensitive data)
@@ -78,6 +85,8 @@ func (t Task) ToCSVNotRedacted() []string {
 		t.FxFn,
 		t.DsSlug,
 		t.DsFullSlug,
+		t.Project,
+		fmt.Sprintf("%v", t.ProjectP2O),
 		t.Endpoint,
 		"{" + strings.Join(confAry, ", ") + "}",
 		t.CommandLine,
@@ -104,6 +113,8 @@ func (t Task) ToCSV() []string {
 		t.FxFn,
 		t.DsSlug,
 		t.DsFullSlug,
+		t.Project,
+		fmt.Sprintf("%v", t.ProjectP2O),
 		t.Endpoint,
 		"{" + strings.Join(confAry, ", ") + "}",
 		t.RedactedCommandLine,
