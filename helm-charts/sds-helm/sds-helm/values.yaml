@@ -144,3 +144,6 @@ debugPodName: 'sds-debug'
 debugCommand: '/bin/sleep'
 debugCommandArgs: ['36525d']
 debugImage: 'lukaszgryglicki/sync-data-sources'
+useNodeSelector: '1'
+nodeSelector:
+  lfda: grimoire
