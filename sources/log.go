@@ -47,3 +47,24 @@ func Printf(format string, args ...interface{}) (n int, err error) {
 	err = EsLog(logCtx, msg, now)
 	return
 }
+
+// PrintLogf is a wrapper around Printf(...) that supports logging.
+func PrintLogf(format string, args ...interface{}) (err error) {
+	// Initialize context once
+	logOnce.Do(func() { logCtx = newLogContext() })
+	if logCtx.SkipEsLog {
+		return
+	}
+
+	// Actual logging to stdout & DB
+	now := time.Now()
+	var msg string
+	if logCtx.LogTime {
+		msg = fmt.Sprintf("%s: "+format, append([]interface{}{ToYMDHMSDate(now)}, args...)...)
+	} else {
+		msg = fmt.Sprintf(format, args...)
+	}
+	msg = FilterRedacted(msg)
+	err = EsLog(logCtx, msg, now)
+	return
+}

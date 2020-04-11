@@ -3313,7 +3313,7 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	if project == "" || origin == "" {
 		return
 	}
-	if ctx.Debug >= 0 {
+	if ctx.Debug > 0 {
 		lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
 	}
 	inline := "ctx._source.project=\"" + project + "\""
@@ -3370,8 +3370,10 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 		return
 	}
-	if ctx.Debug >= 0 {
-		lib.Printf("Setting project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
+	if ctx.Debug > 0 {
+		lib.Printf("Set project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
+	} else {
+		lib.PrintLogf("Set project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
 	}
 }
 
