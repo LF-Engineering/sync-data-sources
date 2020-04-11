@@ -66,7 +66,7 @@ func (t Task) ShortStringCmd(ctx *Ctx) string {
 
 // CSVHeader - CSV header fields
 func CSVHeader() []string {
-	return []string{"timestamp", "project", "filename", "datasource", "full_datasource", "project", "project_p2o", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
+	return []string{"timestamp", "project", "filename", "datasource", "full_datasource", "sub_project", "p2o", "endpoint", "config", "commandline", "duration", "seconds", "retries", "error"}
 }
 
 // ToCSVNotRedacted - outputs array of string for CSV output of this task (without redacting sensitive data)
