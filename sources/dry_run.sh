@@ -4,6 +4,7 @@ then
   echo "$0: you need to specify env: test, prod"
   exit 1
 fi
+#export SDS_ST=1
 export SDS_DEBUG=1
 export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
