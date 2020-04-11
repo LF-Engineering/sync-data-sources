@@ -34,5 +34,5 @@ export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
 export SH_DB=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_DB.$1.secret`
 export SH_USER=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_USER.$1.secret`
 export SH_PASS=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PASS.$1.secret`
-export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
+#export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 ./syncdatasources

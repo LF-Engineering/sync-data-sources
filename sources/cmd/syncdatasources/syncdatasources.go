@@ -183,6 +183,20 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 		}
 		ste[name] = endpoint
 	}
+	hasProjects := len(dataSource.Projects) > 0
+	if hasProjects {
+		for _, cfg := range dataSource.Config {
+			if cfg.Name == "project" {
+				lib.Fatalf(
+					"You cannot have projects section defined and 'project' config option set at the same time, config: %s, projects %+v, data source: %s, fixture: %+v\n",
+					cfg.RedactedString(),
+					dataSource.Projects,
+					dataSource,
+					fixture,
+				)
+			}
+		}
+	}
 }
 
 func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
