@@ -2422,7 +2422,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		for {
 			sig := <-sigs
 			info("signal")
-			gInfoExternal()
+			if gInfoExternal != nil {
+				gInfoExternal()
+			}
 			if sig == syscall.SIGINT {
 				lib.Printf("Exiting due to SIGINT\n")
 				os.Exit(1)
