@@ -3336,8 +3336,8 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_update_by_query", ctx.ElasticURL, index)
-	rurl := fmt.Sprintf("/%s/_update_by_query", index)
+	url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", index)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
