@@ -3311,8 +3311,16 @@ func jsonEscape(str string) string {
 	return string(b[1 : len(b)-1])
 }
 
-func lastProjectDate(ctx *lib.Ctx, index string, silent bool) (epoch int64) {
-	data := `{"query":{"exists":{"field":"project"}},"sort":{"project_ts":"desc"}}`
+func lastProjectDate(ctx *lib.Ctx, index, origin string, silent bool) (epoch int64) {
+	data := ""
+	if origin == "" {
+		data = `{"query":{"exists":{"field":"project"}},"sort":{"project_ts":"desc"}}`
+	} else {
+		data = fmt.Sprintf(
+			`{"query":{"bool":{"must":[{"exists":{"field":"project"}},{"term":{"origin":"%s"}}]}},"sort":{"project_ts":"desc"}}`,
+			jsonEscape(origin),
+		)
+	}
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
@@ -3373,7 +3381,7 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	}
 	lastEpoch := int64(0)
 	if !ctx.SkipProjectTS {
-		lastEpoch = lastProjectDate(ctx, index, true)
+		lastEpoch = lastProjectDate(ctx, index, origin, true)
 	}
 	projectEpoch := time.Now().Unix()
 	var err error
