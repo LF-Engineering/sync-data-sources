@@ -9,4 +9,4 @@ then
   echo "$0: please specify index name as a 1st arg"
   exit 2
 fi
-curl -H 'Content-Type: application/json' "${ES_URL}/${1}/_doc/_search?size=0" -d '{"aggs":{"origin":{"terms":{"field":"origin", "size":2147483647}}}}' 2>/dev/null | jq '.aggregations.origin.buckets'
+curl -H 'Content-Type: application/json' "${ES_URL}/${1}/_doc/_search?size=0" -d '{"aggs":{"origin":{"terms":{"field":"origin","size":2147483647}}}}' 2>/dev/null | jq '.aggregations.origin.buckets'

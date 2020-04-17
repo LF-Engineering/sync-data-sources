@@ -42,11 +42,12 @@ type EsSearchPayload struct {
 
 // EsSearchResultSource - search result single hit's  source document
 type EsSearchResultSource struct {
-	Index    string    `json:"index"`
-	Endpoint string    `json:"endpoint"`
-	Type     string    `json:"type"`
-	Mtx      string    `json:"mtx"`
-	Dt       time.Time `json:"dt"`
+	Index     string    `json:"index"`
+	Endpoint  string    `json:"endpoint"`
+	Type      string    `json:"type"`
+	Mtx       string    `json:"mtx"`
+	Dt        time.Time `json:"dt"`
+	ProjectTS int64     `json:"project_ts"`
 }
 
 // EsSearchResultHit - search result single hit
