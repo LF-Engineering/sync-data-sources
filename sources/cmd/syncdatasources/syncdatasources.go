@@ -3392,7 +3392,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	result.Code[0] = idx
 	result.Affs = affs
-	if !task.ProjectP2O && task.Project != "" {
+	if !affs && !task.ProjectP2O && task.Project != "" {
 		result.SetProject = [2]string{task.Project, task.Endpoint}
 	}
 	// Handle DS slug
