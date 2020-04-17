@@ -63,6 +63,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipEsLog:           in.SkipEsLog,
 		SkipDedup:           in.SkipDedup,
 		SkipProject:         in.SkipProject,
+		SkipProjectTS:       in.SkipProjectTS,
 		MaxDeleteTrials:     in.MaxDeleteTrials,
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
@@ -242,6 +243,7 @@ func TestInit(t *testing.T) {
 		SkipEsLog:           false,
 		SkipDedup:           false,
 		SkipProject:         false,
+		SkipProjectTS:       false,
 		MaxDeleteTrials:     10,
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
@@ -668,13 +670,15 @@ func TestInit(t *testing.T) {
 		{
 			"Set skip project",
 			map[string]string{
-				"SDS_SKIP_PROJECT": "x",
+				"SDS_SKIP_PROJECT":    "x",
+				"SDS_SKIP_PROJECT_TS": "1",
 			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{
-					"SkipProject": true,
+					"SkipProject":   true,
+					"SkipProjectTS": true,
 				},
 			),
 		},

@@ -78,6 +78,12 @@ spec:
       value: '{{ $root.Values.skipAffs }}'
     - name: SDS_SKIP_ALIASES
       value: '{{ $root.Values.skipAliases }}'
+    - name: SDS_SKIP_DEDUP
+      value: '{{ $root.Values.skipDedup }}'
+    - name: SDS_SKIP_PROJECT
+      value: '{{ $root.Values.skipProject }}'
+    - name: SDS_SKIP_PROJECT_TS
+      value: '{{ $root.Values.skipProjectTS }}'
     - name: SDS_NO_MULTI_ALIASES
       value: '{{ $root.Values.noMultiAliases }}'
     - name: SDS_CLEANUP_ALIASES

@@ -3306,6 +3306,59 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 	return allowed
 }
 
+func jsonEscape(str string) string {
+	b, _ := json.Marshal(str)
+	return string(b[1 : len(b)-1])
+}
+
+func lastProjectDate(ctx *lib.Ctx, index string, silent bool) (epoch int64) {
+	data := `{"query":{"exists":{"field":"project"}},"sort":{"project_ts":"desc"}}`
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc/_search?size=1", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc/_search?size=1", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		if silent {
+			return
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%s\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	payload := lib.EsSearchResultPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	if len(payload.Hits.Hits) == 0 {
+		return
+	}
+	epoch = payload.Hits.Hits[0].Source.ProjectTS
+	return
+}
+
 func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	if ctx.SkipProject || (ctx.DryRun && !ctx.DryRunAllowProject) {
 		return
@@ -3318,21 +3371,41 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	if ctx.Debug > 0 {
 		lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
 	}
-	inline := "ctx._source.project=\"" + project + "\""
-	data := lib.EsUpdateByQuery{
-		Script: lib.EsScript{
-			Inline: inline,
-		},
-		Query: lib.EsQueryTerm{
-			Term: lib.EsTermOrigin{
-				Origin: origin,
-			},
-		},
+	lastEpoch := int64(0)
+	if !ctx.SkipProjectTS {
+		lastEpoch = lastProjectDate(ctx, index, true)
 	}
-	payloadBytes, err := json.Marshal(data)
-	if err != nil {
-		lib.Printf("JSON marshall error: %+v for update_by_query: %s: %+v\n", err, index, data)
-		return
+	projectEpoch := time.Now().Unix()
+	var err error
+	payloadBytes := []byte{}
+	data := ""
+	if lastEpoch == 0 {
+		inline := fmt.Sprintf(`ctx._source.project="%s";ctx._source.project_ts=%d`, project, projectEpoch)
+		jsonData := lib.EsUpdateByQuery{
+			Script: lib.EsScript{
+				Inline: inline,
+			},
+			Query: lib.EsQueryTerm{
+				Term: lib.EsTermOrigin{
+					Origin: origin,
+				},
+			},
+		}
+		payloadBytes, err = json.Marshal(jsonData)
+		if err != nil {
+			lib.Printf("JSON marshall error: %+v for update_by_query: %s: %+v\n", err, index, jsonData)
+			return
+		}
+		data = string(payloadBytes)
+	} else {
+		data = fmt.Sprintf(
+			`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":{"range":{"project_ts":{"lte":%d}}},"must":{"term":{"origin":"%s"}}}}}`,
+			jsonEscape(project),
+			projectEpoch,
+			lastEpoch,
+			jsonEscape(origin),
+		)
+		payloadBytes = []byte(data)
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
@@ -3372,10 +3445,11 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 		return
 	}
-	if ctx.Debug > 0 {
-		lib.Printf("Set project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
+	// FIXME: remove once battle tested (>= 0 --> > 0)
+	if ctx.Debug >= 0 {
+		lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
 	} else {
-		lib.PrintLogf("Set project '%s' on '%s' origin (index '%s'): updated: %d\n", project, origin, index, payload.Updated)
+		lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
 	}
 }
 

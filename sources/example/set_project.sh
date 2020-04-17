@@ -19,5 +19,10 @@ then
   echo "$0: please specify origin where to set project as a 3rd arg"
   exit 3
 fi
-#curl -XPOST -H 'Content-Type: application/json' "${ES_URL}/${1}/_update_by_query?pretty" -d'{"script":{"inline":"ctx._source.project=\"${2}\""},"query":{"term":{"origin":"${3}"}}}'
-curl -XPOST -H 'Content-Type: application/json' "${ES_URL}/${1}/_update_by_query?pretty" -d"{\"script\":{\"inline\":\"ctx._source.project=\\\"${2}\\\"\"},\"query\":{\"term\":{\"origin\":\"${3}\"}}}"
+ts=`date +%s`
+if [ -z "$4" ]
+then
+  curl -s -XPOST -H 'Content-Type: application/json' "${ES_URL}/${1}/_update_by_query?pretty" -d"{\"script\":{\"inline\":\"ctx._source.project=\\\"${2}\\\";ctx._source.project_ts=${ts};\"},\"query\":{\"term\":{\"origin\":\"${3}\"}}}" | jq
+else
+  curl -s -XPOST -H 'Content-Type: application/json' "${ES_URL}/${1}/_update_by_query?pretty" -d"{\"script\":{\"inline\":\"ctx._source.project=\\\"${2}\\\";ctx._source.project_ts=${ts};\"},\"query\":{\"bool\":{\"must_not\":{\"range\":{\"project_ts\":{\"lte\":${4}}}},\"must\":{\"term\":{\"origin\":\"${3}\"}}}}}" | jq
+fi
