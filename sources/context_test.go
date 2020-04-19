@@ -574,6 +574,8 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"OnlyValidate": true,
+					"SkipEsData":   true,
+					"SkipEsLog":    true,
 				},
 			),
 		},
