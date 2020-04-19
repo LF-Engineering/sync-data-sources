@@ -32,6 +32,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowOrigins:  in.DryRunAllowOrigins,
 		DryRunAllowDedup:    in.DryRunAllowDedup,
 		DryRunAllowProject:  in.DryRunAllowProject,
+		OnlyValidate:        in.OnlyValidate,
 		TimeoutSeconds:      in.TimeoutSeconds,
 		NodeIdx:             in.NodeIdx,
 		NodeNum:             in.NodeNum,
@@ -213,6 +214,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowOrigins:  false,
 		DryRunAllowDedup:    false,
 		DryRunAllowProject:  false,
+		OnlyValidate:        false,
 		TimeoutSeconds:      171900,
 		NodeIdx:             0,
 		NodeNum:             1,
@@ -559,6 +561,19 @@ func TestInit(t *testing.T) {
 					"DryRunAllowOrigins":  true,
 					"DryRunAllowDedup":    true,
 					"DryRunAllowProject":  true,
+				},
+			),
+		},
+		{
+			"Set validate only mode",
+			map[string]string{
+				"SDS_ONLY_VALIDATE": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"OnlyValidate": true,
 				},
 			),
 		},

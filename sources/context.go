@@ -64,6 +64,7 @@ type Ctx struct {
 	MaxMtxWait          int           // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal     bool          // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
 	EnrichExternalFreq  time.Duration // From SDS_ENRICH_EXTERNAL_FREQ, how often enrich external indexes, default is 48h which means no more often than 48h.
+	OnlyValidate        bool          // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	TestMode            bool          // True when running tests
 	ShUser              string        // Sorting Hat database parameters
 	ShHost              string
@@ -129,6 +130,9 @@ func (ctx *Ctx) Init() {
 		}
 	}
 
+	// Only validate support
+	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
+
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
 	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
@@ -172,7 +176,7 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.ShPass, false)
 	AddRedacted(ctx.ShDB, false)
 
-	if !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
+	if !ctx.OnlyValidate && !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
 		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, password, db) must all be defined unless skiping SortingHat"))
 	}
