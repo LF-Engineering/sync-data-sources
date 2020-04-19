@@ -30,6 +30,7 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_ORIGINS=1
 #export SDS_DRY_RUN_ALLOW_DEDUP=1
 #export SDS_DRY_RUN_ALLOW_PROJECT=1
+#export SDS_ONLY_VALIDATE=1
 export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
 export SH_HOST=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_HOST.$1.secret`
 export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
