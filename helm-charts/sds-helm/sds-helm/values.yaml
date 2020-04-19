@@ -72,6 +72,7 @@
 # skipCheckFreq: 'y'
 # skipEsData: 'y'
 # skipEsLog: 'y'
+# onlyValidate: '1'
 # stripErrorSize: '4096'
 # useRepoAccess: ''
 # latestItems: ''
@@ -103,6 +104,7 @@ skipEsLog: ''
 skipDedup: ''
 skipProject: ''
 skipProjectTS: ''
+onlyValidate: ''
 noMultiAliases: ''
 cleanupAliases: ''
 stripErrorSize: ''
@@ -150,6 +152,7 @@ debugPodName: 'sds-debug'
 debugCommand: '/bin/sleep'
 debugCommandArgs: ['36525d']
 debugImage: 'lukaszgryglicki/sync-data-sources'
+validateImage: 'lukaszgryglicki/validate-sync-data-sources'
 useNodeSelector: '1'
 nodeSelector:
   lfda: grimoire
