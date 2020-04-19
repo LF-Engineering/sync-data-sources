@@ -93,7 +93,58 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	return nil
 }
 
-func syncGrimoireStack(ctx *lib.Ctx) error {
+func validateFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
+	// Connect to GitHub
+	gctx, gcs := lib.GHClient(ctx)
+
+	fixtures := []lib.Fixture{}
+	for _, fixtureFile := range fixtureFiles {
+		if fixtureFile == "" {
+			continue
+		}
+		fixture := processFixtureFile(gctx, gcs, nil, ctx, fixtureFile)
+		if fixture.Disabled != true {
+			fixtures = append(fixtures, fixture)
+		}
+	}
+	if len(fixtures) == 0 {
+		lib.Fatalf("No fixtures read, this is error, please define at least one")
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Fixtures: %+v\n", fixtures)
+	}
+	if !ctx.SkipAliases && ctx.NoMultiAliases {
+		// Check if all aliases are unique
+		aliases := make(map[string]string)
+		for fi, fixture := range fixtures {
+			for ai, alias := range fixture.Aliases {
+				for ti, to := range alias.To {
+					desc := fmt.Sprintf("Fixture #%d: Fn:%s Slug:%s, Alias #%d: From:%s, To: #%d:%s", fi+1, fixture.Fn, fixture.Slug, ai+1, alias.From, ti+1, to)
+					got, ok := aliases[to]
+					if ok {
+						lib.Fatalf("Alias conflict (multi aliases disabled), already exists:\n%s\nWhile trying to add:\n%s\n", got, desc)
+					}
+					aliases[to] = desc
+				}
+			}
+		}
+	}
+	// Then for all fixtures defined, all slugs must be unique - check this also
+	st := make(map[string]lib.Fixture)
+	for _, fixture := range fixtures {
+		slug := fixture.Native["slug"]
+		slug = strings.Replace(slug, "/", "-", -1)
+		fixture2, ok := st[slug]
+		if ok {
+			lib.Fatalf("Duplicate slug %s in fixtures: %+v and %+v\n", slug, fixture, fixture2)
+		}
+		st[slug] = fixture
+	}
+	// Check for duplicated endpoints, they may be moved to a shared.yaml file
+	checkForSharedEndpoints(&fixtures)
+}
+
+func getFixtures(ctx *lib.Ctx) (fixtures []string) {
 	dtStart := time.Now()
 	ctx.ExecOutput = true
 	defer func() {
@@ -113,15 +164,13 @@ func syncGrimoireStack(ctx *lib.Ctx) error {
 	)
 	dtEnd := time.Now()
 	if err != nil {
-		lib.Printf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-		fmt.Fprintf(os.Stderr, "%v: Error finding fixtures (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-		return err
+		lib.Fatalf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
 	}
-	fixtures := strings.Split(res, "\n")
+	fixtures = strings.Split(res, "\n")
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures to process: %+v\n", fixtures)
 	}
-	return processFixtureFiles(ctx, fixtures)
+	return
 }
 
 func validateConfig(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource, cfg *lib.Config) {
@@ -472,7 +521,7 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	return
 }
 
-func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
+func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
 
@@ -676,7 +725,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) error {
 	rslt := processTasks(ctx, &tasks, dss)
 	gAliasesFunc()
 	<-ch
-	return rslt
+	if rslt != nil {
+		lib.Fatalf("Process tasks error: %+v\n", rslt)
+	}
 }
 
 func dedupOrigins(first, second []string) (shared, onlyFirst []string) {
@@ -3784,15 +3835,16 @@ func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
 	ctx.Init()
-	err := ensureGrimoireStackAvail(&ctx)
-	if err != nil {
-		lib.Fatalf("Grimoire stack not available: %+v\n", err)
+	if ctx.OnlyValidate {
+		validateFixtureFiles(&ctx, getFixtures(&ctx))
+	} else {
+		err := ensureGrimoireStackAvail(&ctx)
+		if err != nil {
+			lib.Fatalf("Grimoire stack not available: %+v\n", err)
+		}
+		go finishAfterTimeout(ctx)
+		processFixtureFiles(&ctx, getFixtures(&ctx))
+		dtEnd := time.Now()
+		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 	}
-	go finishAfterTimeout(ctx)
-	err = syncGrimoireStack(&ctx)
-	if err != nil {
-		lib.Fatalf("Grimoire stack sync error: %+v\n", err)
-	}
-	dtEnd := time.Now()
-	lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 }
