@@ -98,6 +98,8 @@ spec:
               value: '{{ $root.Values.skipProject }}'
             - name: SDS_SKIP_PROJECT_TS
               value: '{{ $root.Values.skipProjectTS }}'
+            - name: SDS_ONLY_VALIDATE
+              value: '{{ $root.Values.onlyValidate }}'
             - name: SDS_NO_MULTI_ALIASES
               value: '{{ $root.Values.noMultiAliases }}'
             - name: SDS_CLEANUP_ALIASES
@@ -180,7 +182,11 @@ spec:
                   name: {{ $root.Values.repoSecret }}
                   key: REPO_ACCESS.secret
 {{ end }}
+{{ if $root.Values.onlyValidate }}
+            image: '{{ $root.Values.validateImage }}'
+{{ else }}
             image: '{{ $root.Values.syncImage }}-{{ $root.Values.deployEnv }}'
+{{ end }}
             imagePullPolicy: {{ $root.Values.imagePullPolicy }}
             name: '{{ $root.Values.syncPodName }}-{{ $nIdx }}'
             volumeMounts:
