@@ -130,9 +130,6 @@ func (ctx *Ctx) Init() {
 		}
 	}
 
-	// Only validate support
-	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
-
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
 	ctx.DryRunAllowSSH = os.Getenv("SDS_DRY_RUN_ALLOW_SSH") != ""
@@ -175,6 +172,9 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.ShHost, false)
 	AddRedacted(ctx.ShPass, false)
 	AddRedacted(ctx.ShDB, false)
+
+	// Only validate support
+	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
 
 	if !ctx.OnlyValidate && !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
@@ -368,6 +368,12 @@ func (ctx *Ctx) Init() {
 		dur, err := time.ParseDuration(os.Getenv("SDS_ENRICH_EXTERNAL_FREQ"))
 		FatalNoLog(err)
 		ctx.EnrichExternalFreq = dur
+	}
+
+	// Only validate support - overrides
+	if ctx.OnlyValidate {
+		ctx.SkipEsLog = true
+		ctx.SkipEsData = true
 	}
 
 	// Context out if requested
