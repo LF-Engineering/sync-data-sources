@@ -18,7 +18,8 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Get SortingHat DB endpoint: `prodk.sh -n mariadb get svc mariadb-service-rw`.
 - Get SortingHat DB credentials: `for f in helm-charts/sds-helm/sds-helm/secrets/SH_*.prod.secret; do echo -n "$f: "; cat $f; echo ""; done`.
 - Get other env variables: `prodk.sh -n sds edit cj sds-0`.
-- Finally just run `[EXEC=1] ./docker-images/manual_docker.sh prod`. If you specify EXEC=1 you will get bash instead of runnign SDS, so you can call `./run.sh` manually.
+- Finally just run `[EXEC=1] ./docker-images/manual_docker.sh prod`. If you specify EXEC=1 you will get bash instead of running SDS, so you can call `./run.sh` manually.
+- Validation `[EXEC=1] ./docker-images/manual_docker_validate.sh commit_sha`. If you specify EXEC=1 you will get bash instead of running SDS, so you can call `./run.sh` manually.
 - To see environment inside the container: `clear; env | sort | grep 'SDS\|SH_'`.
 - Send info signal `` kill -SIGUSR1 `ps -ax | grep syncdatasources | head -n 1 | awk '{print $1}'` ``.
 - To shell into the running SDS: `./docker-images/shell_running_sds.sh`.
