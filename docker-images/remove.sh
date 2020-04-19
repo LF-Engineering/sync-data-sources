@@ -1,5 +1,4 @@
 #!/bin/bash
-# DOCKER_USER=lukaszgryglicki SKIP_BUILD=1 SKIP_PUSH=1 BRANCH=test|prod ./docker-images/build.sh
 # DOCKER_USER=lukaszgryglicki BRANCH=test|prod PRUNE=1 ./docker-images/remove.sh
 if [ -z "${DOCKER_USER}" ]
 then
@@ -13,6 +12,7 @@ then
 fi
 rm -rf ./sources/data || exit 1
 docker image rm -f "${DOCKER_USER}/sync-data-sources-${BRANCH}" || exit 2
+docker image rm -f "${DOCKER_USER}/validate-sync-data-sources" || exit 3
 if [ ! -z "$PRUNE" ]
 then
   docker system prune -f
