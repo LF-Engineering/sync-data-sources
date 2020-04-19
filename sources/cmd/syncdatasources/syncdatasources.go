@@ -202,7 +202,9 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 		}
 		dataSource.MaxFreq = dur
 		fixture.DataSources[index].MaxFreq = dur
-		lib.Printf("Data source %s/%s max sync frequency: %+v\n", fixture.Slug, dataSource.Slug, dataSource.MaxFreq)
+		if ctx.Debug > 0 {
+			lib.Printf("Data source %s/%s max sync frequency: %+v\n", fixture.Slug, dataSource.Slug, dataSource.MaxFreq)
+		}
 	}
 	fs := dataSource.Slug + dataSource.IndexSuffix
 	fs = strings.Replace(fs, "/", "-", -1)
