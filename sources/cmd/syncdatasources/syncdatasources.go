@@ -3507,7 +3507,7 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 		return
 	}
 	// FIXME: remove once battle tested (>= 0 --> > 0)
-	if ctx.Debug >= 0 {
+	if ctx.Debug > 0 || lastEpoch > 0 {
 		lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
 	} else {
 		lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
