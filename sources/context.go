@@ -60,6 +60,7 @@ type Ctx struct {
 	SkipDedup           bool          // From SDS_SKIP_DEDUP, will skip attemting to dedup data shared on existing SDS index and external bitergia index (by deleting shared origin data from the external Bitergia index)
 	SkipProject         bool          // From SDS_SKIP_PROJECT, will skip adding column "project": "project name" on all documents where origin = endpoint name, will also add timestamp column "project_ts", so next run can start on documents newer than that
 	SkipProjectTS       bool          // From SDS_SKIP_PROJECT_TS, will add project column as described above, without using "project_ts" column to determine from which document to start
+	SkipValGitHubAPI    bool          // From SDS_SKIP_VALIDATE_GITHUB_API, will not process GitHub orgs/users in validate step (will not attempt to get org's/user's repo lists)
 	MaxDeleteTrials     int           // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait          int           // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal     bool          // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
@@ -334,6 +335,9 @@ func (ctx *Ctx) Init() {
 	// Skip project/TS settings
 	ctx.SkipProject = os.Getenv("SDS_SKIP_PROJECT") != ""
 	ctx.SkipProjectTS = os.Getenv("SDS_SKIP_PROJECT_TS") != ""
+
+	// Skip processing GitHub org's/user's repos in validate mode
+	ctx.SkipValGitHubAPI = os.Getenv("SDS_SKIP_VALIDATE_GITHUB_API") != ""
 
 	// Max delete by query attempts - this can fail due to version conflicts
 	if os.Getenv("SDS_MAX_DELETE_TRIALS") == "" {

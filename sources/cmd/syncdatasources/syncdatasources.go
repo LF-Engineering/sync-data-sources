@@ -317,6 +317,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 		}
 		for _, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
 			epType, ok := rawEndpoint.Flags["type"]
+			if ctx.OnlyValidate && ctx.SkipValGitHubAPI {
+				ok = false
+			}
 			p2o := false
 			if rawEndpoint.ProjectP2O != nil {
 				p2o = *(rawEndpoint.ProjectP2O)

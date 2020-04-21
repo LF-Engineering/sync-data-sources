@@ -65,6 +65,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipDedup:           in.SkipDedup,
 		SkipProject:         in.SkipProject,
 		SkipProjectTS:       in.SkipProjectTS,
+		SkipValGitHubAPI:    in.SkipValGitHubAPI,
 		MaxDeleteTrials:     in.MaxDeleteTrials,
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
@@ -246,6 +247,7 @@ func TestInit(t *testing.T) {
 		SkipDedup:           false,
 		SkipProject:         false,
 		SkipProjectTS:       false,
+		SkipValGitHubAPI:    false,
 		MaxDeleteTrials:     10,
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
@@ -696,6 +698,19 @@ func TestInit(t *testing.T) {
 				map[string]interface{}{
 					"SkipProject":   true,
 					"SkipProjectTS": true,
+				},
+			),
+		},
+		{
+			"Set skip validate GitHub user's/org's repos in validate mode",
+			map[string]string{
+				"SDS_SKIP_VALIDATE_GITHUB_API": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipValGitHubAPI": true,
 				},
 			),
 		},
