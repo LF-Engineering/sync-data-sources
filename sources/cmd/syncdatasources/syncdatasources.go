@@ -3527,7 +3527,7 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 					data += `"enrich_error_dt":null,`
 					data += fmt.Sprintf(`"enrich_success_dt":"%s",`, now.Format(time.RFC3339Nano))
 				} else {
-					data += fmt.Sprintf(`"enrich_error":"%s",`, errStr)
+					data += fmt.Sprintf(`"enrich_error":"%s",`, jsonEscape(errStr))
 					data += fmt.Sprintf(`"enrich_error_dt":"%s",`, now.Format(time.RFC3339Nano))
 				}
 			} else {
@@ -3536,7 +3536,7 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 					data += `"data_sync_error_dt":null,`
 					data += fmt.Sprintf(`"data_sync_success_dt":"%s",`, now.Format(time.RFC3339Nano))
 				} else {
-					data += fmt.Sprintf(`"data_sync_error":"%s",`, errStr)
+					data += fmt.Sprintf(`"data_sync_error":"%s",`, jsonEscape(errStr))
 					data += fmt.Sprintf(`"data_sync_error_dt":"%s",`, now.Format(time.RFC3339Nano))
 				}
 			}
