@@ -53,6 +53,7 @@ type EsSearchResultSource struct {
 // EsSearchResultHit - search result single hit
 type EsSearchResultHit struct {
 	Source EsSearchResultSource `json:"_source"`
+	ID     string               `json:"_id"`
 }
 
 // EsSearchResultHits - search result hits
@@ -79,6 +80,21 @@ type EsLastRunPayload struct {
 	Endpoint string    `json:"endpoint"`
 	Type     string    `json:"type"`
 	Dt       time.Time `json:"dt"`
+}
+
+// EsSyncInfoPayload - sync info support
+type EsSyncInfoPayload struct {
+	Index             string     `json:"index"`
+	Endpoint          string     `json:"endpoint"`
+	Dt                time.Time  `json:"dt"`
+	DataSyncAttemptDt *time.Time `json:"data_sync_attempt_dt"`
+	DataSyncSuccessDt *time.Time `json:"data_sync_success_dt"`
+	DataSyncErrorDt   *time.Time `json:"data_sync_error_dt"`
+	DataSyncError     *string    `json:"data_sync_error"`
+	EnrichAttemptDt   *time.Time `json:"enrich_attempt_dt"`
+	EnrichSuccessDt   *time.Time `json:"enrich_success_dt"`
+	EnrichErrorDt     *time.Time `json:"enrich_error_dt"`
+	EnrichError       *string    `json:"enrich_error"`
 }
 
 // EsMtxPayload - ES mutex support (for locking concurrent nodes)
