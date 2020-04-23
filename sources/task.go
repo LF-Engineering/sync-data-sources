@@ -135,6 +135,7 @@ type TaskResult struct {
 	Affs                bool
 	Err                 error
 	Index               string
+	Endpoint            string
 	SetProject          [2]string
 }
 

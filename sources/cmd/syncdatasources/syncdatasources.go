@@ -641,6 +641,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	if !ctx.SkipEsData {
 		lib.EnsureIndex(ctx, "sdsdata", false)
 	}
+	// SDS sync-info index
+	if !ctx.SkipSyncInfo && (!ctx.DryRun || ctx.DryRunAllowSyncInfo) {
+		lib.EnsureIndex(ctx, "sdssyncinfo", false)
+	}
 	// Tasks
 	tasks := []lib.Task{}
 	nodeIdx := ctx.NodeIdx
@@ -2564,6 +2568,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
 						tMtx.TaskOrderMtx.Unlock()
 					}
+					setSyncInfo(ctx, &result, true)
 					if result.Err == nil && result.SetProject[0] != "" {
 						setProject(ctx, result.Index, result.SetProject)
 					}
@@ -2603,6 +2608,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				processed++
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+				setSyncInfo(ctx, &result, true)
 				if result.Err == nil && result.SetProject[0] != "" {
 					setProject(ctx, result.Index, result.SetProject)
 				}
@@ -2663,6 +2669,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
 				tMtx.TaskOrderMtx.Unlock()
 			}
+			setSyncInfo(ctx, &result, true)
 			if result.Err == nil && result.SetProject[0] != "" {
 				setProject(ctx, result.Index, result.SetProject)
 			}
@@ -3423,6 +3430,17 @@ func lastProjectDate(ctx *lib.Ctx, index, origin string, silent bool) (epoch int
 	return
 }
 
+func setSyncInfo(ctx *lib.Ctx, result *lib.TaskResult, before bool) {
+	if ctx.SkipSyncInfo || (ctx.DryRun && !ctx.DryRunAllowSyncInfo) {
+		return
+	}
+	// before
+	// Affs                bool
+	// Err                 error
+	// Index               string
+	// Endpoint            string
+}
+
 func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	if ctx.SkipProject || (ctx.DryRun && !ctx.DryRunAllowProject) {
 		return
@@ -3539,6 +3557,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	idxSlug := "sds-" + task.FxSlug + "-" + fds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	result.Index = idxSlug
+	result.Endpoint = task.Endpoint
 	commandLine := []string{
 		"p2o.py",
 		"--enrich",
@@ -3726,6 +3745,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 					return
 				}
 			}
+			if ctx.DryRunAllowSyncInfo {
+				setSyncInfo(ctx, &result, false)
+			}
 			if ctx.DryRunSeconds > 0 {
 				if ctx.DryRunSecondsRandom {
 					time.Sleep(time.Duration(rand.Intn(ctx.DryRunSeconds*1000)) * time.Millisecond)
@@ -3774,6 +3796,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				return
 			}
 		}
+		setSyncInfo(ctx, &result, false)
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		if keyAdded {
 			gKeyMtx.Unlock()
