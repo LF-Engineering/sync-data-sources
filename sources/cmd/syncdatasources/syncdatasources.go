@@ -2333,6 +2333,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	if thrN > 1 {
 		tMtx.SSHKeyMtx = &sync.Mutex{}
 		tMtx.TaskOrderMtx = &sync.Mutex{}
+		tMtx.SyncInfoMtx = &sync.Mutex{}
 		tMtx.SyncFreqMtx = &sync.RWMutex{}
 	}
 	failed := [][2]int{}
@@ -2568,7 +2569,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
 						tMtx.TaskOrderMtx.Unlock()
 					}
-					setSyncInfo(ctx, &result, true)
+					setSyncInfo(ctx, &tMtx, &result, false)
 					if result.Err == nil && result.SetProject[0] != "" {
 						setProject(ctx, result.Index, result.SetProject)
 					}
@@ -2608,7 +2609,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				processed++
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
-				setSyncInfo(ctx, &result, true)
+				setSyncInfo(ctx, nil, &result, false)
 				if result.Err == nil && result.SetProject[0] != "" {
 					setProject(ctx, result.Index, result.SetProject)
 				}
@@ -2669,7 +2670,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
 				tMtx.TaskOrderMtx.Unlock()
 			}
-			setSyncInfo(ctx, &result, true)
+			setSyncInfo(ctx, &tMtx, &result, false)
 			if result.Err == nil && result.SetProject[0] != "" {
 				setProject(ctx, result.Index, result.SetProject)
 			}
@@ -3132,6 +3133,55 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 //	return ds
 //}
 
+func searchByQueryFirstID(ctx *lib.Ctx, index, esQuery string) (id string) {
+	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
+	payloadBytes, err := json.Marshal(data)
+	if err != nil {
+		lib.Printf("JSON marshall error: %+v for search: %s query: %s\n", err, index, esQuery)
+		return
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc/_search?size=1", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc/_search?size=1", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d query:%s\n%s\n", method, rurl, resp.StatusCode, esQuery, body)
+		return
+	}
+	payload := lib.EsSearchResultPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	for _, hit := range payload.Hits.Hits {
+		id = hit.ID
+		break
+	}
+	return
+}
+
 func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found bool) {
 	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
 	payloadBytes, err := json.Marshal(data)
@@ -3430,15 +3480,143 @@ func lastProjectDate(ctx *lib.Ctx, index, origin string, silent bool) (epoch int
 	return
 }
 
-func setSyncInfo(ctx *lib.Ctx, result *lib.TaskResult, before bool) {
+func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before bool) {
 	if ctx.SkipSyncInfo || (ctx.DryRun && !ctx.DryRunAllowSyncInfo) {
 		return
 	}
-	// before
-	// Affs                bool
-	// Err                 error
-	// Index               string
-	// Endpoint            string
+	if tMtx != nil && tMtx.SyncInfoMtx != nil {
+		tMtx.SyncInfoMtx.Lock()
+		defer func() {
+			tMtx.SyncInfoMtx.Unlock()
+		}()
+	}
+	// sdssyncinfo
+	// before   -> field modificator: attempt/success/error
+	// result:
+	// Affs     -> field modificator: data_sync/enrich
+	// Err      -> *error
+	// Index    -> index
+	// Endpoint -> endpoint
+	affs := result.Affs
+	esIndex := "sdssyncinfo"
+	now := time.Now()
+	errStr := ""
+	if result.Err != nil {
+		errStr = lib.FilterRedacted(result.Err.Error())
+	}
+	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\"", result.Index, result.Endpoint)
+	id := searchByQueryFirstID(ctx, esIndex, esQuery)
+	var (
+		err          error
+		payloadBytes []byte
+	)
+	if id != "" {
+		// Update record
+		data := `{"doc":{`
+		data += fmt.Sprintf(`"dt":"%s",`, now.Format(time.RFC3339Nano))
+		if before {
+			if affs {
+				data += fmt.Sprintf(`"enrich_attempt_dt":"%s",`, now.Format(time.RFC3339Nano))
+			} else {
+				data += fmt.Sprintf(`"data_sync_attempt_dt":"%s",`, now.Format(time.RFC3339Nano))
+			}
+		} else {
+			if affs {
+				if result.Err == nil {
+					data += `"enrich_error":null,`
+					data += `"enrich_error_dt":null,`
+					data += fmt.Sprintf(`"enrich_success_dt":"%s",`, now.Format(time.RFC3339Nano))
+				} else {
+					data += fmt.Sprintf(`"enrich_error":"%s",`, errStr)
+					data += fmt.Sprintf(`"enrich_error_dt":"%s",`, now.Format(time.RFC3339Nano))
+				}
+			} else {
+				if result.Err == nil {
+					data += `"data_sync_error":null,`
+					data += `"data_sync_error_dt":null,`
+					data += fmt.Sprintf(`"data_sync_success_dt":"%s",`, now.Format(time.RFC3339Nano))
+				} else {
+					data += fmt.Sprintf(`"data_sync_error":"%s",`, errStr)
+					data += fmt.Sprintf(`"data_sync_error_dt":"%s",`, now.Format(time.RFC3339Nano))
+				}
+			}
+		}
+		data = data[:len(data)-1] + "}}"
+		payloadBytes = []byte(data)
+	} else {
+		// New record
+		data := lib.EsSyncInfoPayload{Index: result.Index, Endpoint: result.Endpoint, Dt: time.Now()}
+		if before {
+			if affs {
+				data.EnrichAttemptDt = &now
+			} else {
+				data.DataSyncAttemptDt = &now
+			}
+		} else {
+			if affs {
+				if result.Err == nil {
+					data.EnrichSuccessDt = &now
+				} else {
+					data.EnrichError = &errStr
+					data.EnrichErrorDt = &now
+				}
+			} else {
+				if result.Err == nil {
+					data.DataSyncSuccessDt = &now
+				} else {
+					data.DataSyncError = &errStr
+					data.DataSyncErrorDt = &now
+				}
+			}
+		}
+		payloadBytes, err = json.Marshal(data)
+		if err != nil {
+			lib.Printf("JSON marshall error: %+v for index: %s, endpoint: %s, data: %+v\n", err, result.Index, result.Endpoint, data)
+			return
+		}
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	var (
+		url          string
+		rurl         string
+		expectedCode int
+	)
+	if id == "" {
+		url = fmt.Sprintf("%s/%s/_doc?refresh=wait_for", ctx.ElasticURL, esIndex)
+		rurl = fmt.Sprintf("/%s/_doc?refresh=wait_for", esIndex)
+		expectedCode = 201
+	} else {
+		url = fmt.Sprintf("%s/%s/_update/%s?refresh=wait_for&retry_on_conflict=5", ctx.ElasticURL, esIndex, id)
+		rurl = fmt.Sprintf("/%s/_update/%s?refresh=wait_for&retry_on_conflict=5", esIndex, id)
+		expectedCode = 200
+	}
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		data := string(payloadBytes)
+		lib.Printf("New request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		data := string(payloadBytes)
+		lib.Printf("Do request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != expectedCode {
+		data := string(payloadBytes)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
 }
 
 func setProject(ctx *lib.Ctx, index string, conf [2]string) {
@@ -3746,7 +3924,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				}
 			}
 			if ctx.DryRunAllowSyncInfo {
-				setSyncInfo(ctx, &result, false)
+				setSyncInfo(ctx, tMtx, &result, true)
 			}
 			if ctx.DryRunSeconds > 0 {
 				if ctx.DryRunSecondsRandom {
@@ -3796,7 +3974,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				return
 			}
 		}
-		setSyncInfo(ctx, &result, false)
+		setSyncInfo(ctx, tMtx, &result, true)
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		if keyAdded {
 			gKeyMtx.Unlock()

@@ -143,6 +143,7 @@ type TaskResult struct {
 type TaskMtx struct {
 	SSHKeyMtx    *sync.Mutex
 	TaskOrderMtx *sync.Mutex
+	SyncInfoMtx  *sync.Mutex
 	SyncFreqMtx  *sync.RWMutex
 	OrderMtx     map[int]*sync.Mutex
 }
