@@ -84,6 +84,8 @@ spec:
       value: '{{ $root.Values.skipProject }}'
     - name: SDS_SKIP_PROJECT_TS
       value: '{{ $root.Values.skipProjectTS }}'
+    - name: SDS_SKIP_SYNC_INFO
+      value: '{{ $root.Values.skipSyncInfo }}'
     - name: SDS_SKIP_VALIDATE_GITHUB_API
       value: '{{ $root.Values.skipValGitHubAPI }}'
     - name: SDS_ONLY_VALIDATE
