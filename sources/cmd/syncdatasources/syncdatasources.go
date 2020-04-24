@@ -3504,6 +3504,8 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	if result.Err != nil {
 		errStr = lib.FilterRedacted(result.Err.Error())
 	}
+	cl := result.CommandLine
+	rcl := result.RedactedCommandLine
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\"", result.Index, result.Endpoint)
 	id := searchByQueryFirstID(ctx, esIndex, esQuery)
 	var (
@@ -3514,6 +3516,13 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 		// Update record
 		data := `{"doc":{`
 		data += fmt.Sprintf(`"dt":"%s",`, now.Format(time.RFC3339Nano))
+		if affs {
+			data += fmt.Sprintf(`"enrich_command_line":"%s",`, jsonEscape(cl))
+			data += fmt.Sprintf(`"enrich_redacted_command_line":"%s",`, jsonEscape(rcl))
+		} else {
+			data += fmt.Sprintf(`"data_sync_command_line":"%s",`, jsonEscape(cl))
+			data += fmt.Sprintf(`"data_sync_redacted_command_line":"%s",`, jsonEscape(rcl))
+		}
 		if before {
 			if affs {
 				data += fmt.Sprintf(`"enrich_attempt_dt":"%s",`, now.Format(time.RFC3339Nano))
@@ -3546,6 +3555,13 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	} else {
 		// New record
 		data := lib.EsSyncInfoPayload{Index: result.Index, Endpoint: result.Endpoint, Dt: time.Now()}
+		if affs {
+			data.EnrichCL = &cl
+			data.EnrichRCL = &rcl
+		} else {
+			data.DataSyncCL = &cl
+			data.DataSyncRCL = &rcl
+		}
 		if before {
 			if affs {
 				data.EnrichAttemptDt = &now

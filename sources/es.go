@@ -91,10 +91,14 @@ type EsSyncInfoPayload struct {
 	DataSyncSuccessDt *time.Time `json:"data_sync_success_dt"`
 	DataSyncErrorDt   *time.Time `json:"data_sync_error_dt"`
 	DataSyncError     *string    `json:"data_sync_error"`
+	DataSyncCL        *string    `json:"data_sync_command_line"`
+	DataSyncRCL       *string    `json:"data_sync_redacted_command_line"`
 	EnrichAttemptDt   *time.Time `json:"enrich_attempt_dt"`
 	EnrichSuccessDt   *time.Time `json:"enrich_success_dt"`
 	EnrichErrorDt     *time.Time `json:"enrich_error_dt"`
 	EnrichError       *string    `json:"enrich_error"`
+	EnrichCL          *string    `json:"enrich_command_line"`
+	EnrichRCL         *string    `json:"enrich_redacted_command_line"`
 }
 
 // EsMtxPayload - ES mutex support (for locking concurrent nodes)

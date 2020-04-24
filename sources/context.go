@@ -42,7 +42,7 @@ type Ctx struct {
 	TimeoutSeconds      int           // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest            int           // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH              bool          // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
-	StripErrorSize      int           // From SDS_STRIP_ERROR_SIZE, default 2048, error messages longer that this value will be stripped by this value from beginning and from end, so for 2048 error 8000 bytes long will be 2048 bytes from the beginning \n(...)\n 2048 from the end
+	StripErrorSize      int           // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth         string        // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems         bool          // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
 	CSVPrefix           string        // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
@@ -259,14 +259,14 @@ func (ctx *Ctx) Init() {
 
 	// Strip error size (default 512)
 	if os.Getenv("SDS_STRIP_ERROR_SIZE") == "" {
-		ctx.StripErrorSize = 2048
+		ctx.StripErrorSize = 16384
 	} else {
 		n, err := strconv.Atoi(os.Getenv("SDS_STRIP_ERROR_SIZE"))
 		FatalNoLog(err)
 		if n > 1 {
 			ctx.StripErrorSize = n
 		} else {
-			ctx.StripErrorSize = 2048
+			ctx.StripErrorSize = 16384
 		}
 	}
 
