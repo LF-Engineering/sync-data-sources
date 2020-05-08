@@ -2,6 +2,7 @@
 # shUser: ''
 # shHost: ''
 # shPass: ''
+# ssawURL: ''
 # shDB: ''
 # esURL: ''
 # zipPass: ''
@@ -108,6 +109,7 @@ skipProject: ''
 skipProjectTS: ''
 skipSyncInfo: ''
 skipValGitHubAPI: ''
+skipSSAW: ''
 onlyValidate: ''
 noMultiAliases: ''
 cleanupAliases: ''
@@ -157,6 +159,7 @@ debugCommand: '/bin/sleep'
 debugCommandArgs: ['36525d']
 debugImage: 'lukaszgryglicki/sync-data-sources'
 validateImage: 'lukaszgryglicki/validate-sync-data-sources'
+ssawFreq: ''
 useNodeSelector: '1'
 nodeSelector:
   lfda: grimoire

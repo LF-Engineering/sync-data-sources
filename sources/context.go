@@ -39,22 +39,14 @@ type Ctx struct {
 	DryRunAllowDedup    bool          // From SDS_DRY_RUN_ALLOW_DEDUP, if set it will allow dedup bitergia data by deleting origins shared with existing SDS indices
 	DryRunAllowProject  bool          // From SDS_DRY_RUN_ALLOW_PROJECT, if set it will allow running set project by SDS (on endpoints with project set and p2o mode set to false)
 	DryRunAllowSyncInfo bool          // From SDS_DRY_RUN_ALLOW_SYNC_INFO, if set it will allow setting sync info in sds-sync-info index
+	DryRunAllowSSAW     bool          // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
 	TimeoutSeconds      int           // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	NLongest            int           // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH              bool          // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
-	StripErrorSize      int           // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
-	GitHubOAuth         string        // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
-	LatestItems         bool          // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
-	CSVPrefix           string        // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
-	Silent              bool          // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
 	SkipData            bool          // From SDS_SKIP_DATA, if set - it will not run incremental data sync
 	SkipAffs            bool          // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
 	SkipAliases         bool          // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
 	SkipDropUnused      bool          // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
-	NoMultiAliases      bool          // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
-	CleanupAliases      bool          // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
-	ScrollWait          int           // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
-	ScrollSize          int           // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	SkipCheckFreq       bool          // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
 	SkipEsData          bool          // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog           bool          // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
@@ -63,10 +55,22 @@ type Ctx struct {
 	SkipProjectTS       bool          // From SDS_SKIP_PROJECT_TS, will add project column as described above, without using "project_ts" column to determine from which document to start
 	SkipSyncInfo        bool          // From SDS_SKIP_SYNC_INFO, will skip adding sync info to sds-sync-info index
 	SkipValGitHubAPI    bool          // From SDS_SKIP_VALIDATE_GITHUB_API, will not process GitHub orgs/users in validate step (will not attempt to get org's/user's repo lists)
+	SkipSSAW            bool          // From SDS_SKIP_SSAW, if set - it will completelly skip SSAW processing
+	StripErrorSize      int           // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
+	GitHubOAuth         string        // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
+	LatestItems         bool          // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
+	CSVPrefix           string        // From SDS_CSV_PREFIX, CSV logs filename prefix, default "jobs", so files would be "/root/.perceval/jobs_I_N.csv"
+	Silent              bool          // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
+	NoMultiAliases      bool          // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
+	CleanupAliases      bool          // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
+	ScrollWait          int           // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
+	ScrollSize          int           // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
 	MaxDeleteTrials     int           // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait          int           // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal     bool          // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
 	EnrichExternalFreq  time.Duration // From SDS_ENRICH_EXTERNAL_FREQ, how often enrich external indexes, default is 48h which means no more often than 48h.
+	SSAWURL             string        // From SDS_SSAW_URL, URL of the SSAW service to send notification to, must be set or SkipSSAW flag must be set
+	SSAWFreq            int           // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds
 	OnlyValidate        bool          // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	TestMode            bool          // True when running tests
 	ShUser              string        // Sorting Hat database parameters
@@ -378,6 +382,23 @@ func (ctx *Ctx) Init() {
 		dur, err := time.ParseDuration(os.Getenv("SDS_ENRICH_EXTERNAL_FREQ"))
 		FatalNoLog(err)
 		ctx.EnrichExternalFreq = dur
+	}
+
+	// SSAW stuff
+	ctx.SkipSSAW = os.Getenv("SDS_SKIP_SSAW") != ""
+	ctx.SSAWURL = os.Getenv("SDS_SSAW_URL")
+	if !ctx.TestMode && !ctx.SkipSSAW && ctx.SSAWURL == "" {
+		FatalNoLog(fmt.Errorf("you must provide SDS_SSAW_URL=... or use SDS_SKIP_SSAW=1"))
+	}
+	ctx.DryRunAllowSSAW = os.Getenv("SDS_DRY_RUN_ALLOW_SSAW") != ""
+	if os.Getenv("SDS_SSAW_FREQ") == "" {
+		ctx.SSAWFreq = 0
+	} else {
+		secs, err := strconv.Atoi(os.Getenv("SDS_SSAW_FREQ"))
+		FatalNoLog(err)
+		if secs > 0 {
+			ctx.SSAWFreq = secs
+		}
 	}
 
 	// Only validate support - overrides

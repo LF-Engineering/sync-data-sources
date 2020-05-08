@@ -33,6 +33,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowDedup:    in.DryRunAllowDedup,
 		DryRunAllowProject:  in.DryRunAllowProject,
 		DryRunAllowSyncInfo: in.DryRunAllowSyncInfo,
+		DryRunAllowSSAW:     in.DryRunAllowSSAW,
 		OnlyValidate:        in.OnlyValidate,
 		TimeoutSeconds:      in.TimeoutSeconds,
 		NodeIdx:             in.NodeIdx,
@@ -72,6 +73,9 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		MaxMtxWait:          in.MaxMtxWait,
 		MaxMtxWaitFatal:     in.MaxMtxWaitFatal,
 		EnrichExternalFreq:  in.EnrichExternalFreq,
+		SkipSSAW:            in.SkipSSAW,
+		SSAWURL:             in.SSAWURL,
+		SSAWFreq:            in.SSAWFreq,
 		TestMode:            in.TestMode,
 	}
 	return &out
@@ -218,6 +222,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowDedup:    false,
 		DryRunAllowProject:  false,
 		DryRunAllowSyncInfo: false,
+		DryRunAllowSSAW:     false,
 		OnlyValidate:        false,
 		TimeoutSeconds:      171900,
 		NodeIdx:             0,
@@ -256,6 +261,9 @@ func TestInit(t *testing.T) {
 		MaxMtxWait:          900,
 		MaxMtxWaitFatal:     false,
 		EnrichExternalFreq:  time.Duration(48) * time.Hour,
+		SkipSSAW:            false,
+		SSAWURL:             "",
+		SSAWFreq:            0,
 		TestMode:            true,
 	}
 
@@ -337,6 +345,25 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"EnrichExternalFreq": time.Duration(12) * time.Hour},
+			),
+		},
+		{
+			"Setting SSAW params",
+			map[string]string{
+				"SDS_SKIP_SSAW":          "1",
+				"SDS_SSAW_URL":           "https://my-ssaw-callback:6060",
+				"SDS_DRY_RUN_ALLOW_SSAW": "y",
+				"SDS_SSAW_FREQ":          "30",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipSSAW":        true,
+					"SSAWURL":         "https://my-ssaw-callback:6060",
+					"DryRunAllowSSAW": true,
+					"SSAWFreq":        30,
+				},
 			),
 		},
 		{
@@ -551,6 +578,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_DEDUP":     "t",
 				"SDS_DRY_RUN_ALLOW_PROJECT":   "x",
 				"SDS_DRY_RUN_ALLOW_SYNC_INFO": "1",
+				"SDS_DRY_RUN_ALLOW_SSAW":      "1",
 			},
 			dynamicSetFields(
 				t,
@@ -569,6 +597,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowDedup":    true,
 					"DryRunAllowProject":  true,
 					"DryRunAllowSyncInfo": true,
+					"DryRunAllowSSAW":     true,
 				},
 			),
 		},
