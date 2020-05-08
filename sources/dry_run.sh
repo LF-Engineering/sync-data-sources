@@ -5,7 +5,7 @@ then
   exit 1
 fi
 #export SDS_ST=1
-export SDS_DEBUG=1
+#export SDS_DEBUG=1
 export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
 #export SDS_SKIP_DATA=1
@@ -24,7 +24,7 @@ export SDS_SKIP_VALIDATE_GITHUB_API=1
 export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_CODE=3
 #export SDS_DRY_RUN_CODE_RANDOM=1
-#export SDS_DRY_RUN_SECONDS=1
+export SDS_DRY_RUN_SECONDS=1
 #export SDS_DRY_RUN_SECONDS_RANDOM=3
 #export SDS_DRY_RUN_ALLOW_SSH=1
 #export SDS_DRY_RUN_ALLOW_FREQ=1
