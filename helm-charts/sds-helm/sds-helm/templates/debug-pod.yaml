@@ -130,6 +130,15 @@ spec:
       value: '{{ $root.Values.maxDeleteTrials }}'
     - name: BRANCH
       value: '{{ $root.Values.deployEnv }}'
+    - name: SDS_SSAW_FREQ
+      value: '{{ $root.Values.ssawFreq }}'
+    - name: SDS_SKIP_SSAW
+      value: '{{ $root.Values.skipSSAW }}'
+    - name: SDS_SSAW_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.shSecret }}
+          key: SSAW_URL.secret
     - name: SH_USER
       valueFrom:
         secretKeyRef:
