@@ -19,6 +19,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/LF-Engineering/ssaw/ssawsync"
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
 	"github.com/google/go-github/github"
 	yaml "gopkg.in/yaml.v2"
@@ -32,6 +33,8 @@ var (
 	gKeyMtx       *sync.Mutex
 	gCSVMtx       *sync.Mutex
 )
+
+const cOrigin = "sds"
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	if ctx.Debug > 0 {
@@ -730,12 +733,44 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 		enrichAndDedupExternalIndexes(ctx, &fixtures, &tasks)
 		ch <- struct{}{}
 	}(ch)
+	if !ctx.SkipSSAW {
+		if ctx.SSAWFreq > 0 {
+			go ssawLoop(ctx)
+		}
+	}
 	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
+	if !ctx.SkipSSAW {
+		ssawSync(ctx)
+	}
 	gAliasesFunc()
 	<-ch
 	if rslt != nil {
 		lib.Fatalf("Process tasks error: %+v\n", rslt)
+	}
+}
+
+func ssawSync(ctx *lib.Ctx) {
+	if ctx.DryRun && !ctx.DryRunAllowSSAW {
+		return
+	}
+	e := os.Setenv("SYNC_URL", ctx.SSAWURL)
+	if e != nil {
+		lib.Printf("ssaw failed to set SYNC_URL environment variable: %v\n", e)
+	}
+	e = ssawsync.Sync(cOrigin)
+	if e != nil {
+		lib.Printf("ssaw sync error: %v\n", e)
+	}
+}
+
+func ssawLoop(ctx *lib.Ctx) {
+	if ctx.DryRun && !ctx.DryRunAllowSSAW {
+		return
+	}
+	for {
+		time.Sleep(time.Duration(ctx.SSAWFreq) * time.Second)
+		ssawSync(ctx)
 	}
 }
 

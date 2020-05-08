@@ -353,7 +353,7 @@ func TestInit(t *testing.T) {
 				"SDS_SKIP_SSAW":          "1",
 				"SDS_SSAW_URL":           "https://my-ssaw-callback:6060",
 				"SDS_DRY_RUN_ALLOW_SSAW": "y",
-				"SDS_SSAW_FREQ":          "30",
+				"SDS_SSAW_FREQ":          "10",
 			},
 			dynamicSetFields(
 				t,
@@ -362,7 +362,7 @@ func TestInit(t *testing.T) {
 					"SkipSSAW":        true,
 					"SSAWURL":         "https://my-ssaw-callback:6060",
 					"DryRunAllowSSAW": true,
-					"SSAWFreq":        30,
+					"SSAWFreq":        20,
 				},
 			),
 		},
