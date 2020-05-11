@@ -879,7 +879,7 @@ func ssawSync(ctx *lib.Ctx, final bool) {
 	} else {
 		origin += "partial"
 	}
-	e = ssawsync.Sync(cOrigin)
+	e = ssawsync.Sync(origin)
 	if e != nil {
 		lib.Printf("ssaw sync error: %v\n", e)
 	}
