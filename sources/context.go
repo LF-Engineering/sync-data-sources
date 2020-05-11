@@ -56,6 +56,7 @@ type Ctx struct {
 	SkipSyncInfo        bool          // From SDS_SKIP_SYNC_INFO, will skip adding sync info to sds-sync-info index
 	SkipValGitHubAPI    bool          // From SDS_SKIP_VALIDATE_GITHUB_API, will not process GitHub orgs/users in validate step (will not attempt to get org's/user's repo lists)
 	SkipSSAW            bool          // From SDS_SKIP_SSAW, if set - it will completelly skip SSAW processing
+	SkipSortDuration    bool          // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
 	StripErrorSize      int           // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth         string        // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems         bool          // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
@@ -348,6 +349,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip processing GitHub org's/user's repos in validate mode
 	ctx.SkipValGitHubAPI = os.Getenv("SDS_SKIP_VALIDATE_GITHUB_API") != ""
+
+	// Skip sort by running duration
+	ctx.SkipSortDuration = os.Getenv("SDS_SKIP_SORT_DURATION") != ""
 
 	// Max delete by query attempts - this can fail due to version conflicts
 	if os.Getenv("SDS_MAX_DELETE_TRIALS") == "" {
