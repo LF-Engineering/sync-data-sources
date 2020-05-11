@@ -700,9 +700,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	randInitOnce.Do(func() {
 		rand.Seed(time.Now().UnixNano())
 	})
-	if ctx.SkipSortDuration {
-		rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
-	} else {
+	rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
+	if !ctx.SkipSortDuration {
 		sortByDuration(ctx, tasks)
 	}
 	ctx.ExecFatal = false
