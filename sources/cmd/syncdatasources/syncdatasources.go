@@ -699,6 +699,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	randInitOnce.Do(func() {
 		rand.Seed(time.Now().UnixNano())
 	})
+	// TODO: curl -XPOST -H 'Content-type: application/json' ES_URL/_sql?format=csv -d"{\"query\":\"select data_sync_success_dt::long - data_sync_attempt_dt::long from sdssyncinfo where index = ? and endpoint = ? data_sync_success_dt is not null and data_sync_attempt_dt is not null order by dt desc limit 5\"}"
 	rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
 	ctx.ExecFatal = false
 	ctx.ExecOutput = true
@@ -4032,6 +4033,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 		}
 		setSyncInfo(ctx, tMtx, &result, true)
+		// TODO: add support for maximum running time
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		if keyAdded {
 			gKeyMtx.Unlock()
