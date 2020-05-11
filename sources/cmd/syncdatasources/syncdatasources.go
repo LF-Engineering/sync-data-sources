@@ -741,7 +741,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
 	if !ctx.SkipSSAW {
-		ssawSync(ctx)
+		ssawSync(ctx, true)
 	}
 	gAliasesFunc()
 	<-ch
@@ -750,13 +750,19 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	}
 }
 
-func ssawSync(ctx *lib.Ctx) {
+func ssawSync(ctx *lib.Ctx, final bool) {
 	if ctx.DryRun && !ctx.DryRunAllowSSAW {
 		return
 	}
 	e := os.Setenv("SYNC_URL", ctx.SSAWURL)
 	if e != nil {
 		lib.Printf("ssaw failed to set SYNC_URL environment variable: %v\n", e)
+	}
+	origin := cOrigin + "-"
+	if final {
+		origin += "final"
+	} else {
+		origin += "partial"
 	}
 	e = ssawsync.Sync(cOrigin)
 	if e != nil {
@@ -770,7 +776,7 @@ func ssawLoop(ctx *lib.Ctx) {
 	}
 	for {
 		time.Sleep(time.Duration(ctx.SSAWFreq) * time.Second)
-		ssawSync(ctx)
+		ssawSync(ctx, false)
 	}
 }
 
