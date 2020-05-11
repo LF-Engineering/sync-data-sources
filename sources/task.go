@@ -24,6 +24,7 @@ type Task struct {
 	ExternalIndex       string
 	Project             string
 	ProjectP2O          bool
+	Millis              int64
 }
 
 // String - default string output for a task (generic)
