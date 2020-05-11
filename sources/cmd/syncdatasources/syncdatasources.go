@@ -786,7 +786,7 @@ func sortByDuration(ctx *lib.Ctx, tasks []lib.Task) {
 		}
 	}
 	sort.SliceStable(tasks, func(i, j int) bool {
-		return tasks[i].Millis > tasks[j].Millis
+		return tasks[i].Millis < tasks[j].Millis
 	})
 	for i, task := range tasks {
 		lib.Printf("#%d %s / %s (%d)\n", i, task.DsFullSlug, task.Endpoint, task.Millis)
