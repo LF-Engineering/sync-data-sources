@@ -393,7 +393,7 @@ func (ctx *Ctx) Init() {
 	// SSAW stuff
 	ctx.SkipSSAW = os.Getenv("SDS_SKIP_SSAW") != ""
 	ctx.SSAWURL = os.Getenv("SDS_SSAW_URL")
-	if !ctx.TestMode && !ctx.SkipSSAW && ctx.SSAWURL == "" {
+	if !ctx.TestMode && !ctx.OnlyValidate && !ctx.SkipSSAW && ctx.SSAWURL == "" {
 		FatalNoLog(fmt.Errorf("you must provide SDS_SSAW_URL=... or use SDS_SKIP_SSAW=1"))
 	}
 	ctx.DryRunAllowSSAW = os.Getenv("SDS_DRY_RUN_ALLOW_SSAW") != ""
