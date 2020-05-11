@@ -760,12 +760,38 @@ func sortByDuration(ctx *lib.Ctx, tasks []lib.Task) {
 		return
 	}
 	lib.Printf("Determining running order for %d tasks\n", len(tasks))
-	for i := range tasks {
-		setLastDuration(ctx, &tasks[i])
+	thrN := lib.GetThreadsNum(ctx)
+	if thrN > 1 {
+		ch := make(chan struct{})
+		nThreads := 0
+		for i := range tasks {
+			go func(ch chan struct{}, i int) {
+				defer func() {
+					ch <- struct{}{}
+				}()
+				setLastDuration(ctx, &tasks[i])
+			}(ch, i)
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
+			}
+		}
+		for nThreads > 0 {
+			<-ch
+			nThreads--
+		}
+	} else {
+		for i := range tasks {
+			setLastDuration(ctx, &tasks[i])
+		}
 	}
 	sort.SliceStable(tasks, func(i, j int) bool {
 		return tasks[i].Millis > tasks[j].Millis
 	})
+	for i, task := range tasks {
+		lib.Printf("#%d %s / %s (%d)\n", i, task.DsFullSlug, task.Endpoint, task.Millis)
+	}
 	lib.Printf("Determined running order for %d tasks\n", len(tasks))
 }
 
@@ -829,9 +855,11 @@ func setLastDuration(ctx *lib.Ctx, task *lib.Task) {
 			lib.Printf("Cannot parse integer from '%s' error: %v\n", row[0], err)
 			return
 		}
-		task.Millis = millis
-		if ctx.Debug > 0 {
-			lib.Printf("Last duration %s / %s ---> %d\n", idxSlug, task.Endpoint, task.Millis)
+		if millis > 0 {
+			task.Millis = millis
+			if ctx.Debug >= 0 {
+				lib.Printf("Last duration %s / %s ---> %d\n", idxSlug, task.Endpoint, task.Millis)
+			}
 		}
 		break
 	}
