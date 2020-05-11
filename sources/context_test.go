@@ -37,6 +37,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
 		TimeoutSeconds:          in.TimeoutSeconds,
+		TaskTimeoutSeconds:      in.TaskTimeoutSeconds,
 		NodeIdx:                 in.NodeIdx,
 		NodeNum:                 in.NodeNum,
 		NodeHash:                in.NodeHash,
@@ -228,6 +229,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
 		TimeoutSeconds:          171900,
+		TaskTimeoutSeconds:      36000,
 		NodeIdx:                 0,
 		NodeNum:                 1,
 		NodeHash:                false,
@@ -510,6 +512,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"TimeoutSeconds": 7200},
+			),
+		},
+		{
+			"Set Task Timeout",
+			map[string]string{"SDS_TASK_TIMEOUT_SECONDS": "7200"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"TaskTimeoutSeconds": 7200},
 			),
 		},
 		{
