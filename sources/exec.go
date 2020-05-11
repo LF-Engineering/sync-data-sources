@@ -122,8 +122,21 @@ func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) (string, 
 			}
 		}
 	}
-	// Wait for command to finish
-	err := cmd.Wait()
+	// Wait for command to finish or be killed by a timeout
+	var err error
+	done := make(chan error, 1)
+	go func() {
+		done <- cmd.Wait()
+	}()
+	timeout := time.Duration(ctx.TaskTimeoutSeconds) * time.Second
+	select {
+	case <-time.After(timeout):
+		err = cmd.Process.Kill()
+		if err == nil {
+			err = fmt.Errorf("killed by task timeout %v\n", timeout)
+		}
+	case err = <-done:
+	}
 
 	// If error - then output STDOUT, STDERR and error info
 	if err != nil {

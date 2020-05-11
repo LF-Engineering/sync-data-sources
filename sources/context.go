@@ -42,6 +42,7 @@ type Ctx struct {
 	DryRunAllowSortDuration bool          // From SDS_DRY_RUN_ALLOW_SORT_DURATION, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSSAW         bool          // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
 	TimeoutSeconds          int           // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
+	TaskTimeoutSeconds      int           // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                int           // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
 	SkipSH                  bool          // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	SkipData                bool          // From SDS_SKIP_DATA, if set - it will not run incremental data sync
@@ -248,6 +249,19 @@ func (ctx *Ctx) Init() {
 			ctx.TimeoutSeconds = secs
 		} else {
 			ctx.TimeoutSeconds = 171900
+		}
+	}
+
+	// Single task timeout
+	if os.Getenv("SDS_TASK_TIMEOUT_SECONDS") == "" {
+		ctx.TaskTimeoutSeconds = 36000
+	} else {
+		secs, err := strconv.Atoi(os.Getenv("SDS_TASK_TIMEOUT_SECONDS"))
+		FatalNoLog(err)
+		if secs > 0 {
+			ctx.TaskTimeoutSeconds = secs
+		} else {
+			ctx.TaskTimeoutSeconds = 36000
 		}
 	}
 

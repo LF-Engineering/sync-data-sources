@@ -61,6 +61,7 @@
 # dryRunCode: '4'
 # dryRunSeconds: '1'
 # timeoutSeconds: '72000'
+# taskTimeoutSeconds: '48000'
 # nLongest: '30'
 # skipSH: '1'
 # skipData: '1'
@@ -96,6 +97,7 @@ dryRun: ''
 dryRunCode: ''
 dryRunSeconds: ''
 timeoutSeconds: ''
+taskTimeoutSeconds: ''
 nLongest: ''
 skipSH: ''
 skipData: ''
@@ -138,7 +140,7 @@ requestsMemory: 2Gi
 name: sds
 namespace: sds
 nameOverride: sds
-schedule: '0 0,6,12,18 * * *'
+schedule: '0 0,12 * * *'
 secretType: Opaque
 shSecret: sh-db
 esSecret: es-db
