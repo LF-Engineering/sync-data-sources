@@ -6,6 +6,7 @@ import (
 	"encoding/csv"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"net/http"
@@ -699,8 +700,11 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	randInitOnce.Do(func() {
 		rand.Seed(time.Now().UnixNano())
 	})
-	// TODO: curl -XPOST -H 'Content-type: application/json' ES_URL/_sql?format=csv -d"{\"query\":\"select data_sync_success_dt::long - data_sync_attempt_dt::long from sdssyncinfo where index = ? and endpoint = ? data_sync_success_dt is not null and data_sync_attempt_dt is not null order by dt desc limit 5\"}"
-	rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
+	if ctx.SkipSortDuration {
+		rand.Shuffle(len(tasks), func(i, j int) { tasks[i], tasks[j] = tasks[j], tasks[i] })
+	} else {
+		sortByDuration(ctx, tasks)
+	}
 	ctx.ExecFatal = false
 	ctx.ExecOutput = true
 	ctx.ExecOutputStderr = true
@@ -749,6 +753,89 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	if rslt != nil {
 		lib.Fatalf("Process tasks error: %+v\n", rslt)
 	}
+}
+
+func sortByDuration(ctx *lib.Ctx, tasks []lib.Task) {
+	if ctx.DryRun && !ctx.DryRunAllowSortDuration {
+		return
+	}
+	lib.Printf("Determining running order for %d tasks\n", len(tasks))
+	for i := range tasks {
+		setLastDuration(ctx, &tasks[i])
+	}
+	sort.SliceStable(tasks, func(i, j int) bool {
+		return tasks[i].Millis > tasks[j].Millis
+	})
+	lib.Printf("Determined running order for %d tasks\n", len(tasks))
+}
+
+func setLastDuration(ctx *lib.Ctx, task *lib.Task) {
+	fds := task.DsFullSlug
+	task.Millis = int64(9223372036854775807)
+	idxSlug := "sds-" + task.FxSlug + "-" + fds
+	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+	data := fmt.Sprintf(
+		`{"query":"select data_sync_success_dt::long - data_sync_attempt_dt::long as millis from sdssyncinfo where index = '%s' and endpoint = '%s' and data_sync_success_dt is not null and data_sync_attempt_dt is not null order by dt desc limit 1"}`,
+		jsonEscape(idxSlug),
+		jsonEscape(task.Endpoint),
+	)
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/_sql?format=csv", ctx.ElasticURL)
+	rurl := "/_sql?format=csv"
+	req, err := http.NewRequest(method, url, payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%s\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	reader := csv.NewReader(resp.Body)
+	row := []string{}
+	n := 0
+	for {
+		row, err = reader.Read()
+		if err == io.EOF {
+			err = nil
+			break
+		} else if err != nil {
+			lib.Printf("Read CSV error: %v/%T\n", err, err)
+			return
+		}
+		if n == 0 {
+			n++
+			continue
+		}
+		millis, err := strconv.ParseInt(row[0], 10, 64)
+		if err != nil {
+			lib.Printf("Cannot parse integer from '%s' error: %v\n", row[0], err)
+			return
+		}
+		task.Millis = millis
+		if ctx.Debug > 0 {
+			lib.Printf("Last duration %s / %s ---> %d\n", idxSlug, task.Endpoint, task.Millis)
+		}
+		break
+	}
+	return
 }
 
 func ssawSync(ctx *lib.Ctx, final bool) {
@@ -1468,6 +1555,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 			return
 		}
 		lib.Printf("Method:%s url:%s status:%d data:%s\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
 	}
 	payload := lib.EsSearchResultPayload{}
 	err = json.NewDecoder(resp.Body).Decode(&payload)
