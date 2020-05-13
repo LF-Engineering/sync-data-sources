@@ -788,8 +788,10 @@ func sortByDuration(ctx *lib.Ctx, tasks []lib.Task) {
 	sort.SliceStable(tasks, func(i, j int) bool {
 		return tasks[i].Millis < tasks[j].Millis
 	})
-	for i, task := range tasks {
-		lib.Printf("#%d %s / %s (%d)\n", i, task.DsFullSlug, task.Endpoint, task.Millis)
+	if ctx.Debug > 0 {
+		for i, task := range tasks {
+			lib.Printf("#%d %s / %s (%d)\n", i, task.DsFullSlug, task.Endpoint, task.Millis)
+		}
 	}
 	lib.Printf("Determined running order for %d tasks\n", len(tasks))
 }
@@ -856,7 +858,7 @@ func setLastDuration(ctx *lib.Ctx, task *lib.Task) {
 		}
 		if millis > 0 {
 			task.Millis = millis
-			if ctx.Debug >= 0 {
+			if ctx.Debug > 0 {
 				lib.Printf("Last duration %s / %s ---> %d\n", idxSlug, task.Endpoint, task.Millis)
 			}
 		}
@@ -960,6 +962,13 @@ func dropOriginsInternal(ctx *lib.Ctx, index string, origins []string) (ok bool)
 	}
 	ok = true
 	return
+}
+
+func isTimeoutError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "killed by task timeout")
 }
 
 func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
@@ -1472,6 +1481,13 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					lib.Printf("%+v: finished in %v, retries: %d\n", tsk, dtEnd.Sub(dtStart), retries)
 				}
 				break
+			}
+			if isTimeoutError(err) {
+				dtEnd := time.Now()
+				lib.Printf("Timeout error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
+				str += fmt.Sprintf(": %+v", err)
+				result[3] = fmt.Sprintf("timeout: last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
+				return
 			}
 			retries++
 			if retries <= ctx.MaxRetry {
@@ -4148,7 +4164,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 		}
 		setSyncInfo(ctx, tMtx, &result, true)
-		// TODO: add support for maximum running time
 		str, err := lib.ExecCommand(ctx, commandLine, nil)
 		if keyAdded {
 			gKeyMtx.Unlock()
@@ -4175,6 +4190,15 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				lib.Printf("%+v: finished in %v, retries: %d\n", task, dtEnd.Sub(dtStart), retries)
 			}
 			break
+		}
+		if isTimeoutError(err) {
+			dtEnd := time.Now()
+			lib.Printf("Timeout error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
+			str += fmt.Sprintf(": %+v", err)
+			result.Code[1] = 6
+			result.Err = fmt.Errorf("timeout: last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
+			result.Retries = retries
+			return
 		}
 		retries++
 		if retries <= ctx.MaxRetry {
