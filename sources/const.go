@@ -112,4 +112,5 @@ var ErrorStrings = map[int]string{
 	3: "incorrect config option(s) for given data source",
 	4: "p2o.py error",
 	5: "setting SSH private key error",
+	6: "command timeout error",
 }
