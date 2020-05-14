@@ -207,7 +207,7 @@ func TestInit(t *testing.T) {
 	defaultContext := lib.Ctx{
 		Debug:                   0,
 		CmdDebug:                0,
-		MaxRetry:                2,
+		MaxRetry:                0,
 		ST:                      false,
 		NCPUs:                   0,
 		CtxOut:                  false,
