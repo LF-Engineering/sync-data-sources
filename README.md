@@ -51,3 +51,8 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 - If not installed with the Helm chart (which is the default), for the `test` env do: `cd helm-charts/sds-helm/`, `[NODES=n] [NS=sds] ./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment. Then `./run.sh`.
 - When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks_test.csv`, finally delete debug pod: `[NS=sds] ./debug_delete.sh test`.
+
+# Fargate
+
+- Create cluster via: `AWS_PROFILE=darst ./fargate/create_cluster.sh test sds-cluster`.
+- Create task via: `[DRY=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-onap SDS_ES_BULKSIZE=500 SDS_SILENT=1 ./fargate/create_task.sh prod`.
