@@ -265,14 +265,20 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	if slug == "" {
 		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
 	}
-	if len(fixture.DataSources) == 0 && len(fixture.Aliases) == 0 {
+	nAliases := len(fixture.Aliases)
+	if len(fixture.DataSources) == 0 && nAliases == 0 {
 		lib.Fatalf("Fixture file %s must have at least one data source defined in 'data_sources' key or at least one alias defined in 'aliases' key\n", fixtureFile)
 		//lib.Printf("Fixture file %s has no datasources and no aliases\n", fixtureFile)
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
+	nEndpoints := 0
 	for index, dataSource := range fixture.DataSources {
 		validateDataSource(ctx, fixture, index, &dataSource)
+		nEndpoints += len(dataSource.Endpoints)
+	}
+	if nEndpoints == 0 && nAliases == 0 {
+		lib.Fatalf("Fixture file %s must have at least one endpoint defined in 'endpoints'/'projects' key or at least one alias defined in 'aliases' key\n", fixtureFile)
 	}
 	st := make(map[string]lib.DataSource)
 	for _, dataSource := range fixture.DataSources {
@@ -283,6 +289,67 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 		}
 		st[slug] = dataSource
 	}
+}
+
+func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) (drop bool) {
+	n := 0
+	if ctx.DatasourcesRE == nil {
+		if ctx.ProjectsRE == nil && ctx.EndpointsRE == nil {
+			return
+		}
+		for i, dataSource := range fixture.DataSources {
+			endpoints := []lib.Endpoint{}
+			for _, endpoint := range dataSource.Endpoints {
+				//fmt.Printf("project %+v against %s  --> %v\n", ctx.ProjectsRE, endpoint.Project, ctx.ProjectsRE.MatchString(endpoint.Project))
+				if ctx.ProjectsRE != nil && !ctx.ProjectsRE.MatchString(endpoint.Project) {
+					continue
+				}
+				//fmt.Printf("endpoint %+v against %s --> %v\n", ctx.EndpointsRE, endpoint.Name, ctx.EndpointsRE.MatchString(endpoint.Name))
+				if ctx.EndpointsRE != nil && !ctx.EndpointsRE.MatchString(endpoint.Name) {
+					continue
+				}
+				endpoints = append(endpoints, endpoint)
+				n++
+			}
+			fixture.DataSources[i].Endpoints = endpoints
+		}
+	} else {
+		dataSources := []lib.DataSource{}
+		allEndpoints := false
+		if ctx.ProjectsRE == nil && ctx.EndpointsRE == nil {
+			allEndpoints = true
+		}
+		for _, dataSource := range fixture.DataSources {
+			//fmt.Printf("datasource %+v against %s --> %v\n", ctx.DatasourcesRE, dataSource.Slug, ctx.DatasourcesRE.MatchString(dataSource.Slug))
+			if ctx.DatasourcesRE != nil && !ctx.DatasourcesRE.MatchString(dataSource.Slug) {
+				continue
+			}
+			if !allEndpoints {
+				endpoints := []lib.Endpoint{}
+				for _, endpoint := range dataSource.Endpoints {
+					//fmt.Printf("projects %+v against %s --> %v\n", ctx.ProjectsRE, endpoint.Project, ctx.ProjectsRE.MatchString(endpoint.Project))
+					if ctx.ProjectsRE != nil && !ctx.ProjectsRE.MatchString(endpoint.Project) {
+						continue
+					}
+					//fmt.Printf("endpoints %+v against %s --> %v\n", ctx.EndpointsRE, endpoint.Name, ctx.EndpointsRE.MatchString(endpoint.Name))
+					if ctx.EndpointsRE != nil && !ctx.EndpointsRE.MatchString(endpoint.Name) {
+						continue
+					}
+					endpoints = append(endpoints, endpoint)
+					n++
+				}
+				dataSource.Endpoints = endpoints
+			} else {
+				n += len(dataSource.Endpoints)
+			}
+			dataSources = append(dataSources, dataSource)
+		}
+		fixture.DataSources = dataSources
+	}
+	if ctx.Debug > 0 {
+		fmt.Printf("%s has %d after filter\n", fixture.Fn, n)
+	}
+	return n == 0
 }
 
 func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
@@ -519,12 +586,29 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
+	slug, ok := fixture.Native["slug"]
+	if !ok {
+		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
+	}
+	fixture.Fn = fixtureFile
+	fixture.Slug = slug
+	if ctx.Debug > 0 && ctx.FixturesRE != nil {
+		fmt.Printf("fixture %+v against %s --> %v\n", ctx.FixturesRE, fixture.Slug, ctx.FixturesRE.MatchString(fixture.Slug))
+	}
+	if ctx.FixturesRE != nil && !ctx.FixturesRE.MatchString(fixture.Slug) {
+		fixture.Disabled = true
+		return
+	}
 	if fixture.Disabled == true {
 		return
 	}
 	postprocessFixture(gctx, gc, ctx, &fixture)
+	if filterFixture(gctx, gc, ctx, &fixture) {
+		fixture.Disabled = true
+		return
+	}
 	if ctx.Debug > 0 {
-		lib.Printf("Post-processed %s fixture: %+v\n", fixtureFile, fixture)
+		lib.Printf("Post-processed and filtered %s fixture: %+v\n", fixtureFile, fixture)
 	}
 	validateFixture(ctx, &fixture, fixtureFile)
 	return
