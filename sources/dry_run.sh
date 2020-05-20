@@ -6,6 +6,10 @@ then
 fi
 #export SDS_ST=1
 #export SDS_DEBUG=1
+#export SDS_FIXTURES_RE=''
+#export SDS_DATASOURCES_RE=''
+#export SDS_PROJECTS_RE=''
+#export SDS_ENDPOINTS_RE=''
 export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
 export SDS_SKIP_DATA=1
@@ -45,5 +49,5 @@ export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
 export SH_DB=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_DB.$1.secret`
 export SH_USER=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_USER.$1.secret`
 export SH_PASS=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PASS.$1.secret`
-#export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
+export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 ./syncdatasources

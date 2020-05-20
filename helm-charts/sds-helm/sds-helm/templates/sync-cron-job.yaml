@@ -66,6 +66,14 @@ spec:
                 cpu: '{{ $root.Values.limitsCPU }}'
 {{ end }}
             env:
+            - name: SDS_FIXTURES_RE
+              value: '{{ $root.Values.fixturesRE }}'
+            - name: SDS_DATASOURCES_RE
+              value: '{{ $root.Values.datasourcesRE }}'
+            - name: SDS_PROJECTS_RE
+              value: '{{ $root.Values.projectsRE }}'
+            - name: SDS_ENDPOINTS_RE
+              value: '{{ $root.Values.endpointsRE }}'
             - name: SDS_DRY_RUN
               value: '{{ $root.Values.dryRun }}'
             - name: SDS_DRY_RUN_CODE

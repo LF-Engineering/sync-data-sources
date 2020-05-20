@@ -57,6 +57,10 @@
 # nodeNum: 3
 # nodeIdx: 0
 # nodeHash: '1'
+# fixturesRE: '^lfn/.*'
+# datasourcesRE: '^git$'
+# projectsRE: '[nN]etwork'
+# endpointsRE: '\.gerrit\.'
 # dryRun: '1'
 # dryRunCode: '4'
 # dryRunSeconds: '1'
@@ -93,6 +97,10 @@
 
 # Standard values:
 deployEnv: 'set-me'
+fixturesRE: ''
+datasourcesRE: ''
+projectsRE: ''
+endpointsRE: ''
 dryRun: ''
 dryRunCode: ''
 dryRunSeconds: ''
