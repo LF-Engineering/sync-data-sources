@@ -1,0 +1,305 @@
+{
+  "family": "${SDS_TASK_NAME}-family", 
+  "networkMode": "awsvpc", 
+  "volumes": [
+    {
+      "name": "${SDS_TASK_NAME}",
+      "host": {}
+    }
+  ],
+  "requiresCompatibilities": [
+    "FARGATE"
+  ], 
+  "cpu": "4096", 
+  "memory": "16384",
+  "containerDefinitions": [
+    {
+      "name": "${SDS_TASK_NAME}", 
+      "image": "lukaszgryglicki/sync-data-sources", 
+      "essential": true, 
+      "command": [
+        "/run.sh"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "${SDS_TASK_NAME}",
+          "containerPath": "/root/.perceval"
+        }
+      ],
+      "environment": [
+        {
+          "name": "SDS_TASK_NAME",
+          "value": "${SDS_TASK_NAME}"
+        },
+        {
+          "name": "SDS_FIXTURES_RE",
+          "value": "${SDS_FIXTURES_RE}"
+        },
+        {
+          "name": "SDS_DATASOURCES_RE",
+          "value": "${SDS_DATASOURCES_RE}"
+        },
+        {
+          "name": "SDS_PROJECTS_RE",
+          "value": "${SDS_PROJECTS_RE}"
+        },
+        {
+          "name": "SDS_ENDPOINTS_RE",
+          "value": "${SDS_ENDPOINTS_RE}"
+        },
+        {
+          "name": "SDS_DRY_RUN",
+          "value": "${SDS_DRY_RUN}"
+        },
+        {
+          "name": "SDS_DRY_RUN_CODE",
+          "value": "${SDS_DRY_RUN_CODE}"
+        },
+        {
+          "name": "SDS_DRY_RUN_SECONDS",
+          "value": "${SDS_DRY_RUN_SECONDS}"
+        },
+        {
+          "name": "SDS_DRY_RUN_CODE_RANDOM",
+          "value": "${SDS_DRY_RUN_CODE_RANDOM}"
+        },
+        {
+          "name": "SDS_DRY_RUN_SECONDS_RANDOM",
+          "value": "${SDS_DRY_RUN_SECONDS_RANDOM}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_SSH",
+          "value": "${SDS_DRY_RUN_ALLOW_SSH}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_FREQ",
+          "value": "${SDS_DRY_RUN_ALLOW_FREQ}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_MTX",
+          "value": "${SDS_DRY_RUN_ALLOW_MTX}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_RENAME",
+          "value": "${SDS_DRY_RUN_ALLOW_RENAME}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_ORIGINS",
+          "value": "${SDS_DRY_RUN_ALLOW_ORIGINS}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_DEDUP",
+          "value": "${SDS_DRY_RUN_ALLOW_DEDUP}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_PROJECT",
+          "value": "${SDS_DRY_RUN_ALLOW_PROJECT}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_SYNC_INFO",
+          "value": "${SDS_DRY_RUN_ALLOW_SYNC_INFO}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_SORT_DURATION",
+          "value": "${SDS_DRY_RUN_ALLOW_SORT_DURATION}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_SSAW",
+          "value": "${SDS_DRY_RUN_ALLOW_SSAW}"
+        },
+        {
+          "name": "SDS_TIMEOUT_SECONDS",
+          "value": "${SDS_TIMEOUT_SECONDS}"
+        },
+        {
+          "name": "SDS_TASK_TIMEOUT_SECONDS",
+          "value": "${SDS_TASK_TIMEOUT_SECONDS}"
+        },
+        {
+          "name": "SDS_N_LONGEST",
+          "value": "${SDS_N_LONGEST}"
+        },
+        {
+          "name": "SDS_STRIP_ERROR_SIZE",
+          "value": "${SDS_STRIP_ERROR_SIZE}"
+        },
+        {
+          "name": "SDS_SKIP_SH",
+          "value": "${SDS_SKIP_SH}"
+        },
+        {
+          "name": "SDS_SKIP_DATA",
+          "value": "${SDS_SKIP_DATA}"
+        },
+        {
+          "name": "SDS_SKIP_ES_DATA",
+          "value": "${SDS_SKIP_ES_DATA}"
+        },
+        {
+          "name": "SDS_SKIP_ES_LOG",
+          "value": "${SDS_SKIP_ES_LOG}"
+        },
+        {
+          "name": "SDS_SKIP_CHECK_FREQ",
+          "value": "${SDS_SKIP_CHECK_FREQ}"
+        },
+        {
+          "name": "SDS_SKIP_AFFS",
+          "value": "${SDS_SKIP_AFFS}"
+        },
+        {
+          "name": "SDS_SKIP_ALIASES",
+          "value": "${SDS_SKIP_ALIASES}"
+        },
+        {
+          "name": "SDS_SKIP_DEDUP",
+          "value": "${SDS_SKIP_DEDUP}"
+        },
+        {
+          "name": "SDS_SKIP_PROJECT",
+          "value": "${SDS_SKIP_PROJECT}"
+        },
+        {
+          "name": "SDS_SKIP_PROJECT_TS",
+          "value": "${SDS_SKIP_PROJECT_TS}"
+        },
+        {
+          "name": "SDS_SKIP_SYNC_INFO",
+          "value": "${SDS_SKIP_SYNC_INFO}"
+        },
+        {
+          "name": "SDS_SKIP_SSAW",
+          "value": "${SDS_SKIP_SSAW}"
+        },
+        {
+          "name": "SDS_SKIP_SORT_DURATION",
+          "value": "${SDS_SKIP_SORT_DURATION}"
+        },
+        {
+          "name": "SDS_SKIP_VALIDATE_GITHUB_API",
+          "value": "${SDS_SKIP_VALIDATE_GITHUB_API}"
+        },
+        {
+          "name": "SDS_SKIP_DROP_UNUSED",
+          "value": "${SDS_DROP_UNUSED}"
+        },
+        {
+          "name": "SDS_ONLY_VALIDATE",
+          "value": "${SDS_ONLY_VALIDATE}"
+        },
+        {
+          "name": "SDS_NO_MULTI_ALIASES",
+          "value": "${SDS_NO_MULTI_ALIASES}"
+        },
+        {
+          "name": "SDS_CLEANUP_ALIASES",
+          "value": "${SDS_CLEANUP_ALIASES}"
+        },
+        {
+          "name": "SDS_NODE_HASH",
+          "value": "${SDS_NODE_HASH}"
+        },
+        {
+          "name": "SDS_NODE_NUM",
+          "value": "${SDS_NODE_NUM}"
+        },
+        {
+          "name": "SDS_NODE_IDX",
+          "value": "${SDS_NODE_IDX}"
+        },
+        {
+          "name": "SDS_MAXRETRY",
+          "value": "${SDS_MAXRETRY}"
+        },
+        {
+          "name": "SDS_DEBUG",
+          "value": "${SDS_DEBUG}"
+        },
+        {
+          "name": "SDS_CMDDEBUG",
+          "value": "${SDS_CMDDEBUG}"
+        },
+        {
+          "name": "SDS_ST",
+          "value": "${SDS_ST}"
+        },
+        {
+          "name": "SDS_NCPUS",
+          "value": "${SDS_NCPUS}"
+        },
+        {
+          "name": "SDS_SKIPTIME",
+          "value": "${SDS_SKIPTIME}"
+        },
+        {
+          "name": "SDS_ES_BULKSIZE",
+          "value": "${SDS_ES_BULKSIZE}"
+        },
+        {
+          "name": "SDS_LATEST_ITEMS",
+          "value": "${SDS_LATEST_ITEMS}"
+        },
+        {
+          "name": "SDS_SCROLL_WAIT",
+          "value": "${SDS_SCROLL_WAIT}"
+        },
+        {
+          "name": "SDS_SCROLL_SIZE",
+          "value": "${SDS_SCROLL_SIZE}"
+        },
+        {
+          "name": "SDS_SILENT",
+          "value": "${SDS_SILENT}"
+        },
+        {
+          "name": "SDS_MAX_DELETE_TRIALS",
+          "value": "${SDS_MAX_DELETE_TRIALS}"
+        },
+        {
+          "name": "SDS_SSAW_FREQ",
+          "value": "${SDS_SSAW_FREQ}"
+        },
+        {
+          "name": "SDS_SSAW_URL",
+          "value": "${SDS_SSAW_URL}"
+        },
+        {
+          "name": "SH_USER",
+          "value": "${SDS_SH_USER}"
+        },
+        {
+          "name": "SH_HOST",
+          "value": "${SDS_SH_HOST}"
+        },
+        {
+          "name": "SH_PORT",
+          "value": "${SDS_SH_PORT}"
+        },
+        {
+          "name": "SH_PASS",
+          "value": "${SDS_SH_PASS}"
+        },
+        {
+          "name": "SH_DB",
+          "value": "${SDS_SH_DB}"
+        },
+        {
+          "name": "SDS_ES_URL",
+          "value": "${SDS_ES_URL}"
+        },
+        {
+          "name": "SDS_GITHUB_OAUTH",
+          "value": "${SDS_GITHUB_OAUTH}"
+        },
+        {
+          "name": "ZIPPASS",
+          "value": "${SDS_ZIPPASS}"
+        },
+        {
+          "name": "REPO_ACCESS",
+          "value": "${SDS_REPO_ACCESS}"
+        }
+      ]
+    }
+  ]
+}
