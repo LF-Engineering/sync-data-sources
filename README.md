@@ -55,6 +55,12 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 # Fargate
 
 - Create cluster via: `AWS_PROFILE=darst ./fargate/create_cluster.sh test sds-cluster`.
-- Create task via: `[DRY=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-onap SDS_ES_BULKSIZE=500 SDS_SILENT=1 ./fargate/create_task.sh test`.
+- List clusters via: `AWS_PROFILE=darst ./fargate/list_clusters.sh test sds-cluster`.
+- Create task via: `[DRY=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-onap ./fargate/create_task.sh test`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
+- Create service via: `[PUB=1] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-onap sds-onap-service`.
+- List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
+- Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-onap-service`.
+- Eventually delete task via: `AWS_PROFILE=darst fargate/delete_task.sh test sds-onap`
+- Eventually delete service via: `AWS_PROFILE=darst ./fargate/delete_service.sh test sds-cluster sds-onap-service`.
 - Eventually delete cluster via: `AWS_PROFILE=darst ./fargate/delete_cluster.sh test sds-cluster`.

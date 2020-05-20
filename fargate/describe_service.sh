@@ -14,4 +14,9 @@ then
   echo "$0: you need to specify cluster name as a second argument"
   exit 3
 fi
-aws ecs create-cluster --cluster-name "${2}-${1}"
+if [ -z "${3}" ]
+then
+  echo "$0: you need to specify service name as a third argument"
+  exit 4
+fi
+aws ecs describe-services --cluster "${2}-${1}" --services "${3}-${1}"
