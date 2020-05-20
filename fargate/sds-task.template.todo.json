@@ -1,5 +1,5 @@
 {
-  "family": "${SDS_TASK_NAME}-family", 
+  "family": "${SDS_TASK_NAME}", 
   "networkMode": "awsvpc", 
   "volumes": [
     {
