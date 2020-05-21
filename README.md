@@ -57,8 +57,10 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create cluster via: `AWS_PROFILE=darst ./fargate/create_cluster.sh test sds-cluster`.
 - List clusters via: `AWS_PROFILE=darst ./fargate/list_clusters.sh`.
 - Create role for `awslogs` driver via: `AWS_PROFILE=darst ./fargate/create_role.sh`.
-- List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`.
-- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
+- List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`. Note `"Arn": "arn:aws:iam::XXXXXXXXXXX:role/ecsTaskExecutionRole"`.
+- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole' SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
+- You can put this role ARN in a scret file, to avoid specifying it every time: `helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret`.
+- For example: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
 - Create service via: `[PUB=1] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.

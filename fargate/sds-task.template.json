@@ -1,5 +1,6 @@
 {
   "family": "${SDS_TASK_NAME}", 
+  "executionRoleArn": "${SDS_ROLE_ARN}",
   "networkMode": "awsvpc", 
   "volumes": [
     {
