@@ -5,3 +5,4 @@ then
   exit 1
 fi
 aws efs describe-file-systems | jq '.FileSystems[] | select(.Name == "sds-efs-volume")'
+aws efs describe-access-points | jq '.AccessPoints[] | select(.Name == "sds-efs-access-point")'

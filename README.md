@@ -59,16 +59,16 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create role for `awslogs` driver via: `AWS_PROFILE=darst ./fargate/create_role.sh`.
 - List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`. Note `"Arn": "arn:aws:iam::XXXXXXXXXXX:role/ecsTaskExecutionRole"`. Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret` file.
 - Create EFS persistent volume via: `AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_efs.sh`.
-- List EFS volumes via: `AWS_PROFILE=darst ./fargate/list_efs.sh`. Put `FileSystemId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_FS_ID.secret` file.
+- List EFS volumes via: `AWS_PROFILE=darst ./fargate/list_efs.sh`. Put `FileSystemId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_FS_ID.secret` and `AccessPointId` in `helm-charts/sds-helm/sds-helm/secrets/SDS_FSAP_ID.secret` file.
 - Create VPC via: `AWS_PROFILE=darst ./fargate/create_vpc.sh`.
 - List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpcs.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
-- Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
-- List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
 - Create internet gateway and rountes via: `AWS_PROFILE=darst ./fargate/create_igw.sh`.
 - List internet gateways and routes via: `AWS_PROFILE=darst ./fargate/list_igws.sh`.
+- Create subnet and associate public route via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
+- List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
 - Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
 - List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
-- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
+- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] [SDS_FSAP_ID=fsap-0123456789] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
 - Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh test`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
 - Run single task via: `AWS_PROFILE=darst ./fargate/run_task.sh test sds-cluster sds-egeria-git 1`.
