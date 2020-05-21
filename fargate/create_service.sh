@@ -25,6 +25,11 @@ then
   echo "$0: you need to specify task name as a 4th argument"
   exit 5
 fi
+if [ -z "${5}" ]
+then
+  echo "$0: you need to specify task revision as a 5th argument"
+  exit 6
+fi
 for renv in SDS_VPC_ID SDS_SUBNET_ID SDS_SG_ID
 do
   if [ -z "${!renv}" ]
@@ -43,19 +48,19 @@ do
         export ${renv}=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS security group") | .GroupId'`
       else
         echo "$0: you must specify ${renv}=... or provide helm-charts/sds-helm/sds-helm/secrets/${renv}.secret file (don't know how to get value from aws cli)"
-        exit 6
+        exit 7
       fi
     fi
     if [ -z "${!renv}" ]
     then
       echo "$0: you must specify ${renv}=... or provide helm-charts/sds-helm/sds-helm/secrets/${renv}.secret file (unable to get value from aws cli)"
-      exit 7
+      exit 8
     fi
   fi
 done
 if [ -z "${PUB}" ]
 then
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}]}"
+  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --platform-version "1.4.0" --task-definition "${4}-${1}:${5}" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}]}"
 else
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}],assignPublicIp=ENABLED}"
+  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --platform-version "1.4.0" --task-definition "${4}-${1}:${5}" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}],assignPublicIp=ENABLED}"
 fi
