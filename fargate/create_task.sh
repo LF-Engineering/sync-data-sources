@@ -1,6 +1,7 @@
 #!/bin/bash
 # DRY=1 - run in dry run mode (no task is created, JSON is displayed instead)
 # DRYSDS=1 - run SDS in dry run mode (so task will be created but SDS from that task will run in dry run mode)
+# AP=1 - use version that uses access points
 if [ -z "${AWS_PROFILE}" ]
 then
   echo "${0}: you need to specify AWS_PROFILE=..."
@@ -58,7 +59,12 @@ then
   #export SDS_ONLY_VALIDATE=1
 fi
 export SDS_BRANCH="${1}"
-for renv in SDS_ROLE_ARN SDS_FS_ID SDS_FSAP_ID SDS_TASK_NAME SDS_SSAW_URL SDS_SH_USER SDS_SH_HOST SDS_SH_PORT SDS_SH_PASS SDS_SH_DB SDS_ES_URL SDS_GITHUB_OAUTH SDS_ZIPPASS SDS_REPO_ACCESS
+envlist='SDS_ROLE_ARN SDS_FS_ID SDS_TASK_NAME SDS_SSAW_URL SDS_SH_USER SDS_SH_HOST SDS_SH_PORT SDS_SH_PASS SDS_SH_DB SDS_ES_URL SDS_GITHUB_OAUTH SDS_ZIPPASS SDS_REPO_ACCESS'
+if [ ! -z "${AP}" ]
+then
+  envlist="${envlist} SDS_FSAP_ID"
+fi
+for renv in ${envlist}
 do
   if [ -z "${!renv}" ]
   then
@@ -88,7 +94,12 @@ do
     export ${renv}="${!renv}-${1}"
   fi
 done
-template=`cat fargate/sds-task.template.json`
+if [ -z "${AP}" ]
+then
+  template=`cat fargate/sds-task.template.json`
+else
+  template=`cat fargate/sds-task.template-ap.json`
+fi
 envs=`env | grep SDS_`
 envs="${envs} AWS_REGION"
 for env in ${envs}
