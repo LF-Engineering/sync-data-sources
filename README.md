@@ -57,20 +57,22 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create cluster via: `AWS_PROFILE=darst ./fargate/create_cluster.sh test sds-cluster`.
 - List clusters via: `AWS_PROFILE=darst ./fargate/list_clusters.sh`.
 - Create role for `awslogs` driver via: `AWS_PROFILE=darst ./fargate/create_role.sh`.
-- List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`. Note `"Arn": "arn:aws:iam::XXXXXXXXXXX:role/ecsTaskExecutionRole"`.
-- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole' SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
-- You can put this role ARN in a scret file, to avoid specifying it every time: `helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret`.
+- List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`. Note `"Arn": "arn:aws:iam::XXXXXXXXXXX:role/ecsTaskExecutionRole"`. Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret` file.
+- Create EFS persistent volume via: `AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_efs.sh`.
+- List EFS volumes via: `AWS_PROFILE=darst ./fargate/list_efs.sh`. Put `FileSystemId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_FS_ID.secret` file.
+- Create VPC via: `AWS_PROFILE=darst ./fargate/create_vpc.sh`.
+- List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpcs.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
+- Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
+- List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
+- Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
+- List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
+- Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
 - Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
-- Create VPC via: `AWS_PROFILE=darst ./fargate/create_vpc.sh`.
-- List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpc.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
-- Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
-- List subnets via: `AWS_PROFILE=darst ./fargate/list_subnet.sh`. Note `VpcId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
-- Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
-- List security groups via: `AWS_PROFILE=darst ./fargate/list_security_group.sh`.
 - Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
+- Eventually delete EFS volume via: `AWS_PROFILE=darst ./fargate/delete_efs.sh`.
 - Eventually delete security group via: `AWS_PROFILE=darst ./fargate/delete_security_group.sh`.
 - Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
 - Eventually delete vpc via: `AWS_PROFILE=darst ./fargate/delete_vpc.sh`.
