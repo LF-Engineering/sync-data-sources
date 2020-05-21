@@ -14,4 +14,4 @@ then
   echo "$0: you need to specify task name as a second argument"
   exit 3
 fi
-aws ecs deregister-task-definition "${2}-${1}:1"
+aws ecs deregister-task-definition --task-definition "${2}-${1}:1"
