@@ -1,39 +1,47 @@
 {
   "family": "${SDS_TASK_NAME}", 
+  "executionRoleArn": "${SDS_ROLE_ARN}",
   "networkMode": "awsvpc", 
   "volumes": [
     {
-      "name": "${SDS_TASK_NAME}",
-      "host": {}
+      "name": "sds-efs-volume",
+      "efsVolumeConfiguration": {
+        "fileSystemId": "${SDS_FS_ID}",
+        "transitEncryption": "ENABLED",
+        "authorizationConfig": {
+          "accessPointId": "${SDS_FSAP_ID}"
+        }
+      }
     }
   ],
   "requiresCompatibilities": [
     "FARGATE"
   ], 
   "cpu": "4096", 
-  "memory": "32768",
+  "memory": "16384",
   "containerDefinitions": [
     {
       "name": "${SDS_TASK_NAME}", 
-      "image": "lukaszgryglicki/sync-data-sources", 
+      "image": "lukaszgryglicki/sync-data-sources-${SDS_BRANCH}", 
       "essential": true, 
       "command": [
         "/run.sh"
       ],
+      "mountPoints": [
+        {
+          "sourceVolume": "sds-efs-volume",
+          "containerPath": "/data"
+        }
+      ],
       "logConfiguration": { 
         "logDriver": "awslogs",
         "options": { 
-          "awslogs-group" : "/ecs/fargate-task-definition",
+          "awslogs-create-group": "true",
+          "awslogs-group" : "sds-logs",
           "awslogs-region": "${AWS_REGION}",
           "awslogs-stream-prefix": "${SDS_TASK_NAME}"
         }
       },
-      "mountPoints": [
-        {
-          "sourceVolume": "${SDS_TASK_NAME}",
-          "containerPath": "/root/.perceval"
-        }
-      ],
       "environment": [
         {
           "name": "SDS_TASK_NAME",
@@ -306,6 +314,10 @@
         {
           "name": "REPO_ACCESS",
           "value": "${SDS_REPO_ACCESS}"
+        },
+        {
+          "name": "BRANCH",
+          "value": "${SDS_BRANCH}"
         }
       ]
     }
