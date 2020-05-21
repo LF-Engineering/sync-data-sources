@@ -298,6 +298,10 @@
         {
           "name": "REPO_ACCESS",
           "value": "${SDS_REPO_ACCESS}"
+        },
+        {
+          "name": "BRANCH",
+          "value": "${SDS_BRANCH}"
         }
       ]
     }

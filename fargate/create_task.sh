@@ -1,5 +1,6 @@
 #!/bin/bash
-# DRY=1 - run in dry run mode
+# DRY=1 - run in dry run mode (no task is created, JSON is displayed instead)
+# DRYSDS=1 - run SDS in dry run mode (so task will be created but SDS from that task will run in dry run mode)
 if [ -z "${AWS_PROFILE}" ]
 then
   echo "${0}: you need to specify AWS_PROFILE=..."
@@ -15,7 +16,7 @@ then
   echo "${0}: you need to specify env as a 1st arg: prod|test"
   exit 3
 fi
-if [ ! -z "${DRY}" ]
+if [ ! -z "${DRYSDS}" ]
 then
   #export SDS_ST=1
   #export SDS_DEBUG=1
@@ -56,6 +57,7 @@ then
   #export SDS_DRY_RUN_ALLOW_SSAW=1
   #export SDS_ONLY_VALIDATE=1
 fi
+export SDS_BRANCH="${1}"
 for renv in SDS_TASK_NAME SDS_SSAW_URL SDS_SH_USER SDS_SH_HOST SDS_SH_PORT SDS_SH_PASS SDS_SH_DB SDS_ES_URL SDS_GITHUB_OAUTH SDS_ZIPPASS SDS_REPO_ACCESS
 do
   if [ -z "${!renv}" ]
@@ -101,5 +103,9 @@ fn="fargate/sds-task.json.secret"
 echo "${template}" | jq -e . > "${fn}" || exit 5
 vim -c '%s/"${\(.*\)"/""/g' -c wq "${fn}"
 cwd=`pwd`
-cat "${cwd}/${fn}"
-aws ecs register-task-definition --cli-input-json "file://${cwd}/${fn}"
+if [ -z "${DRY}" ]
+then
+  aws ecs register-task-definition --cli-input-json "file://${cwd}/${fn}"
+else
+  cat "${cwd}/${fn}"
+fi
