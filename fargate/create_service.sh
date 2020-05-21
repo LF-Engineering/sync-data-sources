@@ -25,7 +25,7 @@ then
   echo "$0: you need to specify task name as a 4th argument"
   exit 5
 fi
-for renv in SDS_VPC_ID SDS_SUBNET_ID
+for renv in SDS_VPC_ID SDS_SUBNET_ID SDS_SG_ID
 do
   if [ -z "${!renv}" ]
   then
@@ -38,6 +38,9 @@ do
       elif [ "${renv}" = "SDS_SUBNET_ID" ]
       then
         export ${renv}=`aws ec2 describe-subnets | jq -r '.Subnets[] | select(.CidrBlock == "10.0.128.0/17") | .SubnetId'`
+      elif [ "${renv}" = "SDS_SG_ID" ]
+      then
+        export ${renv}=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS security group") | .GroupId'`
       else
         echo "$0: you must specify ${renv}=... or provide helm-charts/sds-helm/sds-helm/secrets/${renv}.secret file (don't know how to get value from aws cli)"
         exit 6
@@ -50,12 +53,9 @@ do
     fi
   fi
 done
-echo "${SDS_VPC_ID}"
-echo "${SDS_SUBNET_ID}"
-exit 10
 if [ -z "${PUB}" ]
 then
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[subnet-${4}-${1}],securityGroups=[sg-${4}-${1}]}"
+  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}]}"
 else
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[subnet-${4}-${1}],securityGroups=[sg-${4}-${1}],assignPublicIp=ENABLED}"
+  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --task-definition "${4}-${1}:1" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}],assignPublicIp=ENABLED}"
 fi

@@ -66,9 +66,12 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpc.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
 - Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
 - List subnets via: `AWS_PROFILE=darst ./fargate/list_subnet.sh`. Note `VpcId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
+- Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
+- List security groups via: `AWS_PROFILE=darst ./fargate/list_security_group.sh`.
 - Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
+- Eventually delete security group via: `AWS_PROFILE=darst ./fargate/delete_security_group.sh`.
 - Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
 - Eventually delete vpc via: `AWS_PROFILE=darst ./fargate/delete_vpc.sh`.
 - Eventually delete role via: `AWS_PROFILE=darst ./fargate/delete_role.sh`.
