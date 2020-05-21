@@ -60,11 +60,17 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - List roles via: `AWS_PROFILE=darst ./fargate/list_roles.sh`. Note `"Arn": "arn:aws:iam::XXXXXXXXXXX:role/ecsTaskExecutionRole"`.
 - Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole' SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
 - You can put this role ARN in a scret file, to avoid specifying it every time: `helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret`.
-- For example: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
+- Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
-- Create service via: `[PUB=1] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
+- Create VPC via: `AWS_PROFILE=darst ./fargate/create_vpc.sh`.
+- List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpc.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
+- Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
+- List subnets via: `AWS_PROFILE=darst ./fargate/list_subnet.sh`. Note `VpcId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
+- Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
+- Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
+- Eventually delete vpc via: `AWS_PROFILE=darst ./fargate/delete_vpc.sh`.
 - Eventually delete role via: `AWS_PROFILE=darst ./fargate/delete_role.sh`.
 - Eventually delete task via: `AWS_PROFILE=darst fargate/delete_task.sh test sds-projname`
 - Eventually delete service via: `AWS_PROFILE=darst ./fargate/delete_service.sh test sds-cluster sds-projname-service`.
