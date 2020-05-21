@@ -69,7 +69,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
 - Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
-- Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service`.
+- Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service 1`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
 - Eventually delete EFS volume via: `AWS_PROFILE=darst ./fargate/delete_efs.sh`.
@@ -77,6 +77,6 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
 - Eventually delete vpc via: `AWS_PROFILE=darst ./fargate/delete_vpc.sh`.
 - Eventually delete role via: `AWS_PROFILE=darst ./fargate/delete_role.sh`.
-- Eventually delete task via: `AWS_PROFILE=darst fargate/delete_task.sh test sds-projname`
+- Eventually delete task via: `AWS_PROFILE=darst fargate/delete_task.sh test sds-projname 1`
 - Eventually delete service via: `AWS_PROFILE=darst ./fargate/delete_service.sh test sds-cluster sds-projname-service`.
 - Eventually delete cluster via: `AWS_PROFILE=darst ./fargate/delete_cluster.sh test sds-cluster`.

@@ -14,4 +14,9 @@ then
   echo "$0: you need to specify task name as a second argument"
   exit 3
 fi
-aws ecs deregister-task-definition --task-definition "${2}-${1}:1"
+if [ -z "${3}" ]
+then
+  echo "$0: you need to specify task revision as a second argument"
+  exit 3
+fi
+aws ecs deregister-task-definition --task-definition "${2}-${1}:${3}"

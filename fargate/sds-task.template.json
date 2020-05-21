@@ -5,7 +5,6 @@
   "volumes": [
     {
       "name": "sds-efs-volume",
-      "host": {},
       "efsVolumeConfiguration": {
         "fileSystemId": "${SDS_FS_ID}",
         "rootDirectory": "/${SDS_TASK_NAME}"
@@ -28,7 +27,7 @@
       "mountPoints": [
         {
           "sourceVolume": "sds-efs-volume",
-          "containerPath": "/sds-efs-volume"
+          "containerPath": "/data"
         }
       ],
       "logConfiguration": { 
