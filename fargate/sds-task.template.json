@@ -33,7 +33,8 @@
       "logConfiguration": { 
         "logDriver": "awslogs",
         "options": { 
-          "awslogs-group" : "/ecs/fargate-task-definition",
+          "awslogs-create-group": "true",
+          "awslogs-group" : "sds-logs",
           "awslogs-region": "${AWS_REGION}",
           "awslogs-stream-prefix": "${SDS_TASK_NAME}"
         }

@@ -72,6 +72,10 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service 1`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
+- To create sds-logs log group: `AWS_PROFILE=darst ./fargate/create_log_group.sh`.
+- To see all log groups: `AWS_PROFILE=darst ./fargate/list_log_groups.sh`
+- To see given log group's all log streams: `AWS_PROFILE=darst ./fargate/list_log_streams.sh sds-logs`
+- Eventually delete log group via: `AWS_PROFILE=darst ./fargate/delete_log_group.sh`.
 - Eventually delete EFS volume via: `AWS_PROFILE=darst ./fargate/delete_efs.sh`.
 - Eventually delete security group via: `AWS_PROFILE=darst ./fargate/delete_security_group.sh`.
 - Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
