@@ -81,11 +81,11 @@ do
       echo "Missing ${renv} environment variable and unable to get it from the secret file"
       exit 4
     fi
-    if [ "${renv}" = "SDS_TASK_NAME" ]
-    then
-      v="${v}-${1}"
-    fi
     export ${renv}=${v}
+  fi
+  if [ "${renv}" = "SDS_TASK_NAME" ]
+  then
+    export ${renv}="${!renv}-${1}"
   fi
 done
 template=`cat fargate/sds-task.template.json`
