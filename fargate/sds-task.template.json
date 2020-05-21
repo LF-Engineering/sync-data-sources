@@ -3,7 +3,7 @@
   "networkMode": "awsvpc", 
   "volumes": [
     {
-      "name": "${SDS_TASK_NAME}",
+      "name": "sds-efs-volume",
       "host": {}
     }
   ],
@@ -22,10 +22,18 @@
       ],
       "mountPoints": [
         {
-          "sourceVolume": "${SDS_TASK_NAME}",
-          "containerPath": "/root/.perceval"
+          "sourceVolume": "sds-efs-volume",
+          "containerPath": "/sds-efs-volume/"
         }
       ],
+      "logConfiguration": { 
+        "logDriver": "awslogs",
+        "options": { 
+          "awslogs-group" : "/ecs/fargate-task-definition",
+          "awslogs-region": "${AWS_REGION}",
+          "awslogs-stream-prefix": "${SDS_TASK_NAME}"
+        }
+      },
       "environment": [
         {
           "name": "SDS_TASK_NAME",
