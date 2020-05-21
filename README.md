@@ -67,8 +67,12 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
 - List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
 - Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
-- Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh prod`.
+- Example task for `odpi/egeria` fixture and `git` datasource: `DRY='' DRYSDS='' AWS_PROFILE=darst AWS_REGION=us-west-2 SDS_TASK_NAME=sds-egeria-git SDS_FIXTURES_RE='^odpi/egeria$' SDS_DATASOURCES_RE='^git$' ./fargate/create_task.sh test`.
 - List tasks via: `AWS_PROFILE=darst ./fargate/list_tasks.sh`.
+- Run single task via: `AWS_PROFILE=darst ./fargate/run_task.sh test sds-cluster sds-egeria-git 1`.
+- List current cluster tasks via: `AWS_PROFILE=darst ./fargate/list_current_tasks.sh test sds-cluster`.
+- Describe current cluster task: `AWS_PROFILE=darst ./fargate/describe_current_task.sh test sds-cluster 'f4a08473-7702-44ba-8a41-cad8614b8c94'`.
+- Describe task via: `AWS_PROFILE=darst ./fargate/describe_task.sh test sds-egeria-git 1`.
 - Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service 1`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
