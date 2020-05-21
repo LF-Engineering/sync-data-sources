@@ -64,6 +64,8 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - List VPCs via: `AWS_PROFILE=darst ./fargate/list_vpcs.sh`. Note `VpcId` for newly created VPC (it has `"CidrBlock": "10.0.0.0/16"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_VPC_ID.secret` file.
 - Create subnet via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
 - List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
+- Create internet gateway and rountes via: `AWS_PROFILE=darst ./fargate/create_igw.sh`.
+- List internet gateways and routes via: `AWS_PROFILE=darst ./fargate/list_igws.sh`.
 - Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
 - List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
 - Create task via: `[DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
@@ -82,6 +84,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Eventually delete log group via: `AWS_PROFILE=darst ./fargate/delete_log_group.sh`.
 - Eventually delete EFS volume via: `AWS_PROFILE=darst ./fargate/delete_efs.sh`.
 - Eventually delete security group via: `AWS_PROFILE=darst ./fargate/delete_security_group.sh`.
+- Eventually delete internet gateway via: `AWS_PROFILE=darst ./fargate/delete_igw.sh`.
 - Eventually delete subnet via: `AWS_PROFILE=darst ./fargate/delete_subnet.sh`.
 - Eventually delete vpc via: `AWS_PROFILE=darst ./fargate/delete_vpc.sh`.
 - Eventually delete role via: `AWS_PROFILE=darst ./fargate/delete_role.sh`.

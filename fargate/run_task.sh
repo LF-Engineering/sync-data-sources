@@ -1,5 +1,4 @@
 #!/bin/bash
-# PUB=1 - use public AWS VPC address
 if [ -z "${AWS_PROFILE}" ]
 then
   echo "$0: you need to specify AWS_PROFILE=..."
