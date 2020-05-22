@@ -25,12 +25,12 @@ SS=1 ./fargate/create_vpc.sh || exit 6
 # IGW: internet gateway and route tables
 echo 'Gateway:'
 ./fargate/create_igw.sh || exit 7
+# Subnet: subnet and route table associations
+echo 'Subnet:'
+SS=1 ./fargate/create_subnet.sh || exit 8
 
 echo 'AllOK'
 exit 111
-# Subnet: subnet and route table associations
-echo 'Subnet:'
-./fargate/list_subnets.sh
 # SGs: main SG, EFS MT SG (with their ingress rules)
 echo 'Security groups:'
 ./fargate/list_security_groups.sh
