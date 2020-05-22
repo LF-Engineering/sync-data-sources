@@ -5,4 +5,10 @@ then
   exit 1
 fi
 vpcid=`aws ec2 describe-vpcs | jq -r '.Vpcs[] | select(.CidrBlock == "10.0.0.0/16") | .VpcId'`
-aws ec2 delete-vpc --vpc-id "${vpcid}"
+if [ ! -z "${vpcid}" ]
+then
+  echo "Deleting vpc ${vpcid}"
+  aws ec2 delete-vpc --vpc-id "${vpcid}"
+else
+  echo 'No VPC to delete'
+fi
