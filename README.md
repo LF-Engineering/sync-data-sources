@@ -64,7 +64,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - List internet gateways and routes via: `AWS_PROFILE=darst ./fargate/list_igws.sh`.
 - Create subnet and associate public route via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
 - List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
-- Create VPC security group via: `AWS_PROFILE=darst ./fargate/create_security_group.sh`.
+- Create VPC security group via: `AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_security_groups.sh`.
 - List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
 - Create EFS persistent volume via: `[AP=1] AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_efs.sh`.
 - List EFS volumes via: `[AP=1]AWS_PROFILE=darst ./fargate/list_efs.sh`. Put `FileSystemId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_FS_ID.secret` and `AccessPointId` in `helm-charts/sds-helm/sds-helm/secrets/SDS_FSAP_ID.secret` file.

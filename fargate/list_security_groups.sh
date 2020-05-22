@@ -4,4 +4,4 @@ then
   echo "$0: you need to specify AWS_PROFILE=..."
   exit 1
 fi
-aws ec2 describe-security-groups | jq '.SecurityGroups[] | select(.Description == "SDS security group")'
+aws ec2 describe-security-groups | jq '.SecurityGroups[] | select(.Description == "SDS security group" or .Description == "SDS EFS MT security group")'
