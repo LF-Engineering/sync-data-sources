@@ -17,5 +17,5 @@ then
   aws efs create-access-point --client-token sds-efs-access-point --tags "Key=Name,Value=sds-efs-access-point" --file-system-id "${fsid}"
 fi
 subnetid=`aws ec2 describe-subnets | jq -r '.Subnets[] | select(.CidrBlock == "10.0.128.0/17") | .SubnetId'`
-sgid=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS security group") | .GroupId'`
-aws efs create-mount-target --file-system-id "${fsid}" --subnet-id "${subnetid}" --security-group "${sgid}" --region "${AWS_REGION}"
+sgidmt=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS EFS MT security group") | .GroupId'`
+aws efs create-mount-target --file-system-id "${fsid}" --subnet-id "${subnetid}" --security-group "${sgidmt}" --region "${AWS_REGION}"
