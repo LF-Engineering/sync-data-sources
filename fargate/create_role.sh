@@ -10,12 +10,13 @@ arn=`aws iam create-role --role-name ecsTaskExecutionRole --assume-role-policy-d
 echo "Role Arn: ${arn}"
 if [ ! -z "${arn}" ]
 then
-  aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy' || exit 3
+  aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn 'arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy' || exit 2
+  aws iam attach-role-policy --role-name ecsTaskExecutionRole --policy-arn 'arn:aws:iam::aws:policy/CloudWatchLogsFullAccess' || exit 3
   if [ ! -z "${SS}" ]
   then
     echo -n "${arn}" > "helm-charts/sds-helm/sds-helm/secrets/SDS_ROLE_ARN.secret"
   fi
 else
   echo 'Failed to create role'
-  exit 2
+  exit 4
 fi

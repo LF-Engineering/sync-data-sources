@@ -95,6 +95,7 @@ Infra util scripts:
 - To create sds-logs log group: `AWS_PROFILE=darst ./fargate/create_log_group.sh`.
 - To see all log groups: `AWS_PROFILE=darst ./fargate/list_log_groups.sh`
 - To see given log group's all log streams: `AWS_PROFILE=darst ./fargate/list_log_streams.sh sds-logs`
+- To see given log stream contents: `AWS_PROFILE=darst ./fargate/get_log_events.sh sds-logs stream-name`
 - Eventually delete log group via: `AWS_PROFILE=darst ./fargate/delete_log_group.sh`.
 - Eventually delete EFS volume via: `[AP=1] AWS_PROFILE=darst ./fargate/delete_efs.sh`.
 - Eventually delete security group via: `AWS_PROFILE=darst ./fargate/delete_security_group.sh`.
