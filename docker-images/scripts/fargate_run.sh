@@ -9,10 +9,7 @@ then
   echo "SDS_TASK_NAME env variable must be set"
   exit 2
 fi
-ls -l /root
-rm -r /data /root/.perceval
-ls -l /efs
-ls -l "/efs/${SDS_TASK_NAME}"
+rm -rf /data /root/.perceval
 mv "/efs/${SDS_TASK_NAME}" /root/.perceval
 ./fetch.sh && syncdatasources
 mv /root/.perceval "/efs/${SDS_TASK_NAME}"

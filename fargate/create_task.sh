@@ -61,7 +61,7 @@ fi
 export SDS_BRANCH="${1}"
 if [ -z "${SDS_COMMAND}" ]
 then
-  export SDS_COMMAND='/fargate_loop.sh'
+  export SDS_COMMAND='/fargate_run.sh'
 fi
 envlist='SDS_ROLE_ARN SDS_FS_ID SDS_TASK_NAME SDS_SSAW_URL SDS_SH_USER SDS_SH_HOST SDS_SH_PORT SDS_SH_PASS SDS_SH_DB SDS_ES_URL SDS_GITHUB_OAUTH SDS_ZIPPASS SDS_REPO_ACCESS'
 if [ ! -z "${AP}" ]
