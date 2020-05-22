@@ -61,7 +61,7 @@ Shared cluster infra consists of test/prod clusters, task execution role and pol
 
 Infra util scripts:
 
-- Create infra via: `AWS_PROFILE=darst ./fargate/create_infra.sh`.
+- Create infra via: `AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_infra.sh`.
 - List infra via: `[AP=1] [LG=1] AWS_PROFILE=darst ./fargate/list_infra.sh`.
 - Eventually delete infra via: `[AP=1] [LG=1] AWS_PROFILE=darst ./fargate/delete_infra.sh`.
 
@@ -79,7 +79,7 @@ Infra util scripts:
 - Create subnet and associate public route via: `AWS_PROFILE=darst ./fargate/create_subnet.sh`.
 - List subnets via: `AWS_PROFILE=darst ./fargate/list_subnets.sh`. Note `SubnetId` for newly created subnet (it has `"CidrBlock": "10.0.128.0/17"`). Put that value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SUBNET_ID.secret` file.
 - Create VPC security group via: `AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_security_groups.sh`.
-- List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` file.
+- List security groups via: `AWS_PROFILE=darst ./fargate/list_security_groups.sh`. Put `GroupId` values in `helm-charts/sds-helm/sds-helm/secrets/SDS_SG_ID.secret` and `helm-charts/sds-helm/sds-helm/secrets/SDS_SGMT_ID.secret` files.
 - Create EFS persistent volume via: `[AP=1] AWS_PROFILE=darst AWS_REGION=us-west-2 ./fargate/create_efs.sh`.
 - List EFS volumes via: `[AP=1]AWS_PROFILE=darst ./fargate/list_efs.sh`. Put `FileSystemId` value in `helm-charts/sds-helm/sds-helm/secrets/SDS_FS_ID.secret` and `AccessPointId` in `helm-charts/sds-helm/sds-helm/secrets/SDS_FSAP_ID.secret` file.
 - Create task via: `[AP=1] [DRY=1] [DRYSDS=1] AWS_PROFILE=darst AWS_REGION=us-west-2 [SDS_ROLE_ARN='arn:aws:iam::XXXXXX:role/ecsTaskExecutionRole'] [SDS_FS_ID='fs-123456'] [SDS_FSAP_ID=fsap-0123456789] SDS_TASK_NAME=sds-projname ./fargate/create_task.sh test`.
@@ -89,7 +89,7 @@ Infra util scripts:
 - List current cluster tasks via: `AWS_PROFILE=darst ./fargate/list_current_tasks.sh test sds-cluster`.
 - Describe current cluster task: `AWS_PROFILE=darst ./fargate/describe_current_task.sh test sds-cluster 'f4a08473-7702-44ba-8a41-cad8614b8c94'`.
 - Describe task via: `AWS_PROFILE=darst ./fargate/describe_task.sh test sds-egeria-git 1`.
-- Create service via: `[PUB=1] [SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service 1`.
+- Create service via: `[SDS_VPC_ID=...] AWS_PROFILE=darst ./fargate/create_service.sh test sds-cluster sds-projname sds-projname-service 1`.
 - List services via: `AWS_PROFILE=darst ./fargate/list_services.sh test sds-cluster`.
 - Describe service via: `AWS_PROFILE=darst ./fargate/describe_service.sh test sds-cluster sds-projname-service`.
 - To create sds-logs log group: `AWS_PROFILE=darst ./fargate/create_log_group.sh`.
