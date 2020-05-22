@@ -25,7 +25,7 @@ then
   #export SDS_DATASOURCES_RE=''
   #export SDS_PROJECTS_RE=''
   #export SDS_ENDPOINTS_RE=''
-  export SDS_SKIPTIME=1
+  #export SDS_SKIPTIME=1
   export SDS_SKIP_SH=1
   export SDS_SKIP_DATA=1
   export SDS_SKIP_AFFS=1
@@ -59,6 +59,10 @@ then
   #export SDS_ONLY_VALIDATE=1
 fi
 export SDS_BRANCH="${1}"
+if [ -z "${SDS_COMMAND}" ]
+then
+  export SDS_COMMAND='/fargate_loop.sh'
+fi
 envlist='SDS_ROLE_ARN SDS_FS_ID SDS_TASK_NAME SDS_SSAW_URL SDS_SH_USER SDS_SH_HOST SDS_SH_PORT SDS_SH_PASS SDS_SH_DB SDS_ES_URL SDS_GITHUB_OAUTH SDS_ZIPPASS SDS_REPO_ACCESS'
 if [ ! -z "${AP}" ]
 then

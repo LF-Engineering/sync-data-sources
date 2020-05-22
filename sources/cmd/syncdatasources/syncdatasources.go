@@ -42,6 +42,10 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 		lib.Printf("Checking grimoire stack availability\n")
 	}
 	dtStart := time.Now()
+	home := os.Getenv("HOME")
+	dir := home + "/.perceval"
+	cmd := exec.Command("mkdir", dir)
+	_ = cmd.Run()
 	ctx.ExecOutput = true
 	info := ""
 	defer func() {
@@ -4323,6 +4327,9 @@ func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
 	ctx.Init()
+	if ctx.DryRun {
+		lib.Printf("Running in dry-run mode\n")
+	}
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, getFixtures(&ctx))
 	} else {

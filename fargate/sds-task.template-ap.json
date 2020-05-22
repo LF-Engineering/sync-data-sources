@@ -25,12 +25,12 @@
       "image": "lukaszgryglicki/sync-data-sources-${SDS_BRANCH}", 
       "essential": true, 
       "command": [
-        "/run.sh"
+        "${SDS_COMMAND}"
       ],
       "mountPoints": [
         {
           "sourceVolume": "sds-efs-volume",
-          "containerPath": "/data"
+          "containerPath": "/efs"
         }
       ],
       "logConfiguration": { 
