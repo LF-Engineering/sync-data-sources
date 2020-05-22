@@ -9,5 +9,7 @@ then
   echo "SDS_TASK_NAME env variable must be set"
   exit 2
 fi
+rm -r "/efs/${SDS_TASK_NAME}"
+./fargate_run.sh
 ./fargate_run.sh
 ./fargate_run.sh
