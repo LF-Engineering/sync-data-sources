@@ -1,5 +1,6 @@
 #!/bin/bash
-# AP=1 - delete with AP mode
+# AP=1 - delete with AP mode (access point gets deleted too)
+# LG=1 - delete log group
 if [ -z "${AWS_PROFILE}" ]
 then
   echo "$0: you need to specify AWS_PROFILE=..."
@@ -17,6 +18,11 @@ fi
 ./fargate/delete_vpc.sh
 # Role: task role and role policy for task execution
 ./fargate/delete_role.sh
+# Logs: log group
+if [ ! -z "${LG}" ]
+then
+  ./fargate/delete_log_group.sh
+fi
 # Clusters: test & prod
 ./fargate/delete_cluster.sh test sds-cluster
 ./fargate/delete_cluster.sh prod sds-cluster

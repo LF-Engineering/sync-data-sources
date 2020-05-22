@@ -9,4 +9,4 @@ then
   echo "$0: you need to specify log group name as a first argument: "
   exit 2
 fi
-aws logs describe-log-streams --log-group-name "${1}" | jq '.logStreams[] | .logStreamName'
+aws logs describe-log-streams --log-group-name "${1}" 2>/dev/null | jq '.logStreams[] | .logStreamName'
