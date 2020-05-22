@@ -5,4 +5,10 @@ then
   exit 1
 fi
 subnetid=`aws ec2 describe-subnets | jq -r '.Subnets[] | select(.CidrBlock == "10.0.128.0/17") | .SubnetId'`
-aws ec2 delete-subnet --subnet-id "${subnetid}"
+if [ ! -z "${subnetid}" ]
+then
+  echo "Deleting subnet ${subnetid}"
+  aws ec2 delete-subnet --subnet-id "${subnetid}"
+else
+  echo 'No subnet to delete'
+fi

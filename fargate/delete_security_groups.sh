@@ -6,5 +6,17 @@ then
 fi
 sgid=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS security group") | .GroupId'`
 sgidmt=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS EFS MT security group") | .GroupId'`
-aws ec2 delete-security-group --group-id "${sgidmt}"
-aws ec2 delete-security-group --group-id "${sgid}"
+if [ ! -z "${sgid}" ]
+then
+  echo "Deleting main security group ${sgid}"
+  aws ec2 delete-security-group --group-id "${sgidmt}"
+else
+  echo 'No main security group to delete'
+fi
+if [ ! -z "${sgid}" ]
+then
+  echo "Deleting EFS MT security group ${sgidmt}"
+  aws ec2 delete-security-group --group-id "${sgidmt}"
+else
+  echo 'No EFS MT security group to delete'
+fi
