@@ -45,15 +45,13 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	ctx.ExecOutput = true
 	home := os.Getenv("HOME")
 	dir := home + "/.perceval"
-	ctx.ExecFatal = false
-	res, err := lib.ExecCommand(ctx, []string{"mkdir", dir}, nil)
-	ctx.ExecFatal = true
-	lib.Printf("res=%s, err=%v\n", res, err)
+	cmd := exec.Command("mkdir", dir)
+	_ = cmd.Run()
 	info := ""
 	defer func() {
 		ctx.ExecOutput = false
 	}()
-	res, err = lib.ExecCommand(
+	res, err := lib.ExecCommand(
 		ctx,
 		[]string{
 			"perceval",
