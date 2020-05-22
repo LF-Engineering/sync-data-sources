@@ -28,6 +28,17 @@ then
     echo 'No access point to delete'
   fi
 fi
+while true
+do
+  mtid=`aws efs describe-mount-targets --file-system-id "${fsid}" | jq -r '.MountTargets[] | .MountTargetId'`
+  if [ -z "${mtid}" ]
+  then
+    break
+  else
+    echo 'Waiting for mount targets to disappear...'
+    sleep 5
+  fi
+done
 if [ ! -z "${fsid}" ]
 then
   echo "Deleting filesystem ${fsid}"
