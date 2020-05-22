@@ -42,16 +42,16 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 		lib.Printf("Checking grimoire stack availability\n")
 	}
 	dtStart := time.Now()
+	ctx.ExecOutput = true
 	home := os.Getenv("HOME")
 	dir := home + "/.perceval"
-	cmd := exec.Command("mkdir", dir)
-	_ = cmd.Run()
-	ctx.ExecOutput = true
+	res, err := lib.ExecCommand(ctx, []string{"mkdir", dir}, nil)
+	lib.Printf("res=%s, err=%v\n", res, err)
 	info := ""
 	defer func() {
 		ctx.ExecOutput = false
 	}()
-	res, err := lib.ExecCommand(
+	res, err = lib.ExecCommand(
 		ctx,
 		[]string{
 			"perceval",
