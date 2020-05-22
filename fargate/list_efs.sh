@@ -11,4 +11,7 @@ then
   aws efs describe-access-points | jq '.AccessPoints[] | select(.Name == "sds-efs-access-point")'
 fi
 fsid=`aws efs describe-file-systems | jq -r '.FileSystems[] | select(.Name == "sds-efs-volume") | .FileSystemId'`
-aws efs describe-mount-targets --file-system-id "${fsid}" | jq '.MountTargets[]'
+if [ ! -z "${fsid}" ]
+then
+  aws efs describe-mount-targets --file-system-id "${fsid}" | jq '.MountTargets[]'
+fi
