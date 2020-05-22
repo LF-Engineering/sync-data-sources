@@ -14,7 +14,7 @@ igwid=`aws ec2 describe-internet-gateways | jq -r ".InternetGateways[] | select(
 rtid=`aws ec2 describe-route-tables | jq -r ".RouteTables[] | select(.VpcId == \"${vpcid}\" and (.Routes | length) == 2) | .RouteTableId"`
 if [ ! -z "${rtid}" ]
 then
-  echo "Deleting route and routetable ${rtid}"
+  echo "Deleting route and route table ${rtid}"
   aws ec2 delete-route --destination-cidr-block 0.0.0.0/0 --route-table-id "${rtid}"
   aws ec2 delete-route-table --route-table-id "${rtid}"
 else
