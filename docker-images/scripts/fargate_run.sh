@@ -9,6 +9,7 @@ then
   echo "SDS_TASK_NAME env variable must be set"
   exit 2
 fi
+echo "HOME: ${HOME}"
 rm -r /data /root/.perceval
 ls -l /efs
 ls -l "/efs/${SDS_TASK_NAME}"
