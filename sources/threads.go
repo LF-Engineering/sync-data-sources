@@ -10,7 +10,7 @@ import (
 func GetThreadsNum(ctx *Ctx) int {
 	// Use environment variable to have singlethreaded version
 	if ctx.NCPUs > 0 {
-		n := runtime.NumCPU()
+		n := int(float64(runtime.NumCPU()) * ctx.NCPUsScale)
 		if ctx.NCPUs > n {
 			ctx.NCPUs = n
 		}
@@ -20,7 +20,7 @@ func GetThreadsNum(ctx *Ctx) int {
 	if ctx.ST {
 		return 1
 	}
-	thrN := runtime.NumCPU()
+	thrN := int(float64(runtime.NumCPU()) * ctx.NCPUsScale)
 	runtime.GOMAXPROCS(thrN)
 	return thrN
 }

@@ -19,6 +19,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		MaxRetry:                in.MaxRetry,
 		ST:                      in.ST,
 		NCPUs:                   in.NCPUs,
+		NCPUsScale:              in.NCPUsScale,
 		FixturesRE:              in.FixturesRE,
 		DatasourcesRE:           in.DatasourcesRE,
 		ProjectsRE:              in.ProjectsRE,
@@ -71,6 +72,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipEsData:              in.SkipEsData,
 		SkipEsLog:               in.SkipEsLog,
 		SkipDedup:               in.SkipDedup,
+		SkipExternal:            in.SkipExternal,
 		SkipProject:             in.SkipProject,
 		SkipProjectTS:           in.SkipProjectTS,
 		SkipSyncInfo:            in.SkipSyncInfo,
@@ -118,6 +120,13 @@ func dynamicSetFields(t *testing.T, ctx *lib.Ctx, fields map[string]interface{})
 				return ctx
 			}
 			field.SetInt(int64(interfaceValue))
+		case float64:
+			// Check if types match
+			if fieldKind != reflect.Float64 {
+				t.Errorf("trying to set value %v, type %T for field \"%s\", type %v", interfaceValue, interfaceValue, fieldName, fieldKind)
+				return ctx
+			}
+			field.SetFloat(float64(interfaceValue))
 		case bool:
 			// Check if types match
 			if fieldKind != reflect.Bool {
@@ -214,6 +223,7 @@ func TestInit(t *testing.T) {
 		MaxRetry:                0,
 		ST:                      false,
 		NCPUs:                   0,
+		NCPUsScale:              1.0,
 		FixturesRE:              nil,
 		DatasourcesRE:           nil,
 		ProjectsRE:              nil,
@@ -266,6 +276,7 @@ func TestInit(t *testing.T) {
 		SkipEsData:              false,
 		SkipEsLog:               false,
 		SkipDedup:               false,
+		SkipExternal:            false,
 		SkipProject:             false,
 		SkipProjectTS:           false,
 		SkipSyncInfo:            false,
@@ -490,6 +501,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"ST": true, "NCPUs": 1},
+			),
+		},
+		{
+			"Setting NCPUs Scale to 1.5",
+			map[string]string{"SDS_NCPUS_SCALE": "1.5"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"ST": false, "NCPUsScale": 1.5},
 			),
 		},
 		{
@@ -762,6 +782,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipDedup": true,
+				},
+			),
+		},
+		{
+			"Set skip external",
+			map[string]string{
+				"SDS_SKIP_EXTERNAL": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipExternal": true,
 				},
 			),
 		},

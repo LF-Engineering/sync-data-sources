@@ -14,7 +14,8 @@ type Ctx struct {
 	CmdDebug                int            // From SDS_CMDDEBUG Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default 0
 	MaxRetry                int            // From SDS_MAXRETRY Try to run grimoire stack (perceval, p2o.py etc) that many times before reporting failure, default 0 (1 original - always runs and 0 more attempts).
 	ST                      bool           // From SDS_ST true: use single threaded version, false: use multi threaded version, default false
-	NCPUs                   int            // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it)
+	NCPUs                   int            // From SDS_NCPUS, set to override number of CPUs to run, this overwrites SDS_ST, default 0 (which means do not use it, use all CPU reported by go library)
+	NCPUsScale              float64        // From SDS_NCPUS_SCALE, scale number of CPUs, for example 2.0 will report number of cpus 2.0 the number of actually available CPUs
 	FixturesRE              *regexp.Regexp // From SDS_FIXTURES_RE - you can set regular expression specifying which fixtures should be processed, default empty which means all.
 	DatasourcesRE           *regexp.Regexp // From SDS_DATASOURCES_RE - you can set regular expression specifying which datasources should be processed, default empty which means all.
 	ProjectsRE              *regexp.Regexp // From SDS_PROJECTS_RE - you can set regular expression specifying which projects/subprojects should be processed, default empty which means all.
@@ -40,7 +41,7 @@ type Ctx struct {
 	DryRunAllowFreq         bool           // From SDS_DRY_RUN_ALLOW_FREQ, if set it will allow processing sync frequency data in dry run mode
 	DryRunAllowMtx          bool           // From SDS_DRY_RUN_ALLOW_MTX, if set it will allow handling ES mutexes (for nodes concurrency support) in dry run mode
 	DryRunAllowRename       bool           // From SDS_DRY_RUN_ALLOW_RENAME, if set it will allow handling ES index renaming in dry run mode
-	DryRunAllowOrigins      bool           // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices orignis list in dry run mode
+	DryRunAllowOrigins      bool           // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices origins list in dry run mode
 	DryRunAllowDedup        bool           // From SDS_DRY_RUN_ALLOW_DEDUP, if set it will allow dedup bitergia data by deleting origins shared with existing SDS indices
 	DryRunAllowProject      bool           // From SDS_DRY_RUN_ALLOW_PROJECT, if set it will allow running set project by SDS (on endpoints with project set and p2o mode set to false)
 	DryRunAllowSyncInfo     bool           // From SDS_DRY_RUN_ALLOW_SYNC_INFO, if set it will allow setting sync info in sds-sync-info index
@@ -58,6 +59,7 @@ type Ctx struct {
 	SkipEsData              bool           // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog               bool           // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	SkipDedup               bool           // From SDS_SKIP_DEDUP, will skip attemting to dedup data shared on existing SDS index and external bitergia index (by deleting shared origin data from the external Bitergia index)
+	SkipExternal            bool           // From SDS_SKIP_EXTERNAL, will skip any external indices processing: enrichments, deduplication, affiliations etc.
 	SkipProject             bool           // From SDS_SKIP_PROJECT, will skip adding column "project": "project name" on all documents where origin = endpoint name, will also add timestamp column "project_ts", so next run can start on documents newer than that
 	SkipProjectTS           bool           // From SDS_SKIP_PROJECT_TS, will add project column as described above, without using "project_ts" column to determine from which document to start
 	SkipSyncInfo            bool           // From SDS_SKIP_SYNC_INFO, will skip adding sync info to sds-sync-info index
@@ -142,6 +144,15 @@ func (ctx *Ctx) Init() {
 			if ctx.NCPUs == 1 {
 				ctx.ST = true
 			}
+		}
+	}
+	if os.Getenv("SDS_NCPUS_SCALE") == "" {
+		ctx.NCPUsScale = 1.0
+	} else {
+		nCPUsScale, err := strconv.ParseFloat(os.Getenv("SDS_NCPUS_SCALE"), 64)
+		FatalNoLog(err)
+		if nCPUsScale > 0 {
+			ctx.NCPUsScale = nCPUsScale
 		}
 	}
 	fixturesREStr := os.Getenv("SDS_FIXTURES_RE")
@@ -376,6 +387,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip dedup
 	ctx.SkipDedup = os.Getenv("SDS_SKIP_DEDUP") != ""
+
+	// Skip external
+	ctx.SkipExternal = os.Getenv("SDS_SKIP_EXTERNAL") != ""
 
 	// Skip project/TS settings
 	ctx.SkipProject = os.Getenv("SDS_SKIP_PROJECT") != ""

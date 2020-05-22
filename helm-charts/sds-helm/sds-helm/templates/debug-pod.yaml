@@ -90,6 +90,8 @@ spec:
       value: '{{ $root.Values.skipAliases }}'
     - name: SDS_SKIP_DEDUP
       value: '{{ $root.Values.skipDedup }}'
+    - name: SDS_SKIP_EXTERNAL
+      value: '{{ $root.Values.skipExternal }}'
     - name: SDS_SKIP_PROJECT
       value: '{{ $root.Values.skipProject }}'
     - name: SDS_SKIP_PROJECT_TS
@@ -126,6 +128,8 @@ spec:
       value: '{{ $root.Values.sdsST }}'
     - name: SDS_NCPUS
       value: '{{ $root.Values.sdsNCPUs }}'
+    - name: SDS_NCPUS_SCALE
+      value: '{{ $root.Values.sdsNCPUsScale }}'
     - name: SDS_CTXOUT
       value: '{{ $root.Values.sdsCtxOut }}'
     - name: SDS_SKIPTIME

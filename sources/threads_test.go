@@ -17,24 +17,35 @@ func TestGetThreadsNum(t *testing.T) {
 
 	// Set context's ST/NCPUs manually (don't need to repeat tests from context_test.go)
 	var testCases = []struct {
-		ST       bool
-		NCPUs    int
-		expected int
+		ST         bool
+		NCPUs      int
+		NCPUsScale float64
+		expected   int
 	}{
-		{ST: false, NCPUs: 0, expected: nThreads},
-		{ST: false, NCPUs: 1, expected: 1},
-		{ST: false, NCPUs: -1, expected: nThreads},
-		{ST: false, NCPUs: 2, expected: 2},
-		{ST: true, NCPUs: 0, expected: 1},
-		{ST: true, NCPUs: 1, expected: 1},
-		{ST: true, NCPUs: -1, expected: 1},
-		{ST: true, NCPUs: 2, expected: 2},
-		{ST: true, NCPUs: nThreads + 1, expected: nThreads},
+		{ST: false, NCPUs: 0, NCPUsScale: 1.0, expected: nThreads},
+		{ST: false, NCPUs: 1, NCPUsScale: 1.0, expected: 1},
+		{ST: false, NCPUs: -1, NCPUsScale: 1.0, expected: nThreads},
+		{ST: false, NCPUs: 2, NCPUsScale: 1.0, expected: 2},
+		{ST: true, NCPUs: 0, NCPUsScale: 1.0, expected: 1},
+		{ST: true, NCPUs: 1, NCPUsScale: 1.0, expected: 1},
+		{ST: true, NCPUs: -1, NCPUsScale: 1.0, expected: 1},
+		{ST: true, NCPUs: 2, NCPUsScale: 1.0, expected: 2},
+		{ST: true, NCPUs: nThreads + 1, NCPUsScale: 1.0, expected: nThreads},
+		{ST: false, NCPUs: 0, NCPUsScale: 2.0, expected: nThreads * 2},
+		{ST: false, NCPUs: 1, NCPUsScale: 2.0, expected: 1},
+		{ST: false, NCPUs: -1, NCPUsScale: 2.0, expected: nThreads * 2},
+		{ST: false, NCPUs: 2, NCPUsScale: 2.0, expected: 2},
+		{ST: true, NCPUs: 0, NCPUsScale: 2.0, expected: 1},
+		{ST: true, NCPUs: 1, NCPUsScale: 2.0, expected: 1},
+		{ST: true, NCPUs: -1, NCPUsScale: 2.0, expected: 1},
+		{ST: true, NCPUs: 2, NCPUsScale: 2.0, expected: 2},
+		{ST: true, NCPUs: nThreads + 1, NCPUsScale: 2.0, expected: nThreads + 1},
 	}
 	// Execute test cases
 	for index, test := range testCases {
 		ctx.ST = test.ST
 		ctx.NCPUs = test.NCPUs
+		ctx.NCPUsScale = test.NCPUsScale
 		expected := test.expected
 		got := lib.GetThreadsNum(&ctx)
 		if got != expected {
