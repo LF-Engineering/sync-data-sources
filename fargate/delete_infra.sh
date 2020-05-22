@@ -13,3 +13,10 @@ fi
 ./fargate/delete_subnet.sh
 # IGW: internet gateway and route tables
 ./fargate/delete_igw.sh
+# VPC: delete main VPC
+./fargate/delete_vpc.sh
+# Role: task role and role policy for task execution
+./fargate/delete_role.sh
+# Clusters: test & prod
+./fargate/delete_cluster.sh test sds-cluster
+./fargate/delete_cluster.sh prod sds-cluster

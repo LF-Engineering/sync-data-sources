@@ -14,4 +14,10 @@ then
   echo "$0: you need to specify cluster name as a second argument"
   exit 3
 fi
-aws ecs delete-cluster --cluster "${2}-${1}"
+clustername=`aws ecs delete-cluster --cluster "${2}-${1}" 2>/dev/null | jq -r '.cluster.clusterName'`
+if [ ! -z "${clustername}" ]
+then
+  echo "Deleted cluster ${clustername}"
+else
+  echo 'No cluster to delete'
+fi
