@@ -1,5 +1,4 @@
 #!/bin/bash
-# PUB=1 - use public AWS VPC address
 if [ -z "${AWS_PROFILE}" ]
 then
   echo "$0: you need to specify AWS_PROFILE=..."
@@ -30,7 +29,7 @@ then
   echo "$0: you need to specify task revision as a 5th argument"
   exit 6
 fi
-for renv in SDS_VPC_ID SDS_SUBNET_ID SDS_SG_ID
+for renv in SDS_VPC_ID SDS_SUBNET_ID SDS_SG_ID SDS_SGMT_ID
 do
   if [ -z "${!renv}" ]
   then
@@ -46,6 +45,9 @@ do
       elif [ "${renv}" = "SDS_SG_ID" ]
       then
         export ${renv}=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS security group") | .GroupId'`
+      elif [ "${renv}" = "SDS_SGMT_ID" ]
+      then
+        export ${renv}=`aws ec2 describe-security-groups | jq -r '.SecurityGroups[] | select(.Description == "SDS EFS MT security group") | .GroupId'`
       else
         echo "$0: you must specify ${renv}=... or provide helm-charts/sds-helm/sds-helm/secrets/${renv}.secret file (don't know how to get value from aws cli)"
         exit 7
@@ -58,9 +60,4 @@ do
     fi
   fi
 done
-if [ -z "${PUB}" ]
-then
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --platform-version "1.4.0" --task-definition "${4}-${1}:${5}" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}]}"
-else
-  aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --platform-version "1.4.0" --task-definition "${4}-${1}:${5}" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}],assignPublicIp=ENABLED}"
-fi
+aws ecs create-service --cluster "${2}-${1}" --service-name "${3}-${1}" --platform-version "1.4.0" --task-definition "${4}-${1}:${5}" --desired-count 1 --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID},${SDS_SGMT_ID}],assignPublicIp=ENABLED}"

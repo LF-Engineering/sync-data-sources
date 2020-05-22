@@ -6,6 +6,11 @@ then
   echo "$0: you need to specify AWS_PROFILE=..."
   exit 1
 fi
+if [ -z "${AWS_REGION}" ]
+then
+  echo "$0: you need to specify AWS_REGION=..."
+  exit 1
+fi
 # Clusters
 echo 'Clusters:'
 ./fargate/create_cluster.sh test sds-cluster || exit 2
@@ -28,12 +33,10 @@ echo 'Gateway:'
 # Subnet: subnet and route table associations
 echo 'Subnet:'
 SS=1 ./fargate/create_subnet.sh || exit 8
-
-echo 'AllOK'
-exit 111
 # SGs: main SG, EFS MT SG (with their ingress rules)
 echo 'Security groups:'
-./fargate/list_security_groups.sh
+SS=1 ./fargate/create_security_groups.sh || exit 9
 # EFS: mount target, access point (in AP mode), filesystem
 echo 'EFS:'
-./fargate/list_efs.sh
+SS=1 ./fargate/create_efs.sh || exit 10
+echo 'OK'
