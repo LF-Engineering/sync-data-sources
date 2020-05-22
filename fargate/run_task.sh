@@ -55,4 +55,5 @@ do
     fi
   fi
 done
-aws ecs run-task --cluster "${2}-${1}" --task-definition "${3}-${1}:${4}" --platform-version "1.4.0" --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID},${SDS_SGMT_ID}],assignPublicIp=ENABLED}"
+#aws ecs run-task --cluster "${2}-${1}" --task-definition "${3}-${1}:${4}" --platform-version "1.4.0" --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID},${SDS_SGMT_ID}],assignPublicIp=ENABLED}"
+aws ecs run-task --cluster "${2}-${1}" --task-definition "${3}-${1}:${4}" --platform-version "1.4.0" --launch-type "FARGATE" --network-configuration "awsvpcConfiguration={subnets=[${SDS_SUBNET_ID}],securityGroups=[${SDS_SG_ID}],assignPublicIp=ENABLED}"

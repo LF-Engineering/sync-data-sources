@@ -7,7 +7,7 @@
       "name": "sds-efs-volume",
       "efsVolumeConfiguration": {
         "fileSystemId": "${SDS_FS_ID}",
-        "rootDirectory": "/${SDS_TASK_NAME}"
+        "rootDirectory": "/"
       }
     }
   ],
@@ -194,7 +194,7 @@
         },
         {
           "name": "SDS_SKIP_DROP_UNUSED",
-          "value": "${SDS_DROP_UNUSED}"
+          "value": "${SDS_SKIP_DROP_UNUSED}"
         },
         {
           "name": "SDS_ONLY_VALIDATE",
