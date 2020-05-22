@@ -4,4 +4,4 @@ then
   echo "$0: you need to specify AWS_PROFILE=..."
   exit 1
 fi
-aws ecs list-clusters
+aws ecs list-clusters | jq '.clusterArns[]'

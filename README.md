@@ -41,18 +41,32 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Note that `zippass.secret` and `helm-charts/sds-helm/sds-helm/secrets/ZIPPASS.secret` files should have the same contents.
 - See documentation [here](https://github.com/LF-Engineering/sync-data-sources/blob/master/helm-charts/sds-helm/README.md).
 
+
 # In short
 
 - Install: `[NODES=n] [NS=sds] ./setup.sh test|prod`.
 - Unnstall: `[NS=sds] ./delete.sh test|prod`.
 - Other example (with external ES): `` NODES=2 NS=sds-ext FLAGS="esURL=\"`cat sds-helm/secrets/ES_URL_external.secret`\",pvSize=30Gi" ./setup.sh test ``.
 
+
 # Debug
 
 - If not installed with the Helm chart (which is the default), for the `test` env do: `cd helm-charts/sds-helm/`, `[NODES=n] [NS=sds] ./debug.sh test`, `pod_shell.sh test sds sds-debug-0` to get a shell inside `sds` deployment. Then `./run.sh`.
 - When done `exit`, then copy CSV: `testk.sh -n sds cp sds-debug-0:root/.perceval/tasks_0_1.csv tasks_test.csv`, finally delete debug pod: `[NS=sds] ./debug_delete.sh test`.
 
+
 # Fargate
+
+Shared cluster infra consists of test/prod clusters, task execution role and policy, VPC, subnet, internet gateway and route tables, main and EFS security groups and their ingress config, EFS filesystem, mount targed, optionally access point (AP=1 mode), log group for CloudWatch.
+
+Infra util scripts:
+
+- Create infra via: `AWS_PROFILE=darst ./fargate/create_infra.sh`.
+- List infra via: `[AP=1] [LG=1] AWS_PROFILE=darst ./fargate/list_infra.sh`.
+- Eventually delete infra via: `[AP=1] [LG=1] AWS_PROFILE=darst ./fargate/delete_infra.sh`.
+
+
+# Fargate details
 
 - Create cluster via: `AWS_PROFILE=darst ./fargate/create_cluster.sh test sds-cluster`.
 - List clusters via: `AWS_PROFILE=darst ./fargate/list_clusters.sh`.
