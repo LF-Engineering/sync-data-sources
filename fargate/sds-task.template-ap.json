@@ -172,6 +172,10 @@
           "value": "${SDS_SKIP_DEDUP}"
         },
         {
+          "name": "SDS_SKIP_EXTERNAL",
+          "value": "${SDS_SKIP_EXTERNAL}"
+        },
+        {
           "name": "SDS_SKIP_PROJECT",
           "value": "${SDS_SKIP_PROJECT}"
         },
@@ -242,6 +246,10 @@
         {
           "name": "SDS_NCPUS",
           "value": "${SDS_NCPUS}"
+        },
+        {
+          "name": "SDS_NCPUS_SCALE",
+          "value": "${SDS_NCPUS_SCALE}"
         },
         {
           "name": "SDS_SKIPTIME",

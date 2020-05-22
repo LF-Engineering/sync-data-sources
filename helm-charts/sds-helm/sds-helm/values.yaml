@@ -37,6 +37,7 @@
 # sdsCmdDebug (Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default)
 # sdsST (force using single-threaded version)
 # sdsNCPUs (set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect))
+# sdsNCPUsScale (boost autodetected number of CPUs, default 1.0)
 # sdsCtxOut (output all context data (configuration struct))
 # sdsSkipTime (do not output time with log messages)
 #
@@ -45,6 +46,7 @@
 # sdsCmdDebug: '2'
 # sdsST: 1
 # sdsNCPUs: 16
+# sdsNCPUsScale: 4.0
 # sdsCtxOut: '1'
 # sdsSkipTime: 'y'
 #
@@ -73,6 +75,7 @@
 # skipAliases: '1'
 # skipDropUnused: '1'
 # skipDedup: '1'
+# skipExternal: '1'
 # skipProject: '1'
 # skipProjectTS: '1'
 # skipSyncInfo: '1'
@@ -116,6 +119,7 @@ skipCheckFreq: ''
 skipEsData: ''
 skipEsLog: ''
 skipDedup: ''
+skipExternal: ''
 skipProject: ''
 skipProjectTS: ''
 skipSyncInfo: ''

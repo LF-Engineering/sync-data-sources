@@ -804,12 +804,12 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	gAliasesMtx = &sync.Mutex{}
 	gCSVMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
-		lib.Printf("Processing aliases\n")
-		gAliasesMtx.Lock()
-		defer func() {
-			gAliasesMtx.Unlock()
-		}()
 		if !ctx.SkipAliases {
+			lib.Printf("Processing aliases\n")
+			gAliasesMtx.Lock()
+			defer func() {
+				gAliasesMtx.Unlock()
+			}()
 			if ctx.CleanupAliases {
 				processAliases(ctx, &fixtures, lib.Delete)
 			}
@@ -1081,8 +1081,8 @@ func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
 }
 
 func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
-	if ctx.SkipSH || ctx.SkipAffs {
-		lib.Printf("Skip SH or Skip affs is set, skipping enriching external indices\n")
+	if ctx.SkipExternal || ctx.SkipSH || ctx.SkipAffs {
+		lib.Printf("Skip External or Skip SH or Skip affs is set, skipping enriching external indices\n")
 		return
 	}
 	st := time.Now()

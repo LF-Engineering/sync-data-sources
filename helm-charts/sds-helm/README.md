@@ -39,6 +39,7 @@ Other environment parameters:
 - `SDS_CMDDEBUG`/`sdsCmdDebug` - Commands execution Debug level: 0-no, 1-only output commands, 2-output commands and their output, 3-output full environment as well, default.
 - `SDS_ST`/`sdsST` - force using single-threaded version.
 - `SDS_NCPUS`/`sdsNCPUs` - set to override number of CPUs to run, this overwrites `SDS_ST`, default 0 (which means autodetect).
+- `SDS_NCPUS_SCALE`/`sdsNCPUsScale` - set to boost autodetected number of CPUs, default 1.0
 - `SDS_CTXOUT`/`sdsCtxOut` - output all context data (configuration struct).
 - `SDS_SKIPTIME`/`sdsSkipTime` - do not output time with log messages.
 - `SDS_ES_BULKSIZE`/`esBulkSize` - ElasticSearch bulk size when enriching data (default is 1000).

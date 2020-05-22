@@ -20,6 +20,8 @@ fi
 if [ ! -z "${DRYSDS}" ]
 then
   #export SDS_ST=1
+  #export SDS_NCPUS=16
+  #export SDS_NCPUS_SCALE=4
   #export SDS_DEBUG=1
   #export SDS_FIXTURES_RE=''
   #export SDS_DATASOURCES_RE=''
@@ -35,6 +37,7 @@ then
   export SDS_SKIP_ES_DATA=1
   export SDS_SKIP_ES_LOG=1
   export SDS_SKIP_DEDUP=1
+  export SDS_SKIP_EXTERNAL=1
   export SDS_SKIP_PROJECT=1
   export SDS_SKIP_PROJECT_TS=1
   export SDS_SKIP_SYNC_INFO=1
