@@ -46,6 +46,20 @@ func IsRedacted(name string) bool {
 	return false
 }
 
+// ProjectCondition - holds single must or must_not condition for setting project witing a single endpoint
+type ProjectCondition struct {
+	Column string         `yaml:"column"`
+	Value  string         `yaml:"value"`
+	RE     *regexp.Regexp `yaml:"-"`
+}
+
+// EndpointProject - holds data for a single sub-endpoint project configuration
+type EndpointProject struct {
+	Name    string             `yaml:"name"`
+	Must    []ProjectCondition `yaml:"must"`
+	MustNot []ProjectCondition `yaml:"must_not"`
+}
+
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
 	Name       string // Endpoint name
@@ -53,6 +67,7 @@ type Endpoint struct {
 	ProjectP2O bool   // if true SDS will pass `--project "Project value"` to p2o.py
 	// if false, SDS will post-process index and will add `"project": "Project value"`
 	// column where `"origin": "Endpoint name"`
+	Projects []EndpointProject
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
@@ -64,6 +79,7 @@ type RawEndpoint struct {
 	Only       []string          `yaml:"only"`
 	Project    string            `yaml:"project"`
 	ProjectP2O *bool             `yaml:"p2o"`
+	Projects   []EndpointProject `yaml:"endpoint_projects"`
 	SkipREs    []*regexp.Regexp  `yaml:"-"`
 	OnlyREs    []*regexp.Regexp  `yaml:"-"`
 }

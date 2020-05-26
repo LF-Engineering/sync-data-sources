@@ -123,27 +123,6 @@ type EsIndexSettingsPayload struct {
 	Settings EsIndexSettings `json:"settings"`
 }
 
-// EsScript - internal
-type EsScript struct {
-	Inline string `json:"inline"`
-}
-
-// EsTermOrigin - internal
-type EsTermOrigin struct {
-	Origin string `json:"origin"`
-}
-
-// EsQueryTerm - internal
-type EsQueryTerm struct {
-	Term EsTermOrigin `json:"term"`
-}
-
-// EsUpdateByQuery - to update/add project fields on all documents with a given origin
-type EsUpdateByQuery struct {
-	Script EsScript    `json:"script"`
-	Query  EsQueryTerm `json:"query"`
-}
-
 // EnsureIndex - ensure that given index exists in ES
 // init: when this flag is set, do not use syncdatasources.Printf which would cause infinite recurence
 func EnsureIndex(ctx *Ctx, index string, init bool) {

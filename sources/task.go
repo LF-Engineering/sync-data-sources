@@ -24,6 +24,7 @@ type Task struct {
 	ExternalIndex       string
 	Project             string
 	ProjectP2O          bool
+	Projects            []EndpointProject
 	Millis              int64
 }
 
