@@ -14,7 +14,7 @@ fi
 #export SDS_ENDPOINTS_RE=''
 #export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
-export SDS_SKIP_DATA=1
+#export SDS_SKIP_DATA=1
 export SDS_SKIP_AFFS=1
 export SDS_SKIP_ALIASES=1
 export SDS_SKIP_DROP_UNUSED=1
@@ -44,7 +44,7 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_SYNC_INFO=1
 #export SDS_DRY_RUN_ALLOW_SORT_DURATION=1
 #export SDS_DRY_RUN_ALLOW_SSAW=1
-export SDS_ONLY_VALIDATE=1
+#export SDS_ONLY_VALIDATE=1
 export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
 export SDS_SSAW_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/SSAW_URL.$1.secret`
 export SH_HOST=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_HOST.$1.secret`

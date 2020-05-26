@@ -69,18 +69,27 @@ type RawEndpoint struct {
 }
 
 // EndpointIncluded - checks if given endpoint's origin should be included or excluded based on endpoint's skip/only regular expressions lists
-func EndpointIncluded(ep *RawEndpoint, origin string) bool {
+func EndpointIncluded(ctx *Ctx, ep *RawEndpoint, origin string) bool {
 	for _, skipRE := range ep.SkipREs {
 		if skipRE.MatchString(origin) {
+			if ctx.Debug > 0 {
+				fmt.Printf("Skipped %s (%v)\n", origin, skipRE)
+			}
 			return false
 		}
 	}
 	if len(ep.OnlyREs) == 0 {
+		if ctx.Debug > 0 {
+			fmt.Printf("Included all (%d)\n", len(ep.OnlyREs))
+		}
 		return true
 	}
 	included := false
 	for _, onlyRE := range ep.OnlyREs {
 		if onlyRE.MatchString(origin) {
+			if ctx.Debug > 0 {
+				fmt.Printf("Included %s (%v)\n", origin, onlyRE)
+			}
 			included = true
 			break
 		}

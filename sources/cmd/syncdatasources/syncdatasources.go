@@ -387,6 +387,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Project:    proj,
 						ProjectP2O: projP2O,
 						Flags:      rawEndpoint.Flags,
+						Skip:       rawEndpoint.Skip,
+						Only:       rawEndpoint.Only,
 					},
 				)
 			}
@@ -473,7 +475,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
-					if !lib.EndpointIncluded(&rawEndpoint, repo) {
+					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
 						continue
 					}
 					name := repo
@@ -534,7 +536,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
-					if !lib.EndpointIncluded(&rawEndpoint, repo) {
+					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
 						continue
 					}
 					name := repo
