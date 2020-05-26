@@ -75,6 +75,9 @@ func EndpointIncluded(ep *RawEndpoint, origin string) bool {
 			return false
 		}
 	}
+	if len(ep.OnlyREs) == 0 {
+		return true
+	}
 	included := false
 	for _, onlyRE := range ep.OnlyREs {
 		if onlyRE.MatchString(origin) {
