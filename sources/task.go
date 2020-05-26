@@ -138,7 +138,7 @@ type TaskResult struct {
 	Err                 error
 	Index               string
 	Endpoint            string
-	SetProject          [2]string
+	Projects            []EndpointProject
 }
 
 // TaskMtx - holds are mutexes used in task processing
