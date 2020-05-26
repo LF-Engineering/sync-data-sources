@@ -2,6 +2,7 @@ package syncdatasources
 
 import (
 	"fmt"
+	"regexp"
 	"time"
 )
 
@@ -59,8 +60,29 @@ type Endpoint struct {
 type RawEndpoint struct {
 	Name       string            `yaml:"name"`
 	Flags      map[string]string `yaml:"flags"`
+	Skip       []string          `yaml:"skip"`
+	Only       []string          `yaml:"only"`
 	Project    string            `yaml:"project"`
 	ProjectP2O *bool             `yaml:"p2o"`
+	SkipREs    []*regexp.Regexp  `yaml:"-"`
+	OnlyREs    []*regexp.Regexp  `yaml:"-"`
+}
+
+// EndpointIncluded - checks if given endpoint's origin should be included or excluded based on endpoint's skip/only regular expressions lists
+func EndpointIncluded(ep *RawEndpoint, origin string) bool {
+	for _, skipRE := range ep.SkipREs {
+		if skipRE.MatchString(origin) {
+			return false
+		}
+	}
+	included := false
+	for _, onlyRE := range ep.OnlyREs {
+		if onlyRE.MatchString(origin) {
+			included = true
+			break
+		}
+	}
+	return included
 }
 
 // Project holds project data and list of endpoints

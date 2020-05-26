@@ -6,7 +6,7 @@ then
 fi
 #export SDS_ST=1
 #export SDS_NCPUS=16
-export SDS_NCPUS_SCALE=4
+#export SDS_NCPUS_SCALE=4
 #export SDS_DEBUG=1
 #export SDS_FIXTURES_RE=''
 #export SDS_DATASOURCES_RE=''
@@ -14,7 +14,7 @@ export SDS_NCPUS_SCALE=4
 #export SDS_ENDPOINTS_RE=''
 #export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
-export SDS_SKIP_DATA=1
+#export SDS_SKIP_DATA=1
 export SDS_SKIP_AFFS=1
 export SDS_SKIP_ALIASES=1
 export SDS_SKIP_DROP_UNUSED=1

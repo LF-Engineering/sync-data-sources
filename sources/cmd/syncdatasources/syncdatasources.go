@@ -13,6 +13,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -390,7 +391,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				)
 			}
 		}
-		for _, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
+		for j, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
 			epType, ok := rawEndpoint.Flags["type"]
 			if ctx.OnlyValidate && ctx.SkipValGitHubAPI {
 				ok = false
@@ -414,6 +415,18 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				)
 				continue
 			}
+			for _, skip := range rawEndpoint.Skip {
+				skipRE, err := regexp.Compile(skip)
+				lib.FatalOnError(err)
+				rawEndpoint.SkipREs = append(rawEndpoint.SkipREs, skipRE)
+			}
+			fixture.DataSources[i].RawEndpoints[j].SkipREs = rawEndpoint.SkipREs
+			for _, only := range rawEndpoint.Only {
+				onlyRE, err := regexp.Compile(only)
+				lib.FatalOnError(err)
+				rawEndpoint.OnlyREs = append(rawEndpoint.OnlyREs, onlyRE)
+			}
+			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
 			switch epType {
 			case "github_org":
 				if hint < 0 {
@@ -460,6 +473,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
+					if !lib.EndpointIncluded(&rawEndpoint, repo) {
+						continue
+					}
 					name := repo
 					if p2o && rawEndpoint.Project != "" {
 						name += ":::" + rawEndpoint.Project
@@ -518,6 +534,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
+					if !lib.EndpointIncluded(&rawEndpoint, repo) {
+						continue
+					}
 					name := repo
 					if p2o && rawEndpoint.Project != "" {
 						name += ":::" + rawEndpoint.Project
