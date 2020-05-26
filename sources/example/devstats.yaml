@@ -5,7 +5,15 @@ native:
 data_sources:
 - slug: git
   endpoints:
-  - name: https://github.com/cncf/devstats
+  - name: https://github.com/cncf
+    flags:
+      type: github_org
+    skip:
+    - '(?i)lf'
+    - '(?i)example'
+    only:
+    - '(?i)devstats'
+    - '(?i)gitdm'
   config:
   - name: from-date
     value: '2019-10-01'
