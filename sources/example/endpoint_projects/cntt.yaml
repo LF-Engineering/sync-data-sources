@@ -1,0 +1,12 @@
+---
+native:
+  slug: lfn/cntt
+data_sources:
+- slug: jenkins
+  endpoints:
+  - name: https://build.opnfv.org/ci/
+    endpoint_projects:
+    - name: CNTT
+      must:
+      - column: job_name
+        value: '(cntt|CNTT).*'
