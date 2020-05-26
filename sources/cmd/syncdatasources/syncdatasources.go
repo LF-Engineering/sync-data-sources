@@ -397,21 +397,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 		}
 		for j, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
-			for k, endpointProject := range rawEndpoint.Projects {
-				for l, condition := range endpointProject.Must {
-					re, err := regexp.Compile(condition.Value)
-					if err != nil {
-						lib.Fatalf("Failed to compile must condition '%s' in %+v\n", condition, endpointProject)
-					}
-					fixture.DataSources[i].RawEndpoints[j].Projects[k].Must[l].RE = re
-				}
-				for l, condition := range endpointProject.MustNot {
-					re, err := regexp.Compile(condition.Value)
-					if err != nil {
-						lib.Fatalf("Failed to compile must_not condition '%s' in %+v\n", condition, endpointProject)
-					}
-					fixture.DataSources[i].RawEndpoints[j].Projects[k].MustNot[l].RE = re
-				}
+			for k := range rawEndpoint.Projects {
+				fixture.DataSources[i].RawEndpoints[j].Projects[k].Origin = rawEndpoint.Name
 			}
 			epType, ok := rawEndpoint.Flags["type"]
 			if ctx.OnlyValidate && ctx.SkipValGitHubAPI {
@@ -2876,8 +2863,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						tMtx.TaskOrderMtx.Unlock()
 					}
 					setSyncInfo(ctx, &tMtx, &result, false)
-					if result.Err == nil && result.SetProject[0] != "" {
-						setProject(ctx, result.Index, result.SetProject)
+					if result.Err == nil && len(result.Projects) > 0 {
+						setProject(ctx, result.Index, result.Projects)
 					}
 				}
 			}
@@ -2916,8 +2903,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
 				setSyncInfo(ctx, nil, &result, false)
-				if result.Err == nil && result.SetProject[0] != "" {
-					setProject(ctx, result.Index, result.SetProject)
+				if result.Err == nil && len(result.Projects) > 0 {
+					setProject(ctx, result.Index, result.Projects)
 				}
 			}
 		}
@@ -2977,8 +2964,8 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tMtx.TaskOrderMtx.Unlock()
 			}
 			setSyncInfo(ctx, &tMtx, &result, false)
-			if result.Err == nil && result.SetProject[0] != "" {
-				setProject(ctx, result.Index, result.SetProject)
+			if result.Err == nil && len(result.Projects) > 0 {
+				setProject(ctx, result.Index, result.Projects)
 			}
 		}
 		enTime := time.Now()
@@ -3730,14 +3717,28 @@ func jsonEscape(str string) string {
 	return string(b[1 : len(b)-1])
 }
 
-func lastProjectDate(ctx *lib.Ctx, index, origin string, silent bool) (epoch int64) {
+func lastProjectDate(ctx *lib.Ctx, index, origin, must, mustNot string, silent bool) (epoch int64) {
 	data := ""
+	mustPartial := ""
+	if must != "" {
+		mustPartial = "," + must
+	}
+	optionalMustNot := ""
+	if mustNot != "" {
+		optionalMustNot = `,"must_not":[` + mustNot + "]"
+	}
 	if origin == "" {
-		data = `{"query":{"exists":{"field":"project"}},"sort":{"project_ts":"desc"}}`
+		data = fmt.Sprintf(
+			`{"query":{"bool":{"must":[{"exists":{"field":"project"}}%s]%s}},"sort":{"project_ts":"desc"}}`,
+			mustPartial,
+			optionalMustNot,
+		)
 	} else {
 		data = fmt.Sprintf(
-			`{"query":{"bool":{"must":[{"exists":{"field":"project"}},{"term":{"origin":"%s"}}]}},"sort":{"project_ts":"desc"}}`,
+			`{"query":{"bool":{"must":[{"exists":{"field":"project"}},{"term":{"origin":"%s"}}%s]%s}},"sort":{"project_ts":"desc"}}`,
 			jsonEscape(origin),
+			mustPartial,
+			optionalMustNot,
 		)
 	}
 	payloadBytes := []byte(data)
@@ -3941,88 +3942,144 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	}
 }
 
-func setProject(ctx *lib.Ctx, index string, conf [2]string) {
+func getConditionJSON(conds []lib.ProjectCondition) (s string) {
+	for _, cond := range conds {
+		s += fmt.Sprintf(`{"regexp":{"%s":{"value":"%s", "flags":"ALL"}}},`, jsonEscape(cond.Column), jsonEscape(cond.Value))
+	}
+	l := len(s)
+	if l > 0 {
+		s = s[0 : l-1]
+	}
+	return
+}
+
+func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 	if ctx.SkipProject || (ctx.DryRun && !ctx.DryRunAllowProject) {
 		return
 	}
-	project := conf[0]
-	origin := conf[1]
-	if project == "" || origin == "" {
-		return
+	if len(projects) == 0 {
+		lib.Printf("No projects configuration specified for index %s\n", index)
 	}
-	if ctx.Debug > 0 {
-		lib.Printf("Setting project '%s' on '%s' origin (index '%s')\n", project, origin, index)
-	}
-	lastEpoch := int64(0)
-	if !ctx.SkipProjectTS {
-		lastEpoch = lastProjectDate(ctx, index, origin, true)
-	}
-	projectEpoch := time.Now().Unix()
-	var err error
-	payloadBytes := []byte{}
-	data := ""
-	// _search -d'{"query":{"bool":{"must":[{"term":{"origin":"https://build.opnfv.org/ci/"}},{"regexp":{"job_name":{"value":"(cntt|CNTT).*", "flags":"ALL"}}}]}}}' | jq
-	if lastEpoch == 0 {
-		data = fmt.Sprintf(
-			`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must":{"term":{"origin":"%s"}}}}}`,
-			jsonEscape(project),
-			projectEpoch,
-			jsonEscape(origin),
-		)
-		payloadBytes = []byte(data)
-	} else {
-		data = fmt.Sprintf(
-			`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":{"range":{"project_ts":{"lte":%d}}},"must":{"term":{"origin":"%s"}}}}}`,
-			jsonEscape(project),
-			projectEpoch,
-			lastEpoch,
-			jsonEscape(origin),
-		)
-		payloadBytes = []byte(data)
-	}
-	payloadBody := bytes.NewReader(payloadBytes)
-	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, index)
-	rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", index)
-	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
-	if err != nil {
-		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-		return
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-		return
-	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
-	if resp.StatusCode != 200 {
-		body, err := ioutil.ReadAll(resp.Body)
+	for _, conf := range projects {
+		project := conf.Name
+		origin := conf.Origin
+		if project == "" || origin == "" {
+			continue
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Setting project %+v origin (index '%s')\n", conf, index)
+		}
+		lastEpoch := int64(0)
+		must := getConditionJSON(conf.Must)
+		mustPartial := ""
+		if must != "" {
+			mustPartial = "," + must
+		}
+		mustNot := getConditionJSON(conf.MustNot)
+		optionalMustNot := ""
+		mustNotPartial := ""
+		if mustNot != "" {
+			optionalMustNot = `,"must_not":[` + mustNot + "]"
+			mustNotPartial = "," + mustNot
+		}
+		if !ctx.SkipProjectTS {
+			lastEpoch = lastProjectDate(ctx, index, origin, must, mustNot, true)
+		}
+		projectEpoch := time.Now().Unix()
+		var err error
+		payloadBytes := []byte{}
+		data := ""
+		if lastEpoch == 0 {
+			data = fmt.Sprintf(
+				`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must":[{"term":{"origin":"%s"}}%s]%s}}}`,
+				jsonEscape(project),
+				projectEpoch,
+				jsonEscape(origin),
+				mustPartial,
+				optionalMustNot,
+			)
+			payloadBytes = []byte(data)
+		} else {
+			data = fmt.Sprintf(
+				`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":[{"range":{"project_ts":{"lte":%d}}}%s],"must":[{"term":{"origin":"%s"}}%s]}}}`,
+				jsonEscape(project),
+				projectEpoch,
+				lastEpoch,
+				mustNotPartial,
+				jsonEscape(origin),
+				mustPartial,
+			)
+			payloadBytes = []byte(data)
+		}
+		payloadBody := bytes.NewReader(payloadBytes)
+		method := lib.Post
+		url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, index)
+		rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", index)
+		req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 		if err != nil {
-			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
-		return
-	}
-	payload := lib.EsUpdateByQueryPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
-	if err != nil {
-		body, err2 := ioutil.ReadAll(resp.Body)
-		if err2 != nil {
-			lib.Printf("ReadAll request error when parsing response: %+v/%+v for %s url: %s, data: %+v", err, err2, method, rurl, data)
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 			return
 		}
-		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
-		return
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+			return
+		}
+		payload := lib.EsUpdateByQueryPayload{}
+		err = json.NewDecoder(resp.Body).Decode(&payload)
+		if err != nil {
+			body, err2 := ioutil.ReadAll(resp.Body)
+			if err2 != nil {
+				lib.Printf("ReadAll request error when parsing response: %+v/%+v for %s url: %s, data: %+v", err, err2, method, rurl, data)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
+			return
+		}
+		lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
+		/*
+			if ctx.Debug > 0 || lastEpoch > 0 {
+				lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
+			} else {
+				lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
+			}
+		*/
 	}
-	// FIXME: remove once battle tested (>= 0 --> > 0)
-	if ctx.Debug > 0 || lastEpoch > 0 {
-		lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
+}
+
+func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
+	if task.Project == "" {
+		for _, project := range task.Projects {
+			ep := lib.EndpointProject{Name: project.Name, Origin: project.Origin}
+			for _, cond := range project.Must {
+				ep.Must = append(ep.Must, lib.ProjectCondition{Column: cond.Column, Value: cond.Value})
+			}
+			for _, cond := range project.MustNot {
+				ep.MustNot = append(ep.MustNot, lib.ProjectCondition{Column: cond.Column, Value: cond.Value})
+			}
+			result.Projects = append(result.Projects, ep)
+		}
 	} else {
-		lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
+		result.Projects = append(
+			result.Projects,
+			lib.EndpointProject{
+				Name:   task.Project,
+				Origin: task.Endpoint,
+			},
+		)
 	}
 }
 
@@ -4039,8 +4096,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	result.Code[0] = idx
 	result.Affs = affs
-	if !affs && !task.ProjectP2O && task.Project != "" {
-		result.SetProject = [2]string{task.Project, task.Endpoint}
+	if !affs && !task.ProjectP2O && (task.Project != "" || len(task.Projects) > 0) {
+		setTaskResultProjects(&result, &task)
 	}
 	// Handle DS slug
 	ds := task.DsSlug

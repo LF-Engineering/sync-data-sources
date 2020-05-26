@@ -48,14 +48,14 @@ func IsRedacted(name string) bool {
 
 // ProjectCondition - holds single must or must_not condition for setting project witing a single endpoint
 type ProjectCondition struct {
-	Column string         `yaml:"column"`
-	Value  string         `yaml:"value"`
-	RE     *regexp.Regexp `yaml:"-"`
+	Column string `yaml:"column"`
+	Value  string `yaml:"value"`
 }
 
 // EndpointProject - holds data for a single sub-endpoint project configuration
 type EndpointProject struct {
 	Name    string             `yaml:"name"`
+	Origin  string             `yaml:"origin"`
 	Must    []ProjectCondition `yaml:"must"`
 	MustNot []ProjectCondition `yaml:"must_not"`
 }
