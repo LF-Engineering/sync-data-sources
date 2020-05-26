@@ -368,6 +368,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				lib.Fatalf("Empty project name entry in %+v, data source %+v, fixture %+v\n", projectData, dataSource, fixture)
 			}
 			for _, rawEndpoint := range projectData.RawEndpoints {
+				if len(rawEndpoint.Projects) > 0 {
+					lib.Fatalf("You cannot specify single endpoints projects configuration in data source's 'projects' section, it must be specified data source's 'endpoints' section: data source %+v, fixture %+v\n", dataSource, fixture)
+				}
 				proj := project
 				if rawEndpoint.Project != "" {
 					proj = rawEndpoint.Project
@@ -394,6 +397,22 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 		}
 		for j, rawEndpoint := range fixture.DataSources[i].RawEndpoints {
+			for k, endpointProject := range rawEndpoint.Projects {
+				for l, condition := range endpointProject.Must {
+					re, err := regexp.Compile(condition.Value)
+					if err != nil {
+						lib.Fatalf("Failed to compile must condition '%s' in %+v\n", condition, endpointProject)
+					}
+					fixture.DataSources[i].RawEndpoints[j].Projects[k].Must[l].RE = re
+				}
+				for l, condition := range endpointProject.MustNot {
+					re, err := regexp.Compile(condition.Value)
+					if err != nil {
+						lib.Fatalf("Failed to compile must_not condition '%s' in %+v\n", condition, endpointProject)
+					}
+					fixture.DataSources[i].RawEndpoints[j].Projects[k].MustNot[l].RE = re
+				}
+			}
 			epType, ok := rawEndpoint.Flags["type"]
 			if ctx.OnlyValidate && ctx.SkipValGitHubAPI {
 				ok = false
@@ -413,6 +432,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Name:       name,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
+						Projects:   rawEndpoint.Projects,
 					},
 				)
 				continue
@@ -488,6 +508,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Name:       name,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
+							Projects:   rawEndpoint.Projects,
 						},
 					)
 				}
@@ -549,6 +570,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Name:       name,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
+							Projects:   rawEndpoint.Projects,
 						},
 					)
 				}
@@ -564,6 +586,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Name:       name,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
+						Projects:   rawEndpoint.Projects,
 					},
 				)
 				continue
@@ -784,6 +807,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					lib.Task{
 						Project:    endpoint.Project,
 						ProjectP2O: endpoint.ProjectP2O,
+						Projects:   endpoint.Projects,
 						Endpoint:   name,
 						Config:     dataSource.Config,
 						DsSlug:     dataSource.Slug,
@@ -3937,24 +3961,15 @@ func setProject(ctx *lib.Ctx, index string, conf [2]string) {
 	var err error
 	payloadBytes := []byte{}
 	data := ""
+	// _search -d'{"query":{"bool":{"must":[{"term":{"origin":"https://build.opnfv.org/ci/"}},{"regexp":{"job_name":{"value":"(cntt|CNTT).*", "flags":"ALL"}}}]}}}' | jq
 	if lastEpoch == 0 {
-		inline := fmt.Sprintf(`ctx._source.project="%s";ctx._source.project_ts=%d`, project, projectEpoch)
-		jsonData := lib.EsUpdateByQuery{
-			Script: lib.EsScript{
-				Inline: inline,
-			},
-			Query: lib.EsQueryTerm{
-				Term: lib.EsTermOrigin{
-					Origin: origin,
-				},
-			},
-		}
-		payloadBytes, err = json.Marshal(jsonData)
-		if err != nil {
-			lib.Printf("JSON marshall error: %+v for update_by_query: %s: %+v\n", err, index, jsonData)
-			return
-		}
-		data = string(payloadBytes)
+		data = fmt.Sprintf(
+			`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must":{"term":{"origin":"%s"}}}}}`,
+			jsonEscape(project),
+			projectEpoch,
+			jsonEscape(origin),
+		)
+		payloadBytes = []byte(data)
 	} else {
 		data = fmt.Sprintf(
 			`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":{"range":{"project_ts":{"lte":%d}}},"must":{"term":{"origin":"%s"}}}}}`,
