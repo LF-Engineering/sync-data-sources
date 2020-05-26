@@ -1,0 +1,13 @@
+---
+native:
+  slug: lfn/opnfv
+data_sources:
+- slug: jenkins
+  endpoints:
+  - name: https://build.opnfv.org/ci/
+    endpoint_projects:
+    - name: OPNFV
+      must_not:
+      - column: job_name
+        value: '(cntt|CNTT).*'
+  index_suffix: '-for-merge'
