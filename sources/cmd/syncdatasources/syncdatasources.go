@@ -704,7 +704,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	checkForSharedEndpoints(&fixtures)
 	// Drop unused indexes, rename indexes if needed, drop unused aliases
 	didRenames := false
-	if !ctx.SkipDropUnused {
+	if !ctx.SkipDropUnused && !ctx.OnlyP2O {
 		if ctx.NodeNum > 1 {
 			// sdsmtx is an ES wide mutex-like index for blocking between concurrent nodes
 			lib.EnsureIndex(ctx, lib.SDSMtx, false)
@@ -803,7 +803,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	gAliasesMtx = &sync.Mutex{}
 	gCSVMtx = &sync.Mutex{}
 	gAliasesFunc = func() {
-		if !ctx.SkipAliases {
+		if !ctx.SkipAliases && !ctx.OnlyP2O {
 			lib.Printf("Processing aliases\n")
 			gAliasesMtx.Lock()
 			defer func() {
@@ -815,15 +815,17 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 			processAliases(ctx, &fixtures, lib.Put)
 		}
 	}
-	if didRenames {
+	if !ctx.OnlyP2O && didRenames {
 		gAliasesFunc()
 	}
 	// We *try* to enrich external indexes, but we don't care if that actually suceeded
 	ch := make(chan struct{})
-	go func(ch chan struct{}) {
-		enrichAndDedupExternalIndexes(ctx, &fixtures, &tasks)
-		ch <- struct{}{}
-	}(ch)
+	if !ctx.OnlyP2O {
+		go func(ch chan struct{}) {
+			enrichAndDedupExternalIndexes(ctx, &fixtures, &tasks)
+			ch <- struct{}{}
+		}(ch)
+	}
 	if !ctx.SkipSSAW {
 		if ctx.SSAWFreq > 0 {
 			go ssawLoop(ctx)
@@ -834,8 +836,10 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	if !ctx.SkipSSAW {
 		ssawSync(ctx, true)
 	}
-	gAliasesFunc()
-	<-ch
+	if !ctx.OnlyP2O {
+		gAliasesFunc()
+		<-ch
+	}
 	if rslt != nil {
 		lib.Fatalf("Process tasks error: %+v\n", rslt)
 	}
