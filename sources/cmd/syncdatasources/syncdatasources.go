@@ -298,59 +298,29 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 
 func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) (drop bool) {
 	n := 0
-	if ctx.DatasourcesRE == nil {
-		if ctx.ProjectsRE == nil && ctx.EndpointsRE == nil {
-			return
+	dataSources := []lib.DataSource{}
+	for _, dataSource := range fixture.DataSources {
+		//fmt.Printf("datasource %+v against %s --> %v\n", ctx.DatasourcesRE, dataSource.Slug, ctx.DatasourcesRE.MatchString(dataSource.Slug))
+		if (ctx.DatasourcesRE != nil && !ctx.DatasourcesRE.MatchString(dataSource.Slug)) || (ctx.DatasourcesSkipRE != nil && ctx.DatasourcesSkipRE.MatchString(dataSource.Slug)) {
+			continue
 		}
-		for i, dataSource := range fixture.DataSources {
-			endpoints := []lib.Endpoint{}
-			for _, endpoint := range dataSource.Endpoints {
-				//fmt.Printf("project %+v against %s  --> %v\n", ctx.ProjectsRE, endpoint.Project, ctx.ProjectsRE.MatchString(endpoint.Project))
-				if ctx.ProjectsRE != nil && !ctx.ProjectsRE.MatchString(endpoint.Project) {
-					continue
-				}
-				//fmt.Printf("endpoint %+v against %s --> %v\n", ctx.EndpointsRE, endpoint.Name, ctx.EndpointsRE.MatchString(endpoint.Name))
-				if ctx.EndpointsRE != nil && !ctx.EndpointsRE.MatchString(endpoint.Name) {
-					continue
-				}
-				endpoints = append(endpoints, endpoint)
-				n++
-			}
-			fixture.DataSources[i].Endpoints = endpoints
-		}
-	} else {
-		dataSources := []lib.DataSource{}
-		allEndpoints := false
-		if ctx.ProjectsRE == nil && ctx.EndpointsRE == nil {
-			allEndpoints = true
-		}
-		for _, dataSource := range fixture.DataSources {
-			//fmt.Printf("datasource %+v against %s --> %v\n", ctx.DatasourcesRE, dataSource.Slug, ctx.DatasourcesRE.MatchString(dataSource.Slug))
-			if ctx.DatasourcesRE != nil && !ctx.DatasourcesRE.MatchString(dataSource.Slug) {
+		endpoints := []lib.Endpoint{}
+		for _, endpoint := range dataSource.Endpoints {
+			//fmt.Printf("projects %+v against %s --> %v\n", ctx.ProjectsRE, endpoint.Project, ctx.ProjectsRE.MatchString(endpoint.Project))
+			if (ctx.ProjectsRE != nil && !ctx.ProjectsRE.MatchString(endpoint.Project)) || (ctx.ProjectsSkipRE != nil && ctx.ProjectsSkipRE.MatchString(endpoint.Project)) {
 				continue
 			}
-			if !allEndpoints {
-				endpoints := []lib.Endpoint{}
-				for _, endpoint := range dataSource.Endpoints {
-					//fmt.Printf("projects %+v against %s --> %v\n", ctx.ProjectsRE, endpoint.Project, ctx.ProjectsRE.MatchString(endpoint.Project))
-					if ctx.ProjectsRE != nil && !ctx.ProjectsRE.MatchString(endpoint.Project) {
-						continue
-					}
-					//fmt.Printf("endpoints %+v against %s --> %v\n", ctx.EndpointsRE, endpoint.Name, ctx.EndpointsRE.MatchString(endpoint.Name))
-					if ctx.EndpointsRE != nil && !ctx.EndpointsRE.MatchString(endpoint.Name) {
-						continue
-					}
-					endpoints = append(endpoints, endpoint)
-					n++
-				}
-				dataSource.Endpoints = endpoints
-			} else {
-				n += len(dataSource.Endpoints)
+			//fmt.Printf("endpoints %+v against %s --> %v\n", ctx.EndpointsRE, endpoint.Name, ctx.EndpointsRE.MatchString(endpoint.Name))
+			if (ctx.EndpointsRE != nil && !ctx.EndpointsRE.MatchString(endpoint.Name)) || (ctx.EndpointsSkipRE != nil && ctx.EndpointsSkipRE.MatchString(endpoint.Name)) {
+				continue
 			}
-			dataSources = append(dataSources, dataSource)
+			endpoints = append(endpoints, endpoint)
+			n++
 		}
-		fixture.DataSources = dataSources
+		dataSource.Endpoints = endpoints
+		dataSources = append(dataSources, dataSource)
 	}
+	fixture.DataSources = dataSources
 	if ctx.Debug > 0 {
 		fmt.Printf("%s has %d after filter\n", fixture.Fn, n)
 	}
@@ -627,10 +597,7 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
-	if ctx.Debug > 0 && ctx.FixturesRE != nil {
-		fmt.Printf("fixture %+v against %s --> %v\n", ctx.FixturesRE, fixture.Slug, ctx.FixturesRE.MatchString(fixture.Slug))
-	}
-	if ctx.FixturesRE != nil && !ctx.FixturesRE.MatchString(fixture.Slug) {
+	if (ctx.FixturesRE != nil && !ctx.FixturesRE.MatchString(fixture.Slug)) || (ctx.FixturesSkipRE != nil && ctx.FixturesSkipRE.MatchString(fixture.Slug)) {
 		fixture.Disabled = true
 		return
 	}
