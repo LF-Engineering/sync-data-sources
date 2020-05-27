@@ -1,0 +1,113 @@
+---
+native:
+  slug: lfn/cntt
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.lfnetworking.org
+    endpoint_projects:
+    - name: '(null)'
+    - name: 'Getting Started'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*Getting Started.*'
+    - name: 'Releases'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*Releases.*'
+    - name: 'CNTT Workstream Signup'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Workstream Signup.*'
+    - name: 'CNTT Governance Steering Master'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Governance Steering Master.*'
+    - name: 'CNTT Governance Workstreams'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Governance Workstreams.*'
+    - name: 'CNTT Technical Steering'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Technical Steering.*'
+    - name: 'CNTT TSC Tool and Automation'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT TSC Tool and Automation.*'
+    - name: 'CNTT Reference Model'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Reference Model.*'
+    - name: 'CNTT Reference Architectures'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Reference Architectures.*'
+    - name: 'CNTT Reference Implementations'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Reference Implementations.*'
+    - name: 'CNTT Reference Certifications'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Reference Certifications.*'
+    - name: 'CNTT Networking FG'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Networking FG.*'
+    - name: 'CNTT Edge'
+      must:
+      - column: ancestors_titles
+        value: '.*LF Networking Wiki.*'
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
+      - column: ancestors_titles
+        value: '.*CNTT Edge.*'
