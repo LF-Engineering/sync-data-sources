@@ -24,6 +24,10 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DatasourcesRE:           in.DatasourcesRE,
 		ProjectsRE:              in.ProjectsRE,
 		EndpointsRE:             in.EndpointsRE,
+		FixturesSkipRE:          in.FixturesSkipRE,
+		DatasourcesSkipRE:       in.DatasourcesSkipRE,
+		ProjectsSkipRE:          in.ProjectsSkipRE,
+		EndpointsSkipRE:         in.EndpointsSkipRE,
 		CtxOut:                  in.CtxOut,
 		DryRun:                  in.DryRun,
 		DryRunCode:              in.DryRunCode,
@@ -39,8 +43,10 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowProject:      in.DryRunAllowProject,
 		DryRunAllowSyncInfo:     in.DryRunAllowSyncInfo,
 		DryRunAllowSortDuration: in.DryRunAllowSortDuration,
+		DryRunAllowMerge:        in.DryRunAllowMerge,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
+		OnlyP2O:                 in.OnlyP2O,
 		TimeoutSeconds:          in.TimeoutSeconds,
 		TaskTimeoutSeconds:      in.TaskTimeoutSeconds,
 		NodeIdx:                 in.NodeIdx,
@@ -79,6 +85,8 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipValGitHubAPI:        in.SkipValGitHubAPI,
 		SkipSSAW:                in.SkipSSAW,
 		SkipSortDuration:        in.SkipSortDuration,
+		SkipMerge:               in.SkipMerge,
+		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
 		MaxMtxWait:              in.MaxMtxWait,
 		MaxMtxWaitFatal:         in.MaxMtxWaitFatal,
@@ -228,6 +236,10 @@ func TestInit(t *testing.T) {
 		DatasourcesRE:           nil,
 		ProjectsRE:              nil,
 		EndpointsRE:             nil,
+		FixturesSkipRE:          nil,
+		DatasourcesSkipRE:       nil,
+		ProjectsSkipRE:          nil,
+		EndpointsSkipRE:         nil,
 		CtxOut:                  false,
 		LatestItems:             false,
 		DryRun:                  false,
@@ -244,8 +256,10 @@ func TestInit(t *testing.T) {
 		DryRunAllowProject:      false,
 		DryRunAllowSyncInfo:     false,
 		DryRunAllowSortDuration: false,
+		DryRunAllowMerge:        false,
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
+		OnlyP2O:                 false,
 		TimeoutSeconds:          171900,
 		TaskTimeoutSeconds:      36000,
 		NodeIdx:                 0,
@@ -283,6 +297,8 @@ func TestInit(t *testing.T) {
 		SkipValGitHubAPI:        false,
 		SkipSSAW:                false,
 		SkipSortDuration:        false,
+		SkipMerge:               false,
+		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
 		MaxMtxWaitFatal:         false,
@@ -458,7 +474,7 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Setting filtering parameters",
+			"Setting filtering parameters (match)",
 			map[string]string{
 				"SDS_FIXTURES_RE":    `^lfn/.*`,
 				"SDS_DATASOURCES_RE": `^git$`,
@@ -473,6 +489,25 @@ func TestInit(t *testing.T) {
 					"DatasourcesRE": regexp.MustCompile(`^git$`),
 					"ProjectsRE":    regexp.MustCompile(`(?i)network`),
 					"EndpointsRE":   regexp.MustCompile(`\.gerrit\.`),
+				},
+			),
+		},
+		{
+			"Setting filtering parameters (not match)",
+			map[string]string{
+				"SDS_FIXTURES_SKIP_RE":    `^lfn/.*`,
+				"SDS_DATASOURCES_SKIP_RE": `^git$`,
+				"SDS_PROJECTS_SKIP_RE":    `(?i)network`,
+				"SDS_ENDPOINTS_SKIP_RE":   `\.gerrit\.`,
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"FixturesSkipRE":    regexp.MustCompile(`^lfn/.*`),
+					"DatasourcesSkipRE": regexp.MustCompile(`^git$`),
+					"ProjectsSkipRE":    regexp.MustCompile(`(?i)network`),
+					"EndpointsSkipRE":   regexp.MustCompile(`\.gerrit\.`),
 				},
 			),
 		},
@@ -642,6 +677,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_SYNC_INFO":     "1",
 				"SDS_DRY_RUN_ALLOW_SORT_DURATION": "1",
 				"SDS_DRY_RUN_ALLOW_SSAW":          "1",
+				"SDS_DRY_RUN_ALLOW_MERGE":         "1",
 			},
 			dynamicSetFields(
 				t,
@@ -662,6 +698,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowSyncInfo":     true,
 					"DryRunAllowSortDuration": true,
 					"DryRunAllowSSAW":         true,
+					"DryRunAllowMerge":        true,
 				},
 			),
 		},
@@ -677,6 +714,32 @@ func TestInit(t *testing.T) {
 					"OnlyValidate": true,
 					"SkipEsData":   true,
 					"SkipEsLog":    true,
+				},
+			),
+		},
+		{
+			"Set p2o only mode",
+			map[string]string{
+				"SDS_ONLY_P2O": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"OnlyP2O": true,
+				},
+			),
+		},
+		{
+			"Set p2o skip mode",
+			map[string]string{
+				"SDS_SKIP_P2O": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipP2O": true,
 				},
 			),
 		},
@@ -827,7 +890,7 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set skip sync info",
+			"Set skip sort duration",
 			map[string]string{
 				"SDS_SKIP_SORT_DURATION": "1",
 			},
@@ -836,6 +899,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipSortDuration": true,
+				},
+			),
+		},
+		{
+			"Set skip merge",
+			map[string]string{
+				"SDS_SKIP_MERGE": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipMerge": true,
 				},
 			),
 		},

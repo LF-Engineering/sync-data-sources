@@ -20,6 +20,10 @@ type Ctx struct {
 	DatasourcesRE           *regexp.Regexp // From SDS_DATASOURCES_RE - you can set regular expression specifying which datasources should be processed, default empty which means all.
 	ProjectsRE              *regexp.Regexp // From SDS_PROJECTS_RE - you can set regular expression specifying which projects/subprojects should be processed, default empty which means all.
 	EndpointsRE             *regexp.Regexp // From SDS_ENDPOINTS_RE - you can set regular expression specifying which endpoints/origins should be processed, default empty which means all.
+	FixturesSkipRE          *regexp.Regexp // From SDS_FIXTURES_SKIP_RE - you can set regular expression specifying which fixtures should be skipped, default empty which means none.
+	DatasourcesSkipRE       *regexp.Regexp // From SDS_DATASOURCES_SKIP_RE - you can set regular expression specifying which datasources should be skipped, default empty which means none.
+	ProjectsSkipRE          *regexp.Regexp // From SDS_PROJECTS_SKIP_RE - you can set regular expression specifying which projects/subprojects should be slkipped, default empty which means none.
+	EndpointsSkipRE         *regexp.Regexp // From SDS_ENDPOINTS_SKIP_RE - you can set regular expression specifying which endpoints/origins should be skipped, default empty which means none.
 	CtxOut                  bool           // From SDS_CTXOUT output all context data (this struct), default false
 	LogTime                 bool           // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
 	ExecFatal               bool           // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
@@ -47,6 +51,7 @@ type Ctx struct {
 	DryRunAllowSyncInfo     bool           // From SDS_DRY_RUN_ALLOW_SYNC_INFO, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSortDuration bool           // From SDS_DRY_RUN_ALLOW_SORT_DURATION, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSSAW         bool           // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
+	DryRunAllowMerge        bool           // From SDS_DRY_RUN_ALLOW_MERGE, if set it will allow calling DA-affiliation merge_all API after all tasks finished in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds      int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
@@ -66,6 +71,8 @@ type Ctx struct {
 	SkipValGitHubAPI        bool           // From SDS_SKIP_VALIDATE_GITHUB_API, will not process GitHub orgs/users in validate step (will not attempt to get org's/user's repo lists)
 	SkipSSAW                bool           // From SDS_SKIP_SSAW, if set - it will completelly skip SSAW processing
 	SkipSortDuration        bool           // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
+	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
+	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
 	StripErrorSize          int            // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth             string         // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
 	LatestItems             bool           // From SDS_LATEST_ITEMS, if set pass "latest items" or similar flag to the p2o.py backend (that should be handled by p2o.py using ES, so this is probably not a good ide, git backend, for example, can return no data then)
@@ -82,6 +89,7 @@ type Ctx struct {
 	SSAWURL                 string         // From SDS_SSAW_URL, URL of the SSAW service to send notification to, must be set or SkipSSAW flag must be set
 	SSAWFreq                int            // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds, minimal frequency (when set) is 20
 	OnlyValidate            bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
+	OnlyP2O                 bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
 	TestMode                bool           // True when running tests
 	ShUser                  string         // Sorting Hat database parameters
 	ShHost                  string
@@ -155,6 +163,8 @@ func (ctx *Ctx) Init() {
 			ctx.NCPUsScale = nCPUsScale
 		}
 	}
+
+	// Only/Skip REs
 	fixturesREStr := os.Getenv("SDS_FIXTURES_RE")
 	datasourcesREStr := os.Getenv("SDS_DATASOURCES_RE")
 	projectsREStr := os.Getenv("SDS_PROJECTS_RE")
@@ -171,6 +181,22 @@ func (ctx *Ctx) Init() {
 	if endpointsREStr != "" {
 		ctx.EndpointsRE = regexp.MustCompile(endpointsREStr)
 	}
+	fixturesSkipREStr := os.Getenv("SDS_FIXTURES_SKIP_RE")
+	datasourcesSkipREStr := os.Getenv("SDS_DATASOURCES_SKIP_RE")
+	projectsSkipREStr := os.Getenv("SDS_PROJECTS_SKIP_RE")
+	endpointsSkipREStr := os.Getenv("SDS_ENDPOINTS_SKIP_RE")
+	if fixturesSkipREStr != "" {
+		ctx.FixturesSkipRE = regexp.MustCompile(fixturesSkipREStr)
+	}
+	if datasourcesSkipREStr != "" {
+		ctx.DatasourcesSkipRE = regexp.MustCompile(datasourcesSkipREStr)
+	}
+	if projectsSkipREStr != "" {
+		ctx.ProjectsSkipRE = regexp.MustCompile(projectsSkipREStr)
+	}
+	if endpointsSkipREStr != "" {
+		ctx.EndpointsSkipRE = regexp.MustCompile(endpointsSkipREStr)
+	}
 
 	// Dry Run mode
 	ctx.DryRun = os.Getenv("SDS_DRY_RUN") != ""
@@ -185,6 +211,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunSecondsRandom = os.Getenv("SDS_DRY_RUN_SECONDS_RANDOM") != ""
 	ctx.DryRunAllowSyncInfo = os.Getenv("SDS_DRY_RUN_ALLOW_SYNC_INFO") != ""
 	ctx.DryRunAllowSortDuration = os.Getenv("SDS_DRY_RUN_ALLOW_SORT_DURATION") != ""
+	ctx.DryRunAllowMerge = os.Getenv("SDS_DRY_RUN_ALLOW_MERGE") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -224,6 +251,9 @@ func (ctx *Ctx) Init() {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
 		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, password, db) must all be defined unless skiping SortingHat"))
 	}
+
+	// Only P2O support
+	ctx.OnlyP2O = os.Getenv("SDS_ONLY_P2O") != ""
 
 	// Log Time
 	ctx.LogTime = os.Getenv("SDS_SKIPTIME") == ""
@@ -403,6 +433,12 @@ func (ctx *Ctx) Init() {
 
 	// Skip sort by running duration
 	ctx.SkipSortDuration = os.Getenv("SDS_SKIP_SORT_DURATION") != ""
+
+	// Skip calling DA-affiliation merge_all API at the end
+	ctx.SkipMerge = os.Getenv("SDS_SKIP_MERGE") != ""
+
+	// Skip all p2o commands
+	ctx.SkipP2O = os.Getenv("SDS_SKIP_P2O") != ""
 
 	// Max delete by query attempts - this can fail due to version conflicts
 	if os.Getenv("SDS_MAX_DELETE_TRIALS") == "" {

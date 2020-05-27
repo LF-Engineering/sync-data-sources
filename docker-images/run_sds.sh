@@ -19,6 +19,10 @@ then
   #export SDS_DATASOURCES_RE=''
   #export SDS_PROJECTS_RE=''
   #export SDS_ENDPOINTS_RE=''
+  #export SDS_FIXTURES_SKIP_RE=''
+  #export SDS_DATASOURCES_SKIP_RE=''
+  #export SDS_PROJECTS_SKIP_RE=''
+  #export SDS_ENDPOINTS_SKIP_RE=''
   #export SDS_SKIPTIME=1
   export SDS_SKIP_SH=1
   export SDS_SKIP_DATA=1
@@ -36,6 +40,8 @@ then
   export SDS_SKIP_VALIDATE_GITHUB_API=1
   export SDS_SKIP_SSAW=1
   export SDS_SKIP_SORT_DURATION=1
+  export SDS_SKIP_MERGE=1
+  export SDS_SKIP_P2O=1
   export SDS_DRY_RUN=1
   #export SDS_DRY_RUN_CODE=3
   #export SDS_DRY_RUN_CODE_RANDOM=1
@@ -50,8 +56,10 @@ then
   #export SDS_DRY_RUN_ALLOW_PROJECT=1
   #export SDS_DRY_RUN_ALLOW_SYNC_INFO=1
   #export SDS_DRY_RUN_ALLOW_SORT_DURATION=1
+  #export SDS_DRY_RUN_ALLOW_MERGE=1
   #export SDS_DRY_RUN_ALLOW_SSAW=1
   #export SDS_ONLY_VALIDATE=1
+  #export SDS_ONLY_P2O=1
 fi
 envstr="-e BRANCH=\"$1\""
 for renv in SDS_SSAW_URL SH_USER SH_HOST SH_PASS SH_DB SDS_ES_URL SDS_GITHUB_OAUTH REPO_ACCESS

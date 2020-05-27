@@ -4049,14 +4049,11 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 			return
 		}
-		lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
-		/*
-			if ctx.Debug > 0 || lastEpoch > 0 {
-				lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
-			} else {
-				lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s'): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, payload.Updated)
-			}
-		*/
+		if ctx.Debug > 0 || lastEpoch > 0 {
+			lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
+		} else {
+			lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
+		}
 	}
 }
 
