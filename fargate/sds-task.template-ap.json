@@ -22,7 +22,7 @@
   "containerDefinitions": [
     {
       "name": "${SDS_TASK_NAME}", 
-      "image": "lukaszgryglicki/sync-data-sources-${SDS_BRANCH}", 
+      "image": "lukaszgryglicki/sync-data-sources-${SDS_BRANCH}",
       "essential": true, 
       "command": [
         "${SDS_COMMAND}"
@@ -62,6 +62,22 @@
         {
           "name": "SDS_ENDPOINTS_RE",
           "value": "${SDS_ENDPOINTS_RE}"
+        },
+        {
+          "name": "SDS_FIXTURES_SKIP_RE",
+          "value": "${SDS_FIXTURES_SKIP_RE}"
+        },
+        {
+          "name": "SDS_DATASOURCES_SKIP_RE",
+          "value": "${SDS_DATASOURCES_SKIP_RE}"
+        },
+        {
+          "name": "SDS_PROJECTS_SKIP_RE",
+          "value": "${SDS_PROJECTS_SKIP_RE}"
+        },
+        {
+          "name": "SDS_ENDPOINTS_SKIP_RE",
+          "value": "${SDS_ENDPOINTS_SKIP_RE}"
         },
         {
           "name": "SDS_DRY_RUN",
@@ -118,6 +134,10 @@
         {
           "name": "SDS_DRY_RUN_ALLOW_SORT_DURATION",
           "value": "${SDS_DRY_RUN_ALLOW_SORT_DURATION}"
+        },
+        {
+          "name": "SDS_DRY_RUN_ALLOW_MERGE",
+          "value": "${SDS_DRY_RUN_ALLOW_MERGE}"
         },
         {
           "name": "SDS_DRY_RUN_ALLOW_SSAW",
@@ -196,6 +216,14 @@
           "value": "${SDS_SKIP_SORT_DURATION}"
         },
         {
+          "name": "SDS_SKIP_MERGE",
+          "value": "${SDS_SKIP_MERGE}"
+        },
+        {
+          "name": "SDS_SKIP_P2O",
+          "value": "${SDS_SKIP_P2O}"
+        },
+        {
           "name": "SDS_SKIP_VALIDATE_GITHUB_API",
           "value": "${SDS_SKIP_VALIDATE_GITHUB_API}"
         },
@@ -206,6 +234,10 @@
         {
           "name": "SDS_ONLY_VALIDATE",
           "value": "${SDS_ONLY_VALIDATE}"
+        },
+        {
+          "name": "SDS_ONLY_P2O",
+          "value": "${SDS_ONLY_P2O}"
         },
         {
           "name": "SDS_NO_MULTI_ALIASES",
