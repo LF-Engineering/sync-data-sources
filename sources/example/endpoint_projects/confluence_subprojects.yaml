@@ -7,6 +7,9 @@ data_sources:
   - name: https://wiki.lfnetworking.org
     endpoint_projects:
     - name: '(null)'
+      must_not:
+      - column: ancestors_titles
+        value: '.*Cloud iNfrastructure Telco Taskforce - CNTT.*'
     - name: 'Getting Started'
       must:
       - column: ancestors_titles
