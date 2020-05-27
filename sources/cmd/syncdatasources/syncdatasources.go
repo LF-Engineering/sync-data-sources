@@ -3966,10 +3966,16 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 		var err error
 		payloadBytes := []byte{}
 		data := ""
+		var projectVal string
+		if project == "(null)" {
+			projectVal = "null"
+		} else {
+			projectVal = `\"` + jsonEscape(project) + `\"`
+		}
 		if lastEpoch == 0 {
 			data = fmt.Sprintf(
-				`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must":[{"term":{"origin":"%s"}}%s]%s}}}`,
-				jsonEscape(project),
+				`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must":[{"term":{"origin":"%s"}}%s]%s}}}`,
+				projectVal,
 				projectEpoch,
 				jsonEscape(origin),
 				mustPartial,
@@ -3978,8 +3984,8 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			payloadBytes = []byte(data)
 		} else {
 			data = fmt.Sprintf(
-				`{"script":{"inline":"ctx._source.project=\"%s\";ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":[{"range":{"project_ts":{"lte":%d}}}%s],"must":[{"term":{"origin":"%s"}}%s]}}}`,
-				jsonEscape(project),
+				`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":[{"range":{"project_ts":{"lte":%d}}}%s],"must":[{"term":{"origin":"%s"}}%s]}}}`,
+				projectVal,
 				projectEpoch,
 				lastEpoch,
 				mustNotPartial,
@@ -4026,7 +4032,7 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 			return
 		}
-		if ctx.Debug > 0 || lastEpoch > 0 {
+		if ctx.DryRun || ctx.Debug > 0 || lastEpoch > 0 {
 			lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
 		} else {
 			lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
