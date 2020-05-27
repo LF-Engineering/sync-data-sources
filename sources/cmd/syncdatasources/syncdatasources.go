@@ -1542,7 +1542,13 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			if ctx.Debug > 0 {
 				lib.Printf("External endpoint: %s\n", rcl)
 			}
-			str, err := lib.ExecCommand(ctx, commandLine, nil)
+			var (
+				err error
+				str string
+			)
+			if !ctx.SkipP2O {
+				str, err = lib.ExecCommand(ctx, commandLine, nil)
+			}
 			if keyAdded {
 				gKeyMtx.Unlock()
 				if sshKeyMtx != nil {
@@ -1642,7 +1648,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 	}
 	gInfoExternal()
-	if !ctx.SkipEsData {
+	if !ctx.SkipP2O && !ctx.SkipEsData {
 		updated := setLastRun(ctx, nil, lib.Bitergia, lib.External)
 		if !updated {
 			lib.Printf("failed to set last sync date for bitergia/external\n")
@@ -3755,7 +3761,7 @@ func lastProjectDate(ctx *lib.Ctx, index, origin, must, mustNot string, silent b
 }
 
 func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before bool) {
-	if ctx.SkipSyncInfo || (ctx.DryRun && !ctx.DryRunAllowSyncInfo) {
+	if ctx.SkipSyncInfo || (ctx.DryRun && !ctx.DryRunAllowSyncInfo) || (!ctx.DryRun && ctx.SkipP2O) {
 		return
 	}
 	if tMtx != nil && tMtx.SyncInfoMtx != nil {
@@ -4287,7 +4293,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 					result.Retries = rand.Intn(ctx.MaxRetry)
 				}
 			}
-			if !ctx.SkipEsData && !affs {
+			if !ctx.SkipP2O && !ctx.SkipEsData && !affs {
 				_ = setLastRun(ctx, tMtx, idxSlug, sEp)
 			}
 			return
@@ -4309,7 +4315,13 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			}
 		}
 		setSyncInfo(ctx, tMtx, &result, true)
-		str, err := lib.ExecCommand(ctx, commandLine, nil)
+		var (
+			err error
+			str string
+		)
+		if !ctx.SkipP2O {
+			str, err = lib.ExecCommand(ctx, commandLine, nil)
+		}
 		if keyAdded {
 			gKeyMtx.Unlock()
 			if tMtx.SSHKeyMtx != nil {
@@ -4362,7 +4374,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		result.Retries = retries
 		return
 	}
-	if !ctx.SkipEsData && !affs {
+	if !ctx.SkipP2O && !ctx.SkipEsData && !affs {
 		updated := setLastRun(ctx, tMtx, idxSlug, sEp)
 		if !updated {
 			lib.Printf("failed to set last sync date for %s/%s\n", idxSlug, sEp)
