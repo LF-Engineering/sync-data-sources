@@ -105,6 +105,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		Auth0Audience:           in.Auth0Audience,
 		Auth0ClientID:           in.Auth0ClientID,
 		Auth0ClientSecret:       in.Auth0ClientSecret,
+		AffiliationAPIURL:       in.AffiliationAPIURL,
 	}
 	return &out
 }
@@ -288,7 +289,7 @@ func TestInit(t *testing.T) {
 		GitHubOAuth:             "",
 		EsBulkSize:              0,
 		ScrollWait:              0,
-		ScrollSize:              1000,
+		ScrollSize:              100,
 		Silent:                  false,
 		CSVPrefix:               "jobs",
 		SkipSH:                  false,
@@ -328,6 +329,7 @@ func TestInit(t *testing.T) {
 		Auth0Audience:           "",
 		Auth0ClientID:           "",
 		Auth0ClientSecret:       "",
+		AffiliationAPIURL:       "",
 	}
 
 	// Test cases
@@ -1065,6 +1067,19 @@ func TestInit(t *testing.T) {
 					"Auth0Audience":     "my-api",
 					"Auth0ClientID":     "123456",
 					"Auth0ClientSecret": "abcdefghi",
+				},
+			),
+		},
+		{
+			"Set DA affiliation API url",
+			map[string]string{
+				"AFFILIATION_API_URL": "https://affs-api.com",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"AffiliationAPIURL": "https://affs-api.com",
 				},
 			),
 		},
