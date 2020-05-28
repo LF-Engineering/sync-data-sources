@@ -66,5 +66,6 @@ export AUTH0_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_URL.$1.secr
 export AUTH0_AUDIENCE=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_AUDIENCE.$1.secret`
 export AUTH0_CLIENT_ID=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_ID.$1.secret`
 export AUTH0_CLIENT_SECRET=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_SECRET.$1.secret`
+export AFFILIATION_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AFFILIATION_API_URL.$1.secret`
 export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 ./syncdatasources

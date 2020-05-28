@@ -328,6 +328,10 @@
           "value": "${SDS_SSAW_URL}"
         },
         {
+          "name": "AFFILIATION_API_URL",
+          "value": "${SDS_AFFILIATION_API_URL}"
+        },
+        {
           "name": "SH_USER",
           "value": "${SDS_SH_USER}"
         },
