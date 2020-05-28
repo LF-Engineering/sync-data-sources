@@ -44,6 +44,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowSyncInfo:     in.DryRunAllowSyncInfo,
 		DryRunAllowSortDuration: in.DryRunAllowSortDuration,
 		DryRunAllowMerge:        in.DryRunAllowMerge,
+		DryRunAllowHideEmails:   in.DryRunAllowHideEmails,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
 		OnlyP2O:                 in.OnlyP2O,
@@ -86,6 +87,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipSSAW:                in.SkipSSAW,
 		SkipSortDuration:        in.SkipSortDuration,
 		SkipMerge:               in.SkipMerge,
+		SkipHideEmails:          in.SkipHideEmails,
 		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
 		MaxMtxWait:              in.MaxMtxWait,
@@ -94,6 +96,15 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SSAWURL:                 in.SSAWURL,
 		SSAWFreq:                in.SSAWFreq,
 		TestMode:                in.TestMode,
+		ShUser:                  in.ShUser,
+		ShHost:                  in.ShHost,
+		ShPort:                  in.ShPort,
+		ShPass:                  in.ShPass,
+		ShDB:                    in.ShDB,
+		Auth0URL:                in.Auth0URL,
+		Auth0Audience:           in.Auth0Audience,
+		Auth0ClientID:           in.Auth0ClientID,
+		Auth0ClientSecret:       in.Auth0ClientSecret,
 	}
 	return &out
 }
@@ -257,6 +268,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowSyncInfo:     false,
 		DryRunAllowSortDuration: false,
 		DryRunAllowMerge:        false,
+		DryRunAllowHideEmails:   false,
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
 		OnlyP2O:                 false,
@@ -298,6 +310,7 @@ func TestInit(t *testing.T) {
 		SkipSSAW:                false,
 		SkipSortDuration:        false,
 		SkipMerge:               false,
+		SkipHideEmails:          false,
 		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
@@ -306,6 +319,15 @@ func TestInit(t *testing.T) {
 		SSAWURL:                 "",
 		SSAWFreq:                0,
 		TestMode:                true,
+		ShUser:                  "",
+		ShHost:                  "",
+		ShPort:                  "",
+		ShPass:                  "",
+		ShDB:                    "",
+		Auth0URL:                "",
+		Auth0Audience:           "",
+		Auth0ClientID:           "",
+		Auth0ClientSecret:       "",
 	}
 
 	// Test cases
@@ -678,6 +700,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_SORT_DURATION": "1",
 				"SDS_DRY_RUN_ALLOW_SSAW":          "1",
 				"SDS_DRY_RUN_ALLOW_MERGE":         "1",
+				"SDS_DRY_RUN_ALLOW_HIDE_EMAILS":   "1",
 			},
 			dynamicSetFields(
 				t,
@@ -699,6 +722,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowSortDuration": true,
 					"DryRunAllowSSAW":         true,
 					"DryRunAllowMerge":        true,
+					"DryRunAllowHideEmails":   true,
 				},
 			),
 		},
@@ -916,6 +940,19 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
+			"Set skip hide emails",
+			map[string]string{
+				"SDS_SKIP_HIDE_EMAILS": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipHideEmails": true,
+				},
+			),
+		},
+		{
 			"Set skip validate GitHub user's/org's repos in validate mode",
 			map[string]string{
 				"SDS_SKIP_VALIDATE_GITHUB_API": "1",
@@ -989,6 +1026,46 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"CSVPrefix": "debug_jobs"},
+			),
+		},
+		{
+			"Set SH DB params",
+			map[string]string{
+				"SH_HOST": "my.host",
+				"SH_PORT": "13306",
+				"SH_USER": "user-name",
+				"SH_PASS": "123!@#",
+				"SH_DB":   "shdb",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"ShHost": "my.host",
+					"ShPort": "13306",
+					"ShUser": "user-name",
+					"ShPass": "123!@#",
+					"ShDB":   "shdb",
+				},
+			),
+		},
+		{
+			"Set Auth0 params",
+			map[string]string{
+				"AUTH0_URL":           "https://auth0.com/",
+				"AUTH0_AUDIENCE":      "my-api",
+				"AUTH0_CLIENT_ID":     "123456",
+				"AUTH0_CLIENT_SECRET": "abcdefghi",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"Auth0URL":          "https://auth0.com/",
+					"Auth0Audience":     "my-api",
+					"Auth0ClientID":     "123456",
+					"Auth0ClientSecret": "abcdefghi",
+				},
 			),
 		},
 	}

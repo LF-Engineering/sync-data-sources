@@ -112,6 +112,8 @@ spec:
       value: '{{ $root.Values.skipSortDuration }}'
     - name: SDS_SKIP_MERGE
       value: '{{ $root.Values.skipMerge }}'
+    - name: SDS_SKIP_HIDE_EMAILS
+      value: '{{ $root.Values.skipHideEmails }}'
     - name: SDS_SKIP_P2O
       value: '{{ $root.Values.skipP2O }}'
     - name: SDS_SKIP_SSAW
@@ -167,7 +169,7 @@ spec:
     - name: SDS_SSAW_URL
       valueFrom:
         secretKeyRef:
-          name: {{ $root.Values.shSecret }}
+          name: {{ $root.Values.ssawSecret }}
           key: SSAW_URL.secret
     - name: SH_USER
       valueFrom:
@@ -179,6 +181,11 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.shSecret }}
           key: SH_HOST.secret
+    - name: SH_PORT
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.shSecret }}
+          key: SH_PORT.secret
     - name: SH_PASS
       valueFrom:
         secretKeyRef:
@@ -199,6 +206,26 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.githubSecret }}
           key: GITHUB_OAUTH.secret
+    - name: AUTH0_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.auth0Secret }}
+          key: AUTH0_URL.secret
+    - name: AUTH0_AUDIENCE
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.auth0Secret }}
+          key: AUTH0_AUDIENCE.secret
+    - name: AUTH0_CLIENT_ID
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.auth0Secret }}
+          key: AUTH0_CLIENT_ID.secret
+    - name: AUTH0_CLIENT_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.auth0Secret }}
+          key: AUTH0_CLIENT_SECRET.secret
     - name: ZIPPASS
       valueFrom:
         secretKeyRef:

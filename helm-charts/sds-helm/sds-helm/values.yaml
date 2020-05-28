@@ -1,13 +1,18 @@
 # Secrets that can be set via files in `./secrets/*.secret`, via commandline by `--set 'shUser=xyz,shHost=host.com,...'` or even uncomment them in the lines below.
 # shUser: ''
 # shHost: ''
+# shPort: ''
 # shPass: ''
-# ssawURL: ''
 # shDB: ''
 # esURL: ''
 # zipPass: ''
 # githubOAuth: ''
 # repoAccess: ''
+# auth0URL: ''
+# auth0Audience: ''
+# auth0ClientID: ''
+# auth0ClientSecret: ''
+# ssawURL: ''
 #
 # You can skip some parts of the deployment (useful when deploying partailly again)
 # skipCron (will not create a new cron job, you should set it when cron job is already created, if you want to recreate a cron job, delete the existing one first and do not set this flag)
@@ -17,6 +22,8 @@
 # skipZipSecret (will skip creating ZIP file password secret)
 # skipGithubSecret (will skip creating GitHub file password secret)
 # skipRepoSecret (will skip creating repo access secret)
+# skipAuth0Secret (will skip creating Auth0 secret)
+# skipSSAWSecret (will skip creating SSAW secret)
 # skipNamespace (will skip sds namespace creation)
 # skipPV (will skip persistent volume creation)
 #
@@ -28,6 +35,8 @@
 # skipGithubSecret: 1
 # skipNamespace: 1
 # skipRepoSecret: 1
+# skipAuth0Secret: 1
+# skipSSAWSecret: 1
 # skipPV: 1
 #
 # sync-data-sources binary Environmental options (see README.md or NOTES.txt)
@@ -85,6 +94,7 @@
 # skipSyncInfo: '1'
 # skipSortDuration: '1'
 # skipMerge: '1'
+# skipHideEmails: '1'
 # skipP2O: '1'
 # skipValGitHubAPI: '1'
 # skipCheckFreq: 'y'
@@ -136,6 +146,7 @@ skipProjectTS: ''
 skipSyncInfo: ''
 skipSortDuration: ''
 skipMerge: ''
+skipHideEmails: ''
 skipP2O: ''
 skipValGitHubAPI: ''
 skipSSAW: ''
@@ -173,6 +184,8 @@ esSecret: es-db
 zipSecret: zip-pass
 githubSecret: github-oauth
 repoSecret: repo-secret
+auth0Secret: auth0-secret
+ssawSecret: ssaw-secret
 pvName: sds
 pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
