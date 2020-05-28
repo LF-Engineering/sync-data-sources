@@ -4402,6 +4402,18 @@ func finishAfterTimeout(ctx lib.Ctx) {
 	}
 }
 
+func hideEmails(ctx *lib.Ctx) {
+	if ctx.SkipHideEmails || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowHideEmails) {
+		return
+	}
+}
+
+func mergeAll(ctx *lib.Ctx) {
+	if ctx.SkipMerge || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowMerge) {
+		return
+	}
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
@@ -4412,12 +4424,14 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, getFixtures(&ctx))
 	} else {
+		hideEmails(&ctx)
 		err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
 		}
 		go finishAfterTimeout(ctx)
 		processFixtureFiles(&ctx, getFixtures(&ctx))
+		mergeAll(&ctx)
 		dtEnd := time.Now()
 		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 	}

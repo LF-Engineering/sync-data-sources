@@ -83,7 +83,7 @@ type Ctx struct {
 	NoMultiAliases          bool           // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
 	CleanupAliases          bool           // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
 	ScrollWait              int            // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
-	ScrollSize              int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 1000
+	ScrollSize              int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 100
 	MaxDeleteTrials         int            // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait              int            // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal         bool           // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
@@ -92,7 +92,7 @@ type Ctx struct {
 	SSAWFreq                int            // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds, minimal frequency (when set) is 20
 	OnlyValidate            bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	OnlyP2O                 bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
-	TestMode                bool           // True when running tests
+	AffiliationAPIURL       string         // From AFFILIATION_API_URL - DA affiliations API url
 	Auth0URL                string         // From AUTH0_URL: Auth0 parameters for obtaining DA-affiliation API token
 	Auth0Audience           string         // From AUTH0_AUDIENCE
 	Auth0ClientID           string         // From AUTH0_CLIENT_ID
@@ -102,6 +102,7 @@ type Ctx struct {
 	ShPort                  string         // From SH_PORT
 	ShPass                  string         // From SH_PASS
 	ShDB                    string         // From SH_DB
+	TestMode                bool           // True when running tests
 }
 
 // Init - get context from environment variables
@@ -264,6 +265,10 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.Auth0ClientID, false)
 	AddRedacted(ctx.Auth0ClientSecret, false)
 
+	// DA affiliation API URL
+	ctx.AffiliationAPIURL = os.Getenv("AFFILIATION_API_URL")
+	AddRedacted(ctx.AffiliationAPIURL, false)
+
 	// Only validate support
 	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
 
@@ -396,9 +401,9 @@ func (ctx *Ctx) Init() {
 			ctx.ScrollWait = scrollWait
 		}
 	}
-	// ES scroll size p2o.py --scroll-size 1000
+	// ES scroll size p2o.py --scroll-size 100
 	if os.Getenv("SDS_SCROLL_SIZE") == "" {
-		ctx.ScrollSize = 1000
+		ctx.ScrollSize = 100
 	} else {
 		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
 		FatalNoLog(err)
