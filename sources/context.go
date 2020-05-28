@@ -52,6 +52,7 @@ type Ctx struct {
 	DryRunAllowSortDuration bool           // From SDS_DRY_RUN_ALLOW_SORT_DURATION, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSSAW         bool           // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
 	DryRunAllowMerge        bool           // From SDS_DRY_RUN_ALLOW_MERGE, if set it will allow calling DA-affiliation merge_all API after all tasks finished in dry run mode
+	DryRunAllowHideEmails   bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds      int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
@@ -72,6 +73,7 @@ type Ctx struct {
 	SkipSSAW                bool           // From SDS_SKIP_SSAW, if set - it will completelly skip SSAW processing
 	SkipSortDuration        bool           // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
 	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
+	SkipHideEmails          bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
 	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
 	StripErrorSize          int            // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth             string         // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
@@ -91,10 +93,15 @@ type Ctx struct {
 	OnlyValidate            bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	OnlyP2O                 bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
 	TestMode                bool           // True when running tests
-	ShUser                  string         // Sorting Hat database parameters
-	ShHost                  string
-	ShPass                  string
-	ShDB                    string
+	Auth0URL                string         // From AUTH0_URL: Auth0 parameters for obtaining DA-affiliation API token
+	Auth0Audience           string         // From AUTH0_AUDIENCE
+	Auth0ClientID           string         // From AUTH0_CLIENT_ID
+	Auth0ClientSecret       string         // From AUTH0_CLIENT_SECRET
+	ShUser                  string         // From SH_USER: Sorting Hat database parameters
+	ShHost                  string         // From SH_HOST
+	ShPort                  string         // From SH_PORT
+	ShPass                  string         // From SH_PASS
+	ShDB                    string         // From SH_DB
 }
 
 // Init - get context from environment variables
@@ -212,6 +219,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowSyncInfo = os.Getenv("SDS_DRY_RUN_ALLOW_SYNC_INFO") != ""
 	ctx.DryRunAllowSortDuration = os.Getenv("SDS_DRY_RUN_ALLOW_SORT_DURATION") != ""
 	ctx.DryRunAllowMerge = os.Getenv("SDS_DRY_RUN_ALLOW_MERGE") != ""
+	ctx.DryRunAllowHideEmails = os.Getenv("SDS_DRY_RUN_ALLOW_HIDE_EMAILS") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -237,19 +245,31 @@ func (ctx *Ctx) Init() {
 	// Sorting Hat DB parameters
 	ctx.ShUser = os.Getenv("SH_USER")
 	ctx.ShHost = os.Getenv("SH_HOST")
+	ctx.ShPort = os.Getenv("SH_PORT")
 	ctx.ShPass = os.Getenv("SH_PASS")
 	ctx.ShDB = os.Getenv("SH_DB")
 	AddRedacted(ctx.ShUser, false)
 	AddRedacted(ctx.ShHost, false)
+	AddRedacted(ctx.ShPort, false)
 	AddRedacted(ctx.ShPass, false)
 	AddRedacted(ctx.ShDB, false)
+
+	// Auth0 parameters for obtaining DA-affiliation API token
+	ctx.Auth0URL = os.Getenv("AUTH0_URL")
+	ctx.Auth0Audience = os.Getenv("AUTH0_AUDIENCE")
+	ctx.Auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
+	ctx.Auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+	AddRedacted(ctx.Auth0URL, false)
+	AddRedacted(ctx.Auth0Audience, false)
+	AddRedacted(ctx.Auth0ClientID, false)
+	AddRedacted(ctx.Auth0ClientSecret, false)
 
 	// Only validate support
 	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
 
-	if !ctx.OnlyValidate && !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPass == "" || ctx.ShDB == "") {
+	if !ctx.OnlyValidate && !ctx.TestMode && !ctx.DryRun && !ctx.SkipSH && (ctx.ShUser == "" || ctx.ShHost == "" || ctx.ShPort == "" || ctx.ShPass == "" || ctx.ShDB == "") {
 		fmt.Printf("%v %v %s %s %s %s\n", ctx.TestMode, ctx.SkipSH, ctx.ShUser, ctx.ShHost, ctx.ShPass, ctx.ShDB)
-		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, password, db) must all be defined unless skiping SortingHat"))
+		FatalNoLog(fmt.Errorf("SortingHat parameters (user, host, port, password, db) must all be defined unless skiping SortingHat"))
 	}
 
 	// Only P2O support
@@ -436,6 +456,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip calling DA-affiliation merge_all API at the end
 	ctx.SkipMerge = os.Getenv("SDS_SKIP_MERGE") != ""
+
+	// Skip calling DA-affiliation hide_emails API
+	ctx.SkipHideEmails = os.Getenv("SDS_SKIP_HIDE_EMAILS") != ""
 
 	// Skip all p2o commands
 	ctx.SkipP2O = os.Getenv("SDS_SKIP_P2O") != ""

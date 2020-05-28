@@ -140,6 +140,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_MERGE}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_HIDE_EMAILS",
+          "value": "${SDS_DRY_RUN_ALLOW_HIDE_EMAILS}"
+        },
+        {
           "name": "SDS_DRY_RUN_ALLOW_SSAW",
           "value": "${SDS_DRY_RUN_ALLOW_SSAW}"
         },
@@ -218,6 +222,10 @@
         {
           "name": "SDS_SKIP_MERGE",
           "value": "${SDS_SKIP_MERGE}"
+        },
+        {
+          "name": "SDS_SKIP_HIDE_EMAILS",
+          "value": "${SDS_SKIP_HIDE_EMAILS}"
         },
         {
           "name": "SDS_SKIP_P2O",
@@ -346,6 +354,22 @@
         {
           "name": "SDS_GITHUB_OAUTH",
           "value": "${SDS_GITHUB_OAUTH}"
+        },
+        {
+          "name": "AUTH0_URL",
+          "value": "${SDS_SH_AUTH0_URL}"
+        },
+        {
+          "name": "AUTH0_AUDIENCE",
+          "value": "${SDS_SH_AUTH0_AUDIENCE}"
+        },
+        {
+          "name": "AUTH0_CLIENT_ID",
+          "value": "${SDS_SH_AUTH0_CLIENT_ID}"
+        },
+        {
+          "name": "AUTH0_CLIENT_SECRET",
+          "value": "${SDS_SH_AUTH0_CLIENT_SECRET}"
         },
         {
           "name": "ZIPPASS",
