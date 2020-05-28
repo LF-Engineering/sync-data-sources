@@ -107,4 +107,8 @@ if [ -z "${SDS_GITHUB_OAUTH}" ]
 then
   export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 fi
+if [ -z "${JWT_TOKEN}" ]
+then
+  export JWT_TOKEN=`cat token.secret`
+fi
 ./syncdatasources
