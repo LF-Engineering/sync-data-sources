@@ -171,6 +171,11 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.ssawSecret }}
           key: SSAW_URL.secret
+    - name: AFFILIATION_API_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.apiSecret }}
+          key: AFFILIATION_API_URL.secret
     - name: SH_USER
       valueFrom:
         secretKeyRef:
