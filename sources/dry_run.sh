@@ -34,7 +34,7 @@ export SDS_SKIP_VALIDATE_GITHUB_API=1
 export SDS_SKIP_SSAW=1
 export SDS_SKIP_SORT_DURATION=1
 export SDS_SKIP_MERGE=1
-export SDS_SKIP_HIDE_EMAILS=1
+#export SDS_SKIP_HIDE_EMAILS=1
 export SDS_SKIP_P2O=1
 export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_CODE=3
@@ -51,21 +51,60 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_SYNC_INFO=1
 #export SDS_DRY_RUN_ALLOW_SORT_DURATION=1
 #export SDS_DRY_RUN_ALLOW_MERGE=1
-#export SDS_DRY_RUN_ALLOW_HIDE_EMAILS=1
+export SDS_DRY_RUN_ALLOW_HIDE_EMAILS=1
 #export SDS_DRY_RUN_ALLOW_SSAW=1
 #export SDS_ONLY_VALIDATE=1
 #export SDS_ONLY_P2O=1
-export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
-export SDS_SSAW_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/SSAW_URL.$1.secret`
-export SH_HOST=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_HOST.$1.secret`
-export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
-export SH_DB=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_DB.$1.secret`
-export SH_USER=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_USER.$1.secret`
-export SH_PASS=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PASS.$1.secret`
-export AUTH0_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_URL.$1.secret`
-export AUTH0_AUDIENCE=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_AUDIENCE.$1.secret`
-export AUTH0_CLIENT_ID=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_ID.$1.secret`
-export AUTH0_CLIENT_SECRET=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_SECRET.$1.secret`
-export AFFILIATION_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AFFILIATION_API_URL.$1.secret`
-export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
+if [ -z "${SDS_ES_URL}" ]
+then
+  export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
+fi
+if [ -z "${SDS_SSAW_URL}" ]
+then
+  export SDS_SSAW_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/SSAW_URL.$1.secret`
+fi
+if [ -z "${SH_HOST}" ]
+then
+  export SH_HOST=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_HOST.$1.secret`
+fi
+if [ -z "${SH_PORT}" ]
+then
+  export SH_PORT=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PORT.$1.secret`
+fi
+if [ -z "${DB}" ]
+then
+  export SH_DB=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_DB.$1.secret`
+fi
+if [ -z "${USER}" ]
+then
+  export SH_USER=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_USER.$1.secret`
+fi
+if [ -z "${PASS}" ]
+then
+  export SH_PASS=`cat ../helm-charts/sds-helm/sds-helm/secrets/SH_PASS.$1.secret`
+fi
+if [ -z "${AUTH0_URL}" ]
+then
+  export AUTH0_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_URL.$1.secret`
+fi
+if [ -z "${AUTH0_AUDIENCE}" ]
+then
+  export AUTH0_AUDIENCE=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_AUDIENCE.$1.secret`
+fi
+if [ -z "${AUTH0_CLIENT_ID}" ]
+then
+  export AUTH0_CLIENT_ID=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_ID.$1.secret`
+fi
+if [ -z "${AUTH0_CLIENT_SECRET}" ]
+then
+  export AUTH0_CLIENT_SECRET=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_CLIENT_SECRET.$1.secret`
+fi
+if [ -z "${AFFILIATION_API_URL}" ]
+then
+  export AFFILIATION_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AFFILIATION_API_URL.$1.secret`
+fi
+if [ -z "${SDS_GITHUB_OAUTH}" ]
+then
+  export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
+fi
 ./syncdatasources

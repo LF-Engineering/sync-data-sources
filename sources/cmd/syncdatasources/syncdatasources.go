@@ -34,6 +34,7 @@ var (
 	gAliasesMtx   *sync.Mutex
 	gKeyMtx       *sync.Mutex
 	gCSVMtx       *sync.Mutex
+	gToken        string
 )
 
 const cOrigin = "sds"
@@ -4402,10 +4403,125 @@ func finishAfterTimeout(ctx lib.Ctx) {
 	}
 }
 
-func hideEmails(ctx *lib.Ctx) {
+func getToken(ctx *lib.Ctx) (err error) {
+	if ctx.Auth0URL == "" || ctx.Auth0ClientID == "" || ctx.Auth0ClientSecret == "" || ctx.Auth0Audience == "" {
+		err = fmt.Errorf("Cannot obtain auth0 bearer token - all auth0 parameters must be set")
+		return
+	}
+	data := fmt.Sprintf(
+		`{"grant_type":"client_credentials","client_id":"%s","client_secret":"%s","audience":"%s","scope":"access:api"}`,
+		jsonEscape(ctx.Auth0ClientID),
+		jsonEscape(ctx.Auth0ClientSecret),
+		jsonEscape(ctx.Auth0Audience),
+	)
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := http.MethodPost
+	rurl := "/oauth/token"
+	url := ctx.Auth0URL + rurl
+	req, e := http.NewRequest(method, url, payloadBody)
+	if e != nil {
+		err = fmt.Errorf("new request error: %+v for %s url: %s\n", e, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, e := http.DefaultClient.Do(req)
+	if e != nil {
+		err = fmt.Errorf("do request error: %+v for %s url: %s\n", e, method, rurl)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, e := ioutil.ReadAll(resp.Body)
+		if e != nil {
+			err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s\n", e, method, rurl)
+			return
+		}
+		err = fmt.Errorf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+		return
+	}
+	var rdata struct {
+		Token string `json:"access_token"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&rdata)
+	if err != nil {
+		return
+	}
+	if rdata.Token == "" {
+		err = fmt.Errorf("empty token retuned")
+		return
+	}
+	lib.AddRedacted(rdata.Token, false)
+	gToken = "Bearer " + rdata.Token
+	lib.Printf("Generated new token(%d) [%s]\n", len(gToken), gToken)
+	return
+}
+
+func hideEmails(ctx *lib.Ctx) (err error) {
 	if ctx.SkipHideEmails || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowHideEmails) {
 		return
 	}
+	if ctx.AffiliationAPIURL == "" {
+		err = fmt.Errorf("Cannot execute DA affiliation API calls, no API URL specified")
+		return
+	}
+	gToken = os.Getenv("JWT_TOKEN")
+	if gToken == "" {
+		err = getToken(ctx)
+		if err != nil {
+			return
+		}
+		// FIXME
+		gToken = "Bearer xyz"
+	}
+	method := http.MethodPut
+	rurl := "/v1/affiliation/hide_emails"
+	url := ctx.AffiliationAPIURL + rurl
+	for i := 0; i < 2; i++ {
+		req, e := http.NewRequest(method, url, nil)
+		if e != nil {
+			err = fmt.Errorf("new request error: %+v for %s url: %s\n", e, method, rurl)
+			return
+		}
+		req.Header.Set("Authorization", gToken)
+		resp, e := http.DefaultClient.Do(req)
+		if e != nil {
+			err = fmt.Errorf("do request error: %+v for %s url: %s\n", e, method, rurl)
+			return
+		}
+		if i == 0 && resp.StatusCode == 401 {
+			_ = resp.Body.Close()
+			lib.Printf("Token is invalid, trying to generate another one\n")
+			err = getToken(ctx)
+			if err != nil {
+				return
+			}
+			continue
+		}
+		lib.Printf("status: %d\n", resp.StatusCode)
+		if resp.StatusCode != 200 {
+			body, e := ioutil.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			if e != nil {
+				err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s\n", e, method, rurl)
+				return
+			}
+			err = fmt.Errorf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+			return
+		}
+		var rdata struct {
+			Text string `json:"text"`
+		}
+		err = json.NewDecoder(resp.Body).Decode(&rdata)
+		_ = resp.Body.Close()
+		if err != nil {
+			return
+		}
+		lib.Printf("%s\n", rdata.Text)
+	}
+	return
 }
 
 func mergeAll(ctx *lib.Ctx) {
@@ -4424,8 +4540,11 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, getFixtures(&ctx))
 	} else {
-		hideEmails(&ctx)
-		err := ensureGrimoireStackAvail(&ctx)
+		err := hideEmails(&ctx)
+		if err != nil {
+			lib.Printf("Hide emails result: %+v\n", err)
+		}
+		err = ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
 		}
