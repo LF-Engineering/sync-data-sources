@@ -4459,25 +4459,21 @@ func getToken(ctx *lib.Ctx) (err error) {
 	return
 }
 
-func hideEmails(ctx *lib.Ctx) (err error) {
-	if ctx.SkipHideEmails || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowHideEmails) {
-		return
-	}
+func executeAPICall(ctx *lib.Ctx, path string) (err error) {
 	if ctx.AffiliationAPIURL == "" {
 		err = fmt.Errorf("Cannot execute DA affiliation API calls, no API URL specified")
 		return
 	}
 	gToken = os.Getenv("JWT_TOKEN")
 	if gToken == "" {
+		lib.Printf("Obtaining API token\n")
 		err = getToken(ctx)
 		if err != nil {
 			return
 		}
-		// FIXME
-		gToken = "Bearer xyz"
 	}
 	method := http.MethodPut
-	rurl := "/v1/affiliation/hide_emails"
+	rurl := path
 	url := ctx.AffiliationAPIURL + rurl
 	for i := 0; i < 2; i++ {
 		req, e := http.NewRequest(method, url, nil)
@@ -4500,7 +4496,6 @@ func hideEmails(ctx *lib.Ctx) (err error) {
 			}
 			continue
 		}
-		lib.Printf("status: %d\n", resp.StatusCode)
 		if resp.StatusCode != 200 {
 			body, e := ioutil.ReadAll(resp.Body)
 			_ = resp.Body.Close()
@@ -4520,14 +4515,25 @@ func hideEmails(ctx *lib.Ctx) (err error) {
 			return
 		}
 		lib.Printf("%s\n", rdata.Text)
+		break
 	}
 	return
 }
 
-func mergeAll(ctx *lib.Ctx) {
+func hideEmails(ctx *lib.Ctx) (err error) {
+	if ctx.SkipHideEmails || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowHideEmails) {
+		return
+	}
+	err = executeAPICall(ctx, "/v1/affiliation/hide_emails")
+	return
+}
+
+func mergeAll(ctx *lib.Ctx) (err error) {
 	if ctx.SkipMerge || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowMerge) {
 		return
 	}
+	err = executeAPICall(ctx, "/v1/affiliation/merge_all")
+	return
 }
 
 func main() {
@@ -4550,7 +4556,10 @@ func main() {
 		}
 		go finishAfterTimeout(ctx)
 		processFixtureFiles(&ctx, getFixtures(&ctx))
-		mergeAll(&ctx)
+		err = mergeAll(&ctx)
+		if err != nil {
+			lib.Printf("Merge profiles result: %+v\n", err)
+		}
 		dtEnd := time.Now()
 		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
 	}
