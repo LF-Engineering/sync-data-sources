@@ -4464,7 +4464,9 @@ func executeAPICall(ctx *lib.Ctx, path string) (err error) {
 		err = fmt.Errorf("Cannot execute DA affiliation API calls, no API URL specified")
 		return
 	}
-	gToken = os.Getenv("JWT_TOKEN")
+	if gToken == "" {
+		gToken = os.Getenv("JWT_TOKEN")
+	}
 	if gToken == "" {
 		lib.Printf("Obtaining API token\n")
 		err = getToken(ctx)
