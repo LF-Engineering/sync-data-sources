@@ -4248,6 +4248,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		// Ensure that data sync task is finished before attempting to run historical affiliations
 		st := time.Now()
 		// lib.Printf("wait for mtx %d\n", idx)
+		// we need to wait for data sync, then we lock reenrich but unlock immediatelly because no next step will process that task
+		// in worst case it is possible that we must wait for data-sync until timeout (10h) and then reenrich can take 10h too
+		// and be killed by another timeout, so a nasty endpoint can trigger 2 * task timeout wait time
 		tmtx.Lock()
 		tmtx.Unlock()
 		// lib.Printf("mtx %d passed (affs task)\n", idx)
@@ -4316,6 +4319,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			return
 		}
 		if keyAdded {
+			st := time.Now()
 			if tMtx.SSHKeyMtx != nil {
 				tMtx.SSHKeyMtx.Lock()
 			}
@@ -4329,6 +4333,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				lib.Printf("%+v: %s\n", task, lib.ErrorStrings[5])
 				result.Code[1] = 5
 				return
+			}
+			en := time.Now()
+			took := en.Sub(st)
+			if took > time.Duration(10)*time.Minute {
+				lib.Printf("Waited for ssh key on %d/%+v mutex: %v\n", idx, task, en.Sub(st))
 			}
 		}
 		setSyncInfo(ctx, tMtx, &result, true)
