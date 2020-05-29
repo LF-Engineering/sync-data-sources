@@ -2494,6 +2494,9 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 		}
 		lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
 	}
+	if ctx.Debug > 0 {
+		lib.Printf("Success alias url: %s\n", rurl)
+	}
 }
 
 func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
