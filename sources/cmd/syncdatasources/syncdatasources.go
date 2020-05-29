@@ -325,6 +325,9 @@ func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixt
 	if ctx.Debug > 0 {
 		fmt.Printf("%s has %d after filter\n", fixture.Fn, n)
 	}
+	if len(fixture.Aliases) > 0 {
+		return false
+	}
 	return n == 0
 }
 
