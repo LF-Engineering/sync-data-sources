@@ -23,7 +23,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - To see environment inside the container: `clear; env | sort | grep 'SDS\|SH_'`.
 - Send info signal `` kill -SIGUSR1 `ps -ax | grep syncdatasources | head -n 1 | awk '{print $1}'` ``.
 - To shell into the running SDS: `./docker-images/shell_running_sds.sh`.
-- To run configured docker image locally: `DM='' NO='' SH='' DBG=1 DRY=1 SDS_SKIP_DROP_UNUSED=1 [SDS_SKIP_ES_DATA=1 SDS_SKIP_ES_LOG=1 SDS_SKIP_SYNC_INFO=1 SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=50 SDS_SILENT=1] ./docker-images/run_sds.sh prod`
+- To run configured docker image locally: `DM='' NO='' SH='' DBG=1 DRY=1 SDS_SKIP_DROP_UNUSED=1 [SDS_SKIP_ES_DATA=1 SDS_SKIP_ES_LOG=1 SDS_SKIP_SYNC_INFO=1 SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=50 SDS_SILENT=1 SDS_ONLY_P2O=1 SDS_SKIP_P2O=1 SDS_SKIP_MERGE=1 SDS_SKIP_PROJECT=1 SDS_SKIP_PROJECT_TS=1] ./docker-images/run_sds.sh prod`
 
 
 # Kubernetes
