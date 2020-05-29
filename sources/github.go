@@ -28,6 +28,8 @@ func GHClient(ctx *Ctx) (ghCtx context.Context, clients []*github.Client) {
 	} else {
 		oAuths := strings.Split(oAuth, ",")
 		for _, auth := range oAuths {
+			ctx.OAuthKeys = append(ctx.OAuthKeys, auth)
+			AddRedacted(auth, false)
 			ts := oauth2.StaticTokenSource(
 				&oauth2.Token{AccessToken: auth},
 			)
