@@ -89,14 +89,14 @@ func EndpointIncluded(ctx *Ctx, ep *RawEndpoint, origin string) bool {
 	for _, skipRE := range ep.SkipREs {
 		if skipRE.MatchString(origin) {
 			if ctx.Debug > 0 {
-				fmt.Printf("Skipped %s (%v)\n", origin, skipRE)
+				fmt.Printf("%s: skipped %s (%v)\n", ep.Name, origin, skipRE)
 			}
 			return false
 		}
 	}
 	if len(ep.OnlyREs) == 0 {
 		if ctx.Debug > 0 {
-			fmt.Printf("Included all (%d)\n", len(ep.OnlyREs))
+			fmt.Printf("%s: included all\n", ep.Name)
 		}
 		return true
 	}
@@ -104,7 +104,7 @@ func EndpointIncluded(ctx *Ctx, ep *RawEndpoint, origin string) bool {
 	for _, onlyRE := range ep.OnlyREs {
 		if onlyRE.MatchString(origin) {
 			if ctx.Debug > 0 {
-				fmt.Printf("Included %s (%v)\n", origin, onlyRE)
+				fmt.Printf("%s: included %s (%v)\n", ep.Name, origin, onlyRE)
 			}
 			included = true
 			break
