@@ -103,6 +103,7 @@ type Ctx struct {
 	ShPass                  string         // From SH_PASS
 	ShDB                    string         // From SH_DB
 	TestMode                bool           // True when running tests
+	OAuthKeys               []string       // GitHub oauth keys recevide from SDS_GITHUB_OAUTH configuration (initialized only when lib.GHClient() is called)
 }
 
 // Init - get context from environment variables

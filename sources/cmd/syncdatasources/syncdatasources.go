@@ -3071,6 +3071,21 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 	return
 }
 
+func mergeTokens(inf string, tokens1, tokens2 []string) (tokens []string) {
+	m := make(map[string]struct{})
+	for _, token := range tokens1 {
+		m[token] = struct{}{}
+	}
+	for _, token := range tokens2 {
+		m[token] = struct{}{}
+	}
+	for token := range m {
+		tokens = append(tokens, token)
+	}
+	lib.Printf("%s: GitHub OAuth tokens merge: %d, %d --> %d\n", inf, len(tokens1), len(tokens2), len(tokens))
+	return
+}
+
 // massageConfig - this function makes sure that given config options are valid for a given data source
 // it also ensures some essential options are enabled and eventually reformats config
 func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []lib.MultiConfig, fail, keyAdded bool) {
@@ -3086,19 +3101,21 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			}
 			m[name] = struct{}{}
 			if name == lib.APIToken {
+				vals := []string{}
 				if strings.Contains(value, ",") {
 					ary := strings.Split(value, ",")
-					vals := []string{}
 					for _, key := range ary {
 						key = strings.Replace(key, "[", "", -1)
 						key = strings.Replace(key, "]", "", -1)
 						lib.AddRedacted(key, true)
 						vals = append(vals, key)
 					}
-					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
 				} else {
-					c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
+					vals = append(vals, value)
 				}
+				inf := idxSlug + "/" + ds
+				c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+				// OAuthKeys
 			} else {
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 			}
