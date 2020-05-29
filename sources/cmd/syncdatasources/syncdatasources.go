@@ -297,6 +297,13 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 	}
 }
 
+func partialRun(ctx *lib.Ctx) bool {
+	if ctx.FixturesRE != nil || ctx.DatasourcesRE != nil || ctx.ProjectsRE != nil || ctx.EndpointsRE != nil || ctx.FixturesSkipRE != nil || ctx.DatasourcesSkipRE != nil || ctx.ProjectsSkipRE != nil || ctx.EndpointsSkipRE != nil {
+		return true
+	}
+	return false
+}
+
 func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) (drop bool) {
 	n := 0
 	dataSources := []lib.DataSource{}
@@ -326,6 +333,9 @@ func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixt
 		fmt.Printf("%s has %d after filter\n", fixture.Fn, n)
 	}
 	if len(fixture.Aliases) > 0 {
+		if n == 0 {
+			lib.Printf("%s contains only aliases\n", fixture.Fn)
+		}
 		return false
 	}
 	return n == 0
@@ -2274,6 +2284,9 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		lib.Printf("No indices to drop, environment clean\n")
 		return
 	}
+	if partialRun(ctx) {
+		return
+	}
 	lib.Printf("Indices to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
@@ -2403,6 +2416,9 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		lib.Printf("No aliases to drop, environment clean\n")
 		return
 	}
+	if partialRun(ctx) {
+		return
+	}
 	lib.Printf("Aliases to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
@@ -2466,6 +2482,9 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 		rurl string
 	)
 	if method == lib.Delete {
+		if partialRun(ctx) {
+			return
+		}
 		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, pair[1])
 		rurl = fmt.Sprintf("/_all/_alias/%s", pair[1])
 	} else {
