@@ -3090,7 +3090,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 	return
 }
 
-func mergeTokens(inf string, tokens1, tokens2 []string) (tokens []string) {
+func mergeTokens(ctx *lib.Ctx, inf string, tokens1, tokens2 []string) (tokens []string) {
 	m := make(map[string]struct{})
 	for _, token := range tokens1 {
 		m[token] = struct{}{}
@@ -3101,7 +3101,9 @@ func mergeTokens(inf string, tokens1, tokens2 []string) (tokens []string) {
 	for token := range m {
 		tokens = append(tokens, token)
 	}
-	lib.Printf("%s: GitHub OAuth tokens merge: %d, %d --> %d\n", inf, len(tokens1), len(tokens2), len(tokens))
+	if ctx.Debug > 0 {
+		lib.Printf("%s: GitHub OAuth tokens merge: %d, %d --> %d\n", inf, len(tokens1), len(tokens2), len(tokens))
+	}
 	return
 }
 
@@ -3133,7 +3135,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 					vals = append(vals, value)
 				}
 				inf := idxSlug + "/" + ds
-				c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+				c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
 				// OAuthKeys
 			} else {
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -3722,10 +3724,10 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 	if ago < freq {
 		allowed = false
 	}
-	if !allowed {
-		lib.Printf("%s/%s Freq: %+v, Ago: %+v, allowed: %+v (wait %+v)\n", index, ep, freq, ago, allowed, freq-ago)
-	} else {
-		if ctx.Debug > 0 {
+	if ctx.Debug > 0 {
+		if !allowed {
+			lib.Printf("%s/%s Freq: %+v, Ago: %+v, allowed: %+v (wait %+v)\n", index, ep, freq, ago, allowed, freq-ago)
+		} else {
 			lib.Printf("%s/%s Freq: %+v, Ago: %+v, allowed: %+v\n", index, ep, freq, ago, allowed)
 		}
 	}
@@ -4075,7 +4077,7 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 			return
 		}
-		if ctx.DryRun || ctx.Debug > 0 || lastEpoch > 0 {
+		if ctx.DryRun || ctx.Debug > 0 {
 			lib.Printf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
 		} else {
 			lib.PrintLogf("Set project '%s'/%d on '%s'/%d origin (index '%s', config %+v): updated: %d\n", project, projectEpoch, origin, lastEpoch, index, conf, payload.Updated)
