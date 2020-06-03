@@ -4235,7 +4235,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		redactedCommandLine = append(redactedCommandLine, ep)
 	}
 	sEp := strings.Join(eps, " ")
-	if !ctx.SkipEsData && !affs && !ctx.SkipCheckFreq {
+	if !ctx.SkipEsData && !ctx.SkipCheckFreq {
 		var nilDur time.Duration
 		if task.MaxFreq != nilDur {
 			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
