@@ -3080,20 +3080,6 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 			}
 			e = append(e, nAry[lAry-2])
 			e = append(e, nAry[lAry-1])
-		} else if strings.Contains(endpoint, "/") {
-			ary := strings.Split(endpoint, "/")
-			nAry := []string{}
-			for _, e := range ary {
-				if e != "" {
-					nAry = append(nAry, e)
-				}
-			}
-			lAry := len(nAry)
-			if lAry < 2 {
-				return
-			}
-			e = append(e, nAry[lAry-2])
-			e = append(e, nAry[lAry-1])
 		} else {
 			e = append(e, endpoint)
 		}
