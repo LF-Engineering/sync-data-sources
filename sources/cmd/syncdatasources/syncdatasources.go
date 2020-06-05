@@ -1759,7 +1759,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 		dataSource = ary[0]
 	}
 	switch dataSource {
-	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse:
+	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse, lib.RocketChat:
 		endpoints = origins
 	case lib.MeetUp:
 		// FIXME: meetup we don't really have meetup config, the only one we have in SDS is disabled for CNCF/Prometheus 'SF-Prometheus-Meetup-Group'
@@ -1814,6 +1814,7 @@ func figureOutDatasourceFromIndexName(index string) (dataSource string) {
 		lib.Bugzilla,
 		lib.BugzillaRest,
 		lib.MeetUp,
+		lib.RocketChat,
 	}
 	sort.SliceStable(known, func(i, j int) bool {
 		return len(known[i]) > len(known[j])
@@ -3034,6 +3035,7 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 		lib.Bugzilla:     {},
 		lib.BugzillaRest: {},
 		lib.MeetUp:       {},
+		lib.RocketChat:   {},
 	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -3063,9 +3065,23 @@ func massageEndpoint(endpoint string, ds string) (e []string) {
 			}
 			e = append(e, ep)
 		}
-	} else if ds == lib.DockerHub {
+	} else if ds == lib.DockerHub || ds == lib.RocketChat {
 		if strings.Contains(endpoint, " ") {
 			ary := strings.Split(endpoint, " ")
+			nAry := []string{}
+			for _, e := range ary {
+				if e != "" {
+					nAry = append(nAry, e)
+				}
+			}
+			lAry := len(nAry)
+			if lAry < 2 {
+				return
+			}
+			e = append(e, nAry[lAry-2])
+			e = append(e, nAry[lAry-1])
+		} else if strings.Contains(endpoint, "/") {
+			ary := strings.Split(endpoint, "/")
 			nAry := []string{}
 			for _, e := range ary {
 				if e != "" {
@@ -3437,6 +3453,36 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		_, ok = m["sleep-for-rate"]
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}, RedactedValue: []string{}})
+		}
+	} else if ds == lib.RocketChat {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				redactedValue = lib.Redacted
+				lib.AddRedacted(value, true)
+			}
+			m[name] = struct{}{}
+			if name == lib.APIToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
+			} else if name == lib.UserID {
+				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
+			}
+		}
+		_, ok := m["no-archive"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-archive", Value: []string{}, RedactedValue: []string{}})
+		}
+		_, ok = m["sleep-for-rate"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}, RedactedValue: []string{}})
+		}
+		_, ok = m["no-ssl-verify"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
 		}
 	} else {
 		fail = true
