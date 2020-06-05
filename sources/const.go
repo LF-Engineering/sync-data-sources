@@ -51,6 +51,9 @@ const BugzillaRest string = "bugzillarest"
 // MeetUp - meetup
 const MeetUp string = "meetup"
 
+// RocketChat - rocketchat
+const RocketChat string = "rocketchat"
+
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
@@ -62,6 +65,9 @@ const BackendPassword string = "backend-password"
 
 // User - user
 const User string = "user"
+
+// UserID - user-id
+const UserID string = "user-id"
 
 // Email - email
 const Email string = "email"
