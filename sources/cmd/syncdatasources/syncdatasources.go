@@ -4117,10 +4117,20 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 	}
 }
 
+// mapOrigin maps fixture's origin to ES "origin" column, depending on data-source type
+func mapOrigin(origin, ds string) string {
+	switch ds {
+	case "rocketchat":
+		return strings.Replace(strings.Replace(strings.TrimSpace(origin), "  ", " ", -1), " ", "/", -1)
+	default:
+		return origin
+	}
+}
+
 func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 	if task.Project == "" {
 		for _, project := range task.Projects {
-			ep := lib.EndpointProject{Name: project.Name, Origin: project.Origin}
+			ep := lib.EndpointProject{Name: project.Name, Origin: mapOrigin(project.Origin, task.DsSlug)}
 			for _, cond := range project.Must {
 				ep.Must = append(ep.Must, lib.ProjectCondition{Column: cond.Column, Value: cond.Value})
 			}
@@ -4134,7 +4144,7 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 			result.Projects,
 			lib.EndpointProject{
 				Name:   task.Project,
-				Origin: task.Endpoint,
+				Origin: mapOrigin(task.Endpoint, task.DsSlug),
 			},
 		)
 	}
