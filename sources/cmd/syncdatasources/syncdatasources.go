@@ -4120,8 +4120,10 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 // mapOrigin maps fixture's origin to ES "origin" column, depending on data-source type
 func mapOrigin(origin, ds string) string {
 	switch ds {
-	case "rocketchat":
+	case lib.RocketChat:
 		return strings.Replace(strings.Replace(strings.TrimSpace(origin), "  ", " ", -1), " ", "/", -1)
+	case lib.DockerHub:
+		return "https://hub.docker.com/" + strings.Replace(strings.Replace(strings.TrimSpace(origin), "  ", " ", -1), " ", "/", -1)
 	default:
 		return origin
 	}
