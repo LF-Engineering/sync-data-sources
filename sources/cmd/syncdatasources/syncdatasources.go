@@ -1565,7 +1565,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				str string
 			)
 			if !ctx.SkipP2O {
-				str, err = lib.ExecCommand(ctx, commandLine, nil)
+				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.FxSlug})
 			}
 			if keyAdded {
 				gKeyMtx.Unlock()
@@ -4416,7 +4416,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			str string
 		)
 		if !ctx.SkipP2O {
-			str, err = lib.ExecCommand(ctx, commandLine, nil)
+			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.FxSlug})
 		}
 		if keyAdded {
 			gKeyMtx.Unlock()
