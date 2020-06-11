@@ -7,7 +7,7 @@ function cleanup {
 }
 if [ -f "${lock_file}" ]
 then
-  echo "$0: another SDS instance is still running, exiting"
+  # echo "$0: another SDS instance is still running, exiting"
   exit 2
 fi
 > "${lock_file}"
