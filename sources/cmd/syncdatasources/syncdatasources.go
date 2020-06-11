@@ -1120,6 +1120,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			return
 		}
 	}
+	lib.Printf("Enrich external indices: running\n")
 	fixtures := *pfixtures
 	tasks := *ptasks
 	manualEnrich := make(map[string][]string)
