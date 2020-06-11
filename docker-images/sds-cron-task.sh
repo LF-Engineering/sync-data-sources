@@ -12,4 +12,4 @@ then
 fi
 > "${lock_file}"
 trap cleanup EXIT
-DRY=1 SDS_NCPUS_SCALE=2 SDS_ES_BULKSIZE=100 SDS_SKIP_P2O=1 ./docker-images/run_sds.sh prod
+SDS_NCPUS_SCALE=2 SDS_ES_BULKSIZE=100 ./docker-images/run_sds.sh prod
