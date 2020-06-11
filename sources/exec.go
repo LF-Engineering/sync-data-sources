@@ -133,7 +133,7 @@ func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) (string, 
 	case <-time.After(timeout):
 		err = cmd.Process.Kill()
 		if err == nil {
-			err = fmt.Errorf("killed by task timeout %v\n", timeout)
+			err = fmt.Errorf("killed by task timeout %v", timeout)
 		}
 	case err = <-done:
 	}

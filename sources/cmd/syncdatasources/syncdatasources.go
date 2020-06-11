@@ -4518,13 +4518,13 @@ func getToken(ctx *lib.Ctx) (err error) {
 	url := ctx.Auth0URL + rurl
 	req, e := http.NewRequest(method, url, payloadBody)
 	if e != nil {
-		err = fmt.Errorf("new request error: %+v for %s url: %s\n", e, method, rurl)
+		err = fmt.Errorf("new request error: %+v for %s url: %s", e, method, rurl)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 	resp, e := http.DefaultClient.Do(req)
 	if e != nil {
-		err = fmt.Errorf("do request error: %+v for %s url: %s\n", e, method, rurl)
+		err = fmt.Errorf("do request error: %+v for %s url: %s", e, method, rurl)
 		return
 	}
 	defer func() {
@@ -4533,10 +4533,10 @@ func getToken(ctx *lib.Ctx) (err error) {
 	if resp.StatusCode != 200 {
 		body, e := ioutil.ReadAll(resp.Body)
 		if e != nil {
-			err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s\n", e, method, rurl)
+			err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s", e, method, rurl)
 			return
 		}
-		err = fmt.Errorf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+		err = fmt.Errorf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
 		return
 	}
 	var rdata struct {
@@ -4577,13 +4577,13 @@ func executeAPICall(ctx *lib.Ctx, path string) (err error) {
 	for i := 0; i < 2; i++ {
 		req, e := http.NewRequest(method, url, nil)
 		if e != nil {
-			err = fmt.Errorf("new request error: %+v for %s url: %s\n", e, method, rurl)
+			err = fmt.Errorf("new request error: %+v for %s url: %s", e, method, rurl)
 			return
 		}
 		req.Header.Set("Authorization", gToken)
 		resp, e := http.DefaultClient.Do(req)
 		if e != nil {
-			err = fmt.Errorf("do request error: %+v for %s url: %s\n", e, method, rurl)
+			err = fmt.Errorf("do request error: %+v for %s url: %s", e, method, rurl)
 			return
 		}
 		if i == 0 && resp.StatusCode == 401 {
@@ -4599,10 +4599,10 @@ func executeAPICall(ctx *lib.Ctx, path string) (err error) {
 			body, e := ioutil.ReadAll(resp.Body)
 			_ = resp.Body.Close()
 			if e != nil {
-				err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s\n", e, method, rurl)
+				err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s", e, method, rurl)
 				return
 			}
-			err = fmt.Errorf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+			err = fmt.Errorf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
 			return
 		}
 		var rdata struct {
