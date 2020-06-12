@@ -4166,7 +4166,9 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 func taskFilteredOut(ctx *lib.Ctx, result lib.TaskResult) bool {
 	task := result.Index + ":" + result.Endpoint
 	if (ctx.TasksRE != nil && !ctx.TasksRE.MatchString(task)) || (ctx.TasksSkipRE != nil && ctx.TasksSkipRE.MatchString(task)) {
-		lib.Printf("Task %s filtered out due to RE (match,skip) = (%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE)
+		if ctx.Debug > 0 {
+			lib.Printf("Task %s filtered out due to RE (match,skip) = (%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE)
+		}
 		return true
 	}
 	return false
