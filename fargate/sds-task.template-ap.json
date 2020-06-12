@@ -64,6 +64,10 @@
           "value": "${SDS_ENDPOINTS_RE}"
         },
         {
+          "name": "SDS_TASKS_RE",
+          "value": "${SDS_TASKS_RE}"
+        },
+        {
           "name": "SDS_FIXTURES_SKIP_RE",
           "value": "${SDS_FIXTURES_SKIP_RE}"
         },
@@ -78,6 +82,10 @@
         {
           "name": "SDS_ENDPOINTS_SKIP_RE",
           "value": "${SDS_ENDPOINTS_SKIP_RE}"
+        },
+        {
+          "name": "SDS_TASKS_SKIP_RE",
+          "value": "${SDS_TASKS_SKIP_RE}"
         },
         {
           "name": "SDS_DRY_RUN",

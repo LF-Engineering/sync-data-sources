@@ -60,6 +60,8 @@ spec:
       value: '{{ $root.Values.projectsRE }}'
     - name: SDS_ENDPOINTS_RE
       value: '{{ $root.Values.endpointsRE }}'
+    - name: SDS_TASKS_RE
+      value: '{{ $root.Values.tasksRE }}'
     - name: SDS_FIXTURES_SKIP_RE
       value: '{{ $root.Values.fixturesSkipRE }}'
     - name: SDS_DATASOURCES_SKIP_RE
@@ -68,6 +70,8 @@ spec:
       value: '{{ $root.Values.projectsSkipRE }}'
     - name: SDS_ENDPOINTS_SKIP_RE
       value: '{{ $root.Values.endpointsSkipRE }}'
+    - name: SDS_TASKS_SKIP_RE
+      value: '{{ $root.Values.tasksSkipRE }}'
     - name: SDS_DRY_RUN
       value: '{{ $root.Values.dryRun }}'
     - name: SDS_DRY_RUN_CODE

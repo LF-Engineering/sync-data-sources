@@ -12,10 +12,12 @@ fi
 #export SDS_DATASOURCES_RE=''
 #export SDS_PROJECTS_RE=''
 #export SDS_ENDPOINTS_RE=''
+#export SDS_TASKS_RE=''
 #export SDS_FIXTURES_SKIP_RE=''
 #export SDS_DATASOURCES_SKIP_RE=''
 #export SDS_PROJECTS_SKIP_RE=''
 #export SDS_ENDPOINTS_SKIP_RE=''
+#export SDS_TASKS_SKIP_RE=''
 #export SDS_SKIPTIME=1
 export SDS_SKIP_SH=1
 #export SDS_SKIP_DATA=1

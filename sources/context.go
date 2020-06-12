@@ -20,10 +20,12 @@ type Ctx struct {
 	DatasourcesRE           *regexp.Regexp // From SDS_DATASOURCES_RE - you can set regular expression specifying which datasources should be processed, default empty which means all.
 	ProjectsRE              *regexp.Regexp // From SDS_PROJECTS_RE - you can set regular expression specifying which projects/subprojects should be processed, default empty which means all.
 	EndpointsRE             *regexp.Regexp // From SDS_ENDPOINTS_RE - you can set regular expression specifying which endpoints/origins should be processed, default empty which means all.
+	TasksRE                 *regexp.Regexp // From SDS_TASKS_RE - you can set regular expression specifying which tasks should be processed, default empty which means all, exampel task is "sds-lfn-onap-slack:SLACK_CHAN_ID"
 	FixturesSkipRE          *regexp.Regexp // From SDS_FIXTURES_SKIP_RE - you can set regular expression specifying which fixtures should be skipped, default empty which means none.
 	DatasourcesSkipRE       *regexp.Regexp // From SDS_DATASOURCES_SKIP_RE - you can set regular expression specifying which datasources should be skipped, default empty which means none.
 	ProjectsSkipRE          *regexp.Regexp // From SDS_PROJECTS_SKIP_RE - you can set regular expression specifying which projects/subprojects should be slkipped, default empty which means none.
 	EndpointsSkipRE         *regexp.Regexp // From SDS_ENDPOINTS_SKIP_RE - you can set regular expression specifying which endpoints/origins should be skipped, default empty which means none.
+	TasksSkipRE             *regexp.Regexp // From SDS_TASKS_SKIP_RE - you can set regular expression specifying which tasks should be skipped, default empty which means none.
 	CtxOut                  bool           // From SDS_CTXOUT output all context data (this struct), default false
 	LogTime                 bool           // From SDS_SKIPTIME, output time with all lib.Printf(...) calls, default true, use SDS_SKIPTIME to disable
 	ExecFatal               bool           // default true, set this manually to false to avoid lib.ExecCommand calling os.Exit() on failure and return error instead
@@ -178,6 +180,7 @@ func (ctx *Ctx) Init() {
 	datasourcesREStr := os.Getenv("SDS_DATASOURCES_RE")
 	projectsREStr := os.Getenv("SDS_PROJECTS_RE")
 	endpointsREStr := os.Getenv("SDS_ENDPOINTS_RE")
+	tasksREStr := os.Getenv("SDS_TASKS_RE")
 	if fixturesREStr != "" {
 		ctx.FixturesRE = regexp.MustCompile(fixturesREStr)
 	}
@@ -190,10 +193,14 @@ func (ctx *Ctx) Init() {
 	if endpointsREStr != "" {
 		ctx.EndpointsRE = regexp.MustCompile(endpointsREStr)
 	}
+	if tasksREStr != "" {
+		ctx.TasksRE = regexp.MustCompile(tasksREStr)
+	}
 	fixturesSkipREStr := os.Getenv("SDS_FIXTURES_SKIP_RE")
 	datasourcesSkipREStr := os.Getenv("SDS_DATASOURCES_SKIP_RE")
 	projectsSkipREStr := os.Getenv("SDS_PROJECTS_SKIP_RE")
 	endpointsSkipREStr := os.Getenv("SDS_ENDPOINTS_SKIP_RE")
+	tasksSkipREStr := os.Getenv("SDS_TASKS_SKIP_RE")
 	if fixturesSkipREStr != "" {
 		ctx.FixturesSkipRE = regexp.MustCompile(fixturesSkipREStr)
 	}
@@ -205,6 +212,9 @@ func (ctx *Ctx) Init() {
 	}
 	if endpointsSkipREStr != "" {
 		ctx.EndpointsSkipRE = regexp.MustCompile(endpointsSkipREStr)
+	}
+	if tasksSkipREStr != "" {
+		ctx.TasksSkipRE = regexp.MustCompile(tasksSkipREStr)
 	}
 
 	// Dry Run mode
