@@ -109,7 +109,7 @@ else
   cmd="/bin/bash"
   flg="${flg} -it"
 fi
-cmd="docker run ${envstr} ${flg} \"lukaszgryglicki/sync-data-sources-${1}\" \"${cmd}\""
+cmd="docker run ${envstr} ${flg} \"lukaszgryglicki/sync-data-sources-${1}:latest\" \"${cmd}\""
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
