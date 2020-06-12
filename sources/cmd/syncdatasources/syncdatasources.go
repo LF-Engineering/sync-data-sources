@@ -298,6 +298,7 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 }
 
 func partialRun(ctx *lib.Ctx) bool {
+	// We consider TasksRE and TasksSkipRE safe - they only decide run or not run at the final task level
 	if ctx.FixturesRE != nil || ctx.DatasourcesRE != nil || ctx.ProjectsRE != nil || ctx.EndpointsRE != nil || ctx.FixturesSkipRE != nil || ctx.DatasourcesSkipRE != nil || ctx.ProjectsSkipRE != nil || ctx.EndpointsSkipRE != nil {
 		return true
 	}
@@ -4153,6 +4154,15 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 	}
 }
 
+func taskFilteredOut(ctx *lib.Ctx, result lib.TaskResult) bool {
+	task := result.Index + ":" + result.Endpoint
+	if (ctx.TasksRE != nil && !ctx.TasksRE.MatchString(task)) || (ctx.TasksSkipRE != nil && ctx.TasksSkipRE.MatchString(task)) {
+		lib.Printf("Task %s filtered out due to RE (match,skip) = (%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE)
+		return true
+	}
+	return false
+}
+
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
@@ -4176,6 +4186,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
+	if taskFilteredOut(ctx, result) {
+		return
+	}
 	commandLine := []string{
 		"p2o.py",
 		"--enrich",
