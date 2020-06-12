@@ -2822,6 +2822,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
 					skippedTasks++
+					processed++
 					continue
 				}
 				mtx.Lock()
@@ -2893,6 +2894,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
 					skippedTasks++
+					processed++
 					continue
 				}
 				processing[idx] = struct{}{}
