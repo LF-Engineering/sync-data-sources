@@ -2844,7 +2844,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					tasks[tIdx].Duration = durations[tIdx]
 					dataDs := byDs[ds]
 					dataFx := byFx[fx]
-					if res[1] != 0 {
+					if res[1] > 0 {
 						failed = append(failed, res)
 						dataDs[1]++
 						dataFx[1]++
@@ -2856,6 +2856,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					processed++
 					mtx.Unlock()
 					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+					if res[1] < 0 {
+						continue
+					}
 					if !taffs && tMtx.OrderMtx != nil {
 						tMtx.TaskOrderMtx.Lock()
 						tmtx, ok := tMtx.OrderMtx[tIdx]
@@ -2896,7 +2899,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tasks[tIdx].Duration = durations[tIdx]
 				dataDs := byDs[ds]
 				dataFx := byFx[fx]
-				if res[1] != 0 {
+				if res[1] > 0 {
 					failed = append(failed, res)
 					dataDs[1]++
 					dataFx[1]++
@@ -2908,6 +2911,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				processed++
 				mtx.Unlock()
 				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+				if res[1] < 0 {
+					continue
+				}
 				setSyncInfo(ctx, nil, &result, false)
 				if result.Err == nil && len(result.Projects) > 0 {
 					setProject(ctx, result.Index, result.Projects)
@@ -2945,7 +2951,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			tasks[tIdx].Duration = durations[tIdx]
 			dataDs := byDs[ds]
 			dataFx := byFx[fx]
-			if res[1] != 0 {
+			if res[1] > 0 {
 				failed = append(failed, res)
 				dataDs[1]++
 				dataFx[1]++
@@ -2957,6 +2963,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			processed++
 			mtx.Unlock()
 			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+			if res[1] < 0 {
+				continue
+			}
 			if !taffs && tMtx.OrderMtx != nil {
 				tMtx.TaskOrderMtx.Lock()
 				tmtx, ok := tMtx.OrderMtx[tIdx]
@@ -4187,6 +4196,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
 	if taskFilteredOut(ctx, result) {
+		result.Code[1] = -1
 		return
 	}
 	commandLine := []string{

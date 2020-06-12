@@ -113,10 +113,11 @@ const Post string = "POST"
 
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
-	1: "datasource slug contains > 1 '/' separators",
-	2: "incorrect endpoint value for given data source",
-	3: "incorrect config option(s) for given data source",
-	4: "p2o.py error",
-	5: "setting SSH private key error",
-	6: "command timeout error",
+	-1: "task was skipped",
+	1:  "datasource slug contains > 1 '/' separators",
+	2:  "incorrect endpoint value for given data source",
+	3:  "incorrect config option(s) for given data source",
+	4:  "p2o.py error",
+	5:  "setting SSH private key error",
+	6:  "command timeout error",
 }
