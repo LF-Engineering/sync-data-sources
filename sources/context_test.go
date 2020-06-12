@@ -320,7 +320,7 @@ func TestInit(t *testing.T) {
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
 		MaxMtxWaitFatal:         false,
-		EnrichExternalFreq:      time.Duration(48) * time.Hour,
+		EnrichExternalFreq:      time.Duration(168) * time.Hour,
 		SSAWURL:                 "",
 		SSAWFreq:                0,
 		TestMode:                true,

@@ -89,7 +89,7 @@ type Ctx struct {
 	MaxDeleteTrials         int            // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait              int            // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal         bool           // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
-	EnrichExternalFreq      time.Duration  // From SDS_ENRICH_EXTERNAL_FREQ, how often enrich external indexes, default is 48h which means no more often than 48h.
+	EnrichExternalFreq      time.Duration  // From SDS_ENRICH_EXTERNAL_FREQ, how often enrich external indexes, default is 168h (7 days, week) which means no more often than 168h.
 	SSAWURL                 string         // From SDS_SSAW_URL, URL of the SSAW service to send notification to, must be set or SkipSSAW flag must be set
 	SSAWFreq                int            // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds, minimal frequency (when set) is 20
 	OnlyValidate            bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
@@ -507,7 +507,7 @@ func (ctx *Ctx) Init() {
 	ctx.MaxMtxWaitFatal = os.Getenv("SDS_MAX_MTX_WAIT_FATAL") != ""
 
 	if os.Getenv("SDS_ENRICH_EXTERNAL_FREQ") == "" {
-		ctx.EnrichExternalFreq = time.Duration(48) * time.Hour
+		ctx.EnrichExternalFreq = time.Duration(168) * time.Hour
 	} else {
 		dur, err := time.ParseDuration(os.Getenv("SDS_ENRICH_EXTERNAL_FREQ"))
 		FatalNoLog(err)
