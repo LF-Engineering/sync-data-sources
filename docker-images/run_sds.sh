@@ -116,5 +116,6 @@ then
 fi
 if [ -z "${NO}" ]
 then
+  docker pull "lukaszgryglicki/sync-data-sources-${1}:latest"
   eval $cmd
 fi
