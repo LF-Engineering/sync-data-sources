@@ -1,1 +1,1 @@
-*/10 * * * * PATH=$PATH:/snap/bin SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=100 /usr/bin/sds-cron-task.sh sds 1>> /tmp/sds.log 2>>/tmp/sds.err
+*/10 * * * * PATH=$PATH:/snap/bin SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=100 /usr/bin/sds-cron-task.sh sds test 1>> /tmp/sds.log 2>>/tmp/sds.err
