@@ -57,7 +57,7 @@ type Ctx struct {
 	DryRunAllowHideEmails   bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds      int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
-	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 10
+	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 30
 	SkipSH                  bool           // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	SkipData                bool           // From SDS_SKIP_DATA, if set - it will not run incremental data sync
 	SkipAffs                bool           // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
@@ -365,14 +365,14 @@ func (ctx *Ctx) Init() {
 
 	// Longest running tasks stats
 	if os.Getenv("SDS_N_LONGEST") == "" {
-		ctx.NLongest = 10
+		ctx.NLongest = 30
 	} else {
 		n, err := strconv.Atoi(os.Getenv("SDS_N_LONGEST"))
 		FatalNoLog(err)
 		if n > 0 {
 			ctx.NLongest = n
 		} else {
-			ctx.NLongest = 10
+			ctx.NLongest = 30
 		}
 	}
 
