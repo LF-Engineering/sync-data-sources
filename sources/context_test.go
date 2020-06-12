@@ -283,7 +283,7 @@ func TestInit(t *testing.T) {
 		NodeNum:                 1,
 		NodeHash:                false,
 		NodeSettleTime:          10,
-		NLongest:                10,
+		NLongest:                30,
 		StripErrorSize:          16384,
 		LogTime:                 true,
 		ExecFatal:               true,
