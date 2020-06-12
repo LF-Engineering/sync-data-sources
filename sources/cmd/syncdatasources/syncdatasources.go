@@ -2802,6 +2802,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	modes := []bool{false, true}
 	modesStr := []string{"data", "affs"}
 	nThreads := 0
+	skippedTasks := 0
 	ch := make(chan lib.TaskResult)
 	for modeIdx, affs := range modes {
 		stTime := time.Now()
@@ -2819,6 +2820,10 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
 			}
 			for idx, task := range tasks {
+				if taskFilteredOut(ctx, &task) {
+					skippedTasks++
+					continue
+				}
 				mtx.Lock()
 				processing[idx] = struct{}{}
 				startTimes[idx] = time.Now()
@@ -2855,7 +2860,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					byFx[fx] = dataFx
 					processed++
 					mtx.Unlock()
-					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+					extraInf := tasks[tIdx].ShortString()
+					if skippedTasks > 0 {
+						extraInf += fmt.Sprintf(" (%d skipped)", skippedTasks)
+					}
+					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, extraInf)
 					if res[1] < 0 {
 						continue
 					}
@@ -2882,6 +2891,10 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				lib.Printf("Processing %d tasks using ST version\n", len(tasks))
 			}
 			for idx, task := range tasks {
+				if taskFilteredOut(ctx, &task) {
+					skippedTasks++
+					continue
+				}
 				processing[idx] = struct{}{}
 				result := processTask(nil, ctx, idx, task, affs, &tMtx)
 				res := result.Code
@@ -2910,7 +2923,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				byFx[fx] = dataFx
 				processed++
 				mtx.Unlock()
-				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+				extraInf := tasks[tIdx].ShortString()
+				if skippedTasks > 0 {
+					extraInf += fmt.Sprintf(" (%d skipped)", skippedTasks)
+				}
+				lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, extraInf)
 				if res[1] < 0 {
 					continue
 				}
@@ -2962,7 +2979,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			byFx[fx] = dataFx
 			processed++
 			mtx.Unlock()
-			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, tasks[tIdx].ShortString())
+			extraInf := tasks[tIdx].ShortString()
+			if skippedTasks > 0 {
+				extraInf += fmt.Sprintf(" (%d skipped)", skippedTasks)
+			}
+			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, extraInf)
 			if res[1] < 0 {
 				continue
 			}
@@ -2987,6 +3008,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 		lib.Printf("Pass (threads join) finished in %v\n", enTime.Sub(stTime))
 	}
 	info("final")
+	lib.Printf("Skipped tasks: %d\n", skippedTasks)
 	return nil
 }
 
@@ -4163,8 +4185,10 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 	}
 }
 
-func taskFilteredOut(ctx *lib.Ctx, result lib.TaskResult) bool {
-	task := result.Index + ":" + result.Endpoint
+func taskFilteredOut(ctx *lib.Ctx, tsk *lib.Task) bool {
+	idxSlug := "sds-" + tsk.FxSlug + "-" + tsk.DsFullSlug
+	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+	task := idxSlug + ":" + tsk.Endpoint
 	if (ctx.TasksRE != nil && !ctx.TasksRE.MatchString(task)) || (ctx.TasksSkipRE != nil && ctx.TasksSkipRE.MatchString(task)) {
 		if ctx.Debug > 0 {
 			lib.Printf("Task %s filtered out due to RE (match,skip) = (%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE)
@@ -4197,7 +4221,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
-	if taskFilteredOut(ctx, result) {
+	if taskFilteredOut(ctx, &task) {
 		result.Code[1] = -1
 		return
 	}
