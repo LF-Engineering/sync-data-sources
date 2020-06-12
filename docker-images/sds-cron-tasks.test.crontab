@@ -1,3 +1,4 @@
 # remember to remove docker image for sds when it was updated, docker will not pull the newest one automatically
 */10 * * * * PATH=$PATH:/snap/bin SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=100 SDS_TASKS_SKIP_RE='(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)' /usr/bin/sds-cron-task.sh sds_main test 1>> /tmp/sds_main.log 2>>/tmp/sds_main.err
 */10 * * * * PATH=$PATH:/snap/bin SDS_ES_BULKSIZE=100 SDS_ONLY_P2O=1 SDS_TASKS_RE='(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)' /usr/bin/sds-cron-task.sh sds_slow test 1>> /tmp/sds_slow.log 2>>/tmp/sds_slow.err
+5 * * * * /usr/bin/docker system prune -f 1>/tmp/prune.log 2>/tmp/prune.err
