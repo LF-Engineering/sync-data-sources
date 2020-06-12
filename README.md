@@ -11,7 +11,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod [PRUNE=1] ./docker-images/remove.sh` to remove docker image locally (remote version is not touched).
 - Use: `` DOCKER_USER=docker-user BRANCH=test|prod [REPO_ACCESS="`cat repo_access.secret`"] ./docker-images/test_image_docker.sh [command] `` to test docker image locally. Then inside the container run: `./run.sh`.
 - Use: `` DOCKER_USER=docker-user BRANCH=commit_SHA [REPO_ACCESS="`cat repo_access.secret`"] ./docker-images/test_validate_image_docker.sh [command] `` to test docker image locally. Then inside the container run: `./run.sh`.
-- You can use `docker-images/sds-cron-task.sh` as an example SDS cron task: `crontab -e`: `*/10 * * * * PATH=$PATH:/snap/bin /usr/bin/sds-cron-task.sh 1>> /tmp/sds.log 2>>/tmp/sds.err`.
+- You can use `docker-images/sds-cron-task.sh` as an example SDS cron task: `crontab -e`: see prod/test `docker-images/sds-cron-tasks.prod.crontab` and `docker-images/sds-cron-tasks.test.crontab`.
 
 
 # Manual docker run example
