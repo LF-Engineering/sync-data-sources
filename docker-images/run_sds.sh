@@ -98,7 +98,12 @@ do
   IFS=${OIFS}
   envstr="${envstr} -e ${a}=\"${!a}\""
 done
-flg="-v /root/.perceval:/root/.perceval"
+if [ -z "${2}" ]
+then
+  flg="-v /root/.perceval:/root/.perceval"
+else
+  flg="-v /root/.perceval:/root/.perceval -v /data/${2}:/root"
+fi
 if [ -z "${SH}" ]
 then
   cmd="/run.sh"
