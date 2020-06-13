@@ -365,6 +365,10 @@
           "value": "${SDS_GITHUB_OAUTH}"
         },
         {
+          "name": "SDS_SKIP_REENRICH",
+          "value": "${SDS_SKIP_REENRICH}"
+        },
+        {
           "name": "AUTH0_URL",
           "value": "${SDS_AUTH0_URL}"
         },
