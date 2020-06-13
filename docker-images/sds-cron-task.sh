@@ -22,4 +22,4 @@ then
 fi
 > "${lock_file}"
 trap cleanup EXIT
-./docker-images/run_sds.sh "$2"
+./docker-images/run_sds.sh "$2" "$1"
