@@ -27,6 +27,11 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 - To run configured docker image locally: `DM='' NO='' SH='' DBG=1 DRY=1 SDS_SKIP_DROP_UNUSED=1 [SDS_SKIP_ES_DATA=1 SDS_SKIP_ES_LOG=1 SDS_SKIP_SYNC_INFO=1 SDS_NCPUS_SCALE=4 SDS_ES_BULKSIZE=50 SDS_SILENT=1 SDS_DEBUG=1 SDS_ONLY_P2O=1 SDS_SKIP_P2O=1 SDS_SKIP_MERGE=1 SDS_SKIP_PROJECT=1 SDS_SKIP_PROJECT_TS=1] ./docker-images/run_sds.sh prod`
 
 
+# Example
+
+See example configurations files `sources/example/project1.yaml` and other YAMLs in `sources/example`.
+
+
 # Kubernetes
 
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod ./kubernetes/test_image_kubernetes.sh [command]` to test docker image on kubernetes (without Helm chart). Then inside the container run: `./run.sh`.
