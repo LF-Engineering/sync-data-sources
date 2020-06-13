@@ -1,0 +1,140 @@
+---
+native:
+  slug: project1
+data_sources:
+- slug: rocketchat
+  projects:
+  - name: hyperledger
+    endpoints:
+    - name: "https://chat.hyperledger.org general" 
+  config:
+  - name: api-token
+    value: XXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXX
+  - name: user-id
+    value: XXXXXXXXXXXXXXXXX  
+- slug: discourse
+  projects:
+  - name: edgex 
+    endpoints:
+    - name: https://edgex.discourse.group
+      config: &github_config
+      - name: api-token
+        value: "[1111111111111111111111111111111111111111,2222222222222222222222222222222222222222]"
+- slug: jenkins
+  projects:
+  - name: edgex
+    endpoints:
+    - name: https://jenkins.edgexfoundry.org
+- slug: dockerhub
+  projects:
+  - name: edgex
+    endpoints:
+    - name: "edgexfoundry docker-core-config-seed-go"
+    - name: "edgexfoundry docker-export-client-go"
+    - name: "edgexfoundry docker-export-distro-go"
+    - name: "edgexfoundry docker-core-data-go"
+    - name: "edgexfoundry docker-core-metadata-go"
+    - name: "edgexfoundry docker-support-rulesengine"
+    - name: "edgexfoundry docker-edgex-volume"
+    - name: "edgexfoundry docker-edgex-mongo"
+    - name: "edgexfoundry docker-device-virtual"
+- slug: git
+  projects:
+  - name: edgex
+    endpoints: &github_endpoints
+    - name: https://github.com/edgexfoundry
+      flags:
+        type: github_org
+- slug: github/issue
+  endpoints: *github_endpoints
+  config: *github_config
+- slug: github/pull_request
+  endpoints: *github_endpoints
+  config: *github_config
+- slug: github/repository
+  endpoints: *github_endpoints
+  config: *github_config
+- slug: slack
+  projects:
+  - name: edgex
+    endpoints:
+    - name: CE4MHUBTM
+    - name: CELKF50B0
+    - name: CE6902Q6S
+    - name: CE44YG81E
+    - name: CE46S51DX
+    - name: CE5U62YHM
+    - name: CE4KJ5VV2
+    - name: CE48UTVQ9
+    - name: CE6914ZDL
+  config:
+  - name: api-token
+    value: xoxp-XXXXXXXXXXXX-YYYYYYYYYYYY-ZZZZZZZZZZZZ-AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+- slug: confluence
+  projects:
+  - name: edgex
+    endpoints:
+    - name: https://wiki.edgexfoundry.org
+- slug: groupsio
+  projects:
+  - name: edgex
+    endpoints:
+    - name: edgexfoundry
+  config:
+  - name: email
+    value: xxxxxxx@zzzzzzzzz.yyy
+  - name: password
+    value: zzzzzzzzzz
+  max_frequency: "24h"
+- slug: pipermail
+  projects:
+  - name: dpdk
+    endpoints:
+    - name: https://mails.dpdk.org/archives/users/
+    - name: https://mails.dpdk.org/archives/announce/
+- slug: jira
+  endpoints:
+  - name: https://jira.o-ran-sc.org
+  config:
+  - name: project
+    value: NONRTRIC
+  - name: backend-user
+    value: aaaaaa
+  - name: backend-password
+    value: bbbbbbbbbb
+- slug: bugzilla
+  projects:
+  - name: yocto
+    endpoints:
+    - name: https://bugzilla.yoctoproject.org
+  config:
+  - name: backend-user
+    value: tttttttttttttttttt@zz.ee
+  - name: backend-password
+    value: ttttttttttttt
+- slug: gerrit
+  projects:
+  - name: ODL-Common
+    endpoints:
+    - name: git.opendaylight.org
+  config:
+  - name: user
+    value: yyyyyy
+  - name: ssh-key
+    value: |
+      -----BEGIN RSA PRIVATE KEY-----
+      ZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZZ
+      YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY
+      AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
+      -----END RSA PRIVATE KEY-----
+aliases:
+- from: sds-project1-jira
+  to:
+  - sds-project1-jira-timing
+  - sds-project1-jira-backlog
+- from: sds-project1-groupsio
+  to:
+  - sds-project1-mail
+- from: sds-project1-pipermail
+  to:
+  - sds-project1-mail

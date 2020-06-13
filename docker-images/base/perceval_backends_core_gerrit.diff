@@ -1,0 +1,13 @@
+diff --git a/perceval/backends/core/gerrit.py b/perceval/backends/core/gerrit.py
+index 71d2acd..7a8ea6a 100644
+--- a/perceval/backends/core/gerrit.py
++++ b/perceval/backends/core/gerrit.py
+@@ -390,7 +390,7 @@ class GerritClient():
+             cause = "Gerrit 2.9.0 does not support pagination"
+             raise BackendError(cause=cause)
+         else:
+-            if entry is not None:
++            if entry is not None and 'sortKey' in entry:
+                 next_item = entry['sortKey']
+ 
+         return next_item
