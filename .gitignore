@@ -21,3 +21,4 @@
 /sources/sds.yaml
 out
 *.secret
+docker-images/base/repos

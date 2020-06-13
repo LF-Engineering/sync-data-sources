@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -eo pipefail
+
+pip3 install --upgrade setuptools
+pip3 install --upgrade pip
+
+repos=(grimoirelab-perceval grimoirelab-elk grimoirelab-sortinghat grimoirelab-kingarthur)
+
+for r in "${repos[@]}"; do 
+  echo "INSTALLING ${r}"
+  pip3 install -e "${REPOS_DIR}/$r";
+done

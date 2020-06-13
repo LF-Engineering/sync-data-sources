@@ -5,7 +5,7 @@ Single go binary that will manage Grimoire stack data gathering using configurat
 
 # Docker images
 
-- First you will need a base image containing grimoire stack tools needed, follow instructions on `LF-Engineering/dev-analytics-grimoire-docker` to build minimal image.
+- First you will need a base image containing grimoire stack tools needed, go to `docker-images/base`, follow instructions from `README.md`.
 - Use: `DOCKER_USER=docker-user BRANCH=test [API_REPO_PATH="$HOME/dev/LF/dev-analytics-api"] [SKIP_BUILD=1] [SKIP_PUSH=1] [SKIP_PULL=1] [PRUNE=1] ./docker-images/build.sh` to build docker image.
 - Use: `DOCKER_USER=docker-user [SKIP_BUILD=1] [SKIP_PUSH=1] [PRUNE=1] ./docker-images/build-validate.sh` to build docker image file (validation image),
 - Use: `DOCKER_USER=docker-user BRANCH=test|prod [PRUNE=1] ./docker-images/remove.sh` to remove docker image locally (remote version is not touched).
