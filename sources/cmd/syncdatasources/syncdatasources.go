@@ -2797,6 +2797,11 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 		}
 	}()
+	skipAry := strings.Split(ctx.SkipReenrich, ",")
+	skipDS := make(map[string]struct{})
+	for _, skipV := range skipAry {
+		skipDS[strings.TrimSpace(skipV)] = struct{}{}
+	}
 	lastTime := time.Now()
 	dtStart := lastTime
 	modes := []bool{false, true}
@@ -2821,6 +2826,12 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
+					skippedTasks++
+					processed++
+					continue
+				}
+				_, skipped := skipDS[task.DsSlug]
+				if affs && skipped {
 					skippedTasks++
 					processed++
 					continue
@@ -2893,6 +2904,12 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
+					skippedTasks++
+					processed++
+					continue
+				}
+				_, skipped := skipDS[task.DsSlug]
+				if affs && skipped {
 					skippedTasks++
 					processed++
 					continue
