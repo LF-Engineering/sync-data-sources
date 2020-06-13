@@ -66,6 +66,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		EsBulkSize:              in.EsBulkSize,
 		SkipSH:                  in.SkipSH,
 		GitHubOAuth:             in.GitHubOAuth,
+		SkipReenrich:            in.SkipReenrich,
 		LatestItems:             in.LatestItems,
 		ScrollWait:              in.ScrollWait,
 		ScrollSize:              in.ScrollSize,
@@ -291,6 +292,7 @@ func TestInit(t *testing.T) {
 		ExecOutput:              false,
 		ElasticURL:              "http://127.0.0.1:9200",
 		GitHubOAuth:             "",
+		SkipReenrich:            "",
 		EsBulkSize:              0,
 		ScrollWait:              0,
 		ScrollSize:              100,
@@ -617,6 +619,15 @@ func TestInit(t *testing.T) {
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{"GitHubOAuth": "key1,key2"},
+			),
+		},
+		{
+			"Set Skip Re-enrich",
+			map[string]string{"SDS_SKIP_REENRICH": "jira,gerrit,bugzilla,confluence"},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{"SkipReenrich": "jira,gerrit,bugzilla,confluence"},
 			),
 		},
 		{

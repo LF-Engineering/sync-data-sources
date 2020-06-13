@@ -94,6 +94,7 @@ type Ctx struct {
 	SSAWFreq                int            // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds, minimal frequency (when set) is 20
 	OnlyValidate            bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	OnlyP2O                 bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
+	SkipReenrich            string         // From SDS_SKIP_REENRICH, list of backend types where re-enrich phase is not needed, because they always fetch full data (don't support incremental updates), probably we can specify "jira,gerrit,confluence,bugzilla"
 	AffiliationAPIURL       string         // From AFFILIATION_API_URL - DA affiliations API url
 	Auth0URL                string         // From AUTH0_URL: Auth0 parameters for obtaining DA-affiliation API token
 	Auth0Audience           string         // From AUTH0_AUDIENCE
@@ -362,6 +363,9 @@ func (ctx *Ctx) Init() {
 			ctx.TaskTimeoutSeconds = 36000
 		}
 	}
+
+	// Backends to skip reenrich phase
+	ctx.SkipReenrich = os.Getenv("SDS_SKIP_REENRICH")
 
 	// Longest running tasks stats
 	if os.Getenv("SDS_N_LONGEST") == "" {

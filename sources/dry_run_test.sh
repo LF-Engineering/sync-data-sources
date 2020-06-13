@@ -38,6 +38,7 @@ export SDS_SKIP_ES_LOG=1
 export SDS_SKIP_MERGE=1
 #export SDS_SKIP_HIDE_EMAILS=1
 #export SDS_SKIP_P2O=1
+export SDS_SKIP_REENRICH="jira,gerrit,confluence,bugzilla"
 export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_CODE=3
 #export SDS_DRY_RUN_CODE_RANDOM=1
