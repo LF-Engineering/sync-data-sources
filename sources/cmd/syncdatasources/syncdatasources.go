@@ -2574,7 +2574,7 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 
 func saveCSVInternal(ctx *lib.Ctx, tasks []lib.Task, when string, redacted bool) {
 	var writer *csv.Writer
-	csvFile := fmt.Sprintf("/root/.perceval/%s_%s_%d_%d.csv", ctx.CSVPrefix, when, ctx.NodeIdx, ctx.NodeNum)
+	csvFile := fmt.Sprintf("%s_%s_%d_%d.csv", ctx.CSVPrefix, when, ctx.NodeIdx, ctx.NodeNum)
 	oFile, err := os.Create(csvFile)
 	if err != nil {
 		lib.Printf("CSV create error: %+v\n", err)
