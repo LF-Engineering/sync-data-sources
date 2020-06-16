@@ -297,7 +297,7 @@ func TestInit(t *testing.T) {
 		ScrollWait:              0,
 		ScrollSize:              100,
 		Silent:                  false,
-		CSVPrefix:               "jobs",
+		CSVPrefix:               "/root/.perceval/jobs",
 		SkipSH:                  false,
 		SkipData:                false,
 		SkipAffs:                false,
@@ -1042,11 +1042,11 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Set CSV prefix",
-			map[string]string{"SDS_CSV_PREFIX": "debug_jobs"},
+			map[string]string{"SDS_CSV_PREFIX": "/debug_jobs"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"CSVPrefix": "debug_jobs"},
+				map[string]interface{}{"CSVPrefix": "/debug_jobs"},
 			),
 		},
 		{
