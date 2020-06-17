@@ -47,6 +47,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowSortDuration: in.DryRunAllowSortDuration,
 		DryRunAllowMerge:        in.DryRunAllowMerge,
 		DryRunAllowHideEmails:   in.DryRunAllowHideEmails,
+		DryRunAllowOrgMap:       in.DryRunAllowOrgMap,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
 		OnlyP2O:                 in.OnlyP2O,
@@ -91,6 +92,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipSortDuration:        in.SkipSortDuration,
 		SkipMerge:               in.SkipMerge,
 		SkipHideEmails:          in.SkipHideEmails,
+		SkipOrgMap:              in.SkipOrgMap,
 		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
 		MaxMtxWait:              in.MaxMtxWait,
@@ -275,6 +277,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowSortDuration: false,
 		DryRunAllowMerge:        false,
 		DryRunAllowHideEmails:   false,
+		DryRunAllowOrgMap:       false,
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
 		OnlyP2O:                 false,
@@ -318,6 +321,7 @@ func TestInit(t *testing.T) {
 		SkipSortDuration:        false,
 		SkipMerge:               false,
 		SkipHideEmails:          false,
+		SkipOrgMap:              false,
 		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
@@ -722,6 +726,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_SSAW":          "1",
 				"SDS_DRY_RUN_ALLOW_MERGE":         "1",
 				"SDS_DRY_RUN_ALLOW_HIDE_EMAILS":   "1",
+				"SDS_DRY_RUN_ALLOW_ORG_MAP":       "t",
 			},
 			dynamicSetFields(
 				t,
@@ -744,6 +749,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowSSAW":         true,
 					"DryRunAllowMerge":        true,
 					"DryRunAllowHideEmails":   true,
+					"DryRunAllowOrgMap":       true,
 				},
 			),
 		},
@@ -970,6 +976,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipHideEmails": true,
+				},
+			),
+		},
+		{
+			"Set skip map org names",
+			map[string]string{
+				"SDS_SKIP_ORG_MAP": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipOrgMap": true,
 				},
 			),
 		},
