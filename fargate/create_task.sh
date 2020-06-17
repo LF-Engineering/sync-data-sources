@@ -53,6 +53,7 @@ then
   export SDS_SKIP_SORT_DURATION=1
   export SDS_SKIP_MERGE=1
   export SDS_SKIP_HIDE_EMAILS=1
+  export SDS_SKIP_ORG_MAP=1
   export SDS_SKIP_P2O=1
   export SDS_DRY_RUN=1
   #export SDS_DRY_RUN_CODE=3
@@ -70,6 +71,7 @@ then
   #export SDS_DRY_RUN_ALLOW_SORT_DURATION=1
   #export SDS_DRY_RUN_ALLOW_MERGE=1
   #export SDS_DRY_RUN_ALLOW_HIDE_EMAILS=1
+  #export SDS_DRY_RUN_ALLOW_ORG_MAP=1
   #export SDS_DRY_RUN_ALLOW_SSAW=1
   #export SDS_ONLY_VALIDATE=1
   #export SDS_ONLY_P2O=1

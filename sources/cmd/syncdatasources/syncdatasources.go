@@ -4704,6 +4704,14 @@ func mergeAll(ctx *lib.Ctx) (err error) {
 	return
 }
 
+func mapOrgNames(ctx *lib.Ctx) (err error) {
+	if ctx.SkipOrgMap || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowOrgMap) {
+		return
+	}
+	err = executeAPICall(ctx, "/v1/affiliation/map_org_names")
+	return
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
@@ -4727,6 +4735,10 @@ func main() {
 		err = mergeAll(&ctx)
 		if err != nil {
 			lib.Printf("Merge profiles result: %+v\n", err)
+		}
+		err = mapOrgNames(&ctx)
+		if err != nil {
+			lib.Printf("Map organization names result: %+v\n", err)
 		}
 		dtEnd := time.Now()
 		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
