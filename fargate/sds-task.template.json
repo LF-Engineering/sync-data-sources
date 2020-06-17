@@ -149,6 +149,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_HIDE_EMAILS}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_ORG_MAP",
+          "value": "${SDS_DRY_RUN_ALLOW_ORG_MAP}"
+        },
+        {
           "name": "SDS_DRY_RUN_ALLOW_SSAW",
           "value": "${SDS_DRY_RUN_ALLOW_SSAW}"
         },

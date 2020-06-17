@@ -118,6 +118,8 @@ spec:
       value: '{{ $root.Values.skipMerge }}'
     - name: SDS_SKIP_HIDE_EMAILS
       value: '{{ $root.Values.skipHideEmails }}'
+    - name: SDS_SKIP_ORG_MAP
+      value: '{{ $root.Values.skipOrgMap }}'
     - name: SDS_SKIP_P2O
       value: '{{ $root.Values.skipP2O }}'
     - name: SDS_SKIP_SSAW
