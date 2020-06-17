@@ -55,6 +55,7 @@ type Ctx struct {
 	DryRunAllowSSAW         bool           // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
 	DryRunAllowMerge        bool           // From SDS_DRY_RUN_ALLOW_MERGE, if set it will allow calling DA-affiliation merge_all API after all tasks finished in dry run mode
 	DryRunAllowHideEmails   bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
+	DryRunAllowOrgMap       bool           // From SDS_DRY_RUN_ALLOW_ORG_MAP, if set it will allow calling DA-affiliation map_org_names API in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds      int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 30
@@ -76,6 +77,7 @@ type Ctx struct {
 	SkipSortDuration        bool           // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
 	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails          bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
+	SkipOrgMap              bool           // From SDS_SKIP_ORG_MAP, if set - it will skip calling DA-affiliation map_org_name API
 	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
 	StripErrorSize          int            // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth             string         // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
@@ -233,6 +235,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowSortDuration = os.Getenv("SDS_DRY_RUN_ALLOW_SORT_DURATION") != ""
 	ctx.DryRunAllowMerge = os.Getenv("SDS_DRY_RUN_ALLOW_MERGE") != ""
 	ctx.DryRunAllowHideEmails = os.Getenv("SDS_DRY_RUN_ALLOW_HIDE_EMAILS") != ""
+	ctx.DryRunAllowOrgMap = os.Getenv("SDS_DRY_RUN_ALLOW_ORG_MAP") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -479,6 +482,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip calling DA-affiliation hide_emails API
 	ctx.SkipHideEmails = os.Getenv("SDS_SKIP_HIDE_EMAILS") != ""
+
+	// Skip calling DA-affiliation map_org_names API
+	ctx.SkipOrgMap = os.Getenv("SDS_SKIP_ORG_MAP") != ""
 
 	// Skip all p2o commands
 	ctx.SkipP2O = os.Getenv("SDS_SKIP_P2O") != ""
