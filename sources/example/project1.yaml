@@ -6,7 +6,18 @@ data_sources:
   projects:
   - name: hyperledger
     endpoints:
-    - name: "https://chat.hyperledger.org general" 
+    - name: "https://chat.hyperledger.org general"
+    - name: https://chat.hyperledger.org
+      flags:
+        type: rocketchat_server
+      skip:
+      - '(?i)sdk'
+      - '(?i)lab'
+      only:
+      - '(?i)fabric'
+      - '(?i)indy'
+      - '(?i)sawtooth'
+      - '(?i)aries'
   config:
   - name: api-token
     value: XXX_XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX-XXXX
