@@ -422,6 +422,47 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
 			switch epType {
+			case "rocketchat_server":
+				srv := strings.TrimSpace(rawEndpoint.Name)
+				channels, ok := cache[srv]
+				if !ok {
+					token := ""
+					uid := ""
+					for _, cfg := range dataSource.Config {
+						if cfg.Name == "api-token" {
+							token = cfg.Value
+						} else if cfg.Name == "user-id" {
+							uid = cfg.Value
+						}
+					}
+					var err error
+					channels, err = lib.GetRocketChatChannels(ctx, srv, token, uid)
+					if err != nil {
+						lib.Printf("Error getting channels list for rocketchat server: %s: error: %+v\n", srv, err)
+					}
+					cache[srv] = channels
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("RocketChat srv %s channels: %+v\n", srv, channels)
+				}
+				for _, channel := range channels {
+					if !lib.EndpointIncluded(ctx, &rawEndpoint, channel) {
+						continue
+					}
+					name := srv + " " + channel
+					if p2o && rawEndpoint.Project != "" {
+						name += ":::" + rawEndpoint.Project
+					}
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:       name,
+							Project:    rawEndpoint.Project,
+							ProjectP2O: p2o,
+							Projects:   rawEndpoint.Projects,
+						},
+					)
+				}
 			case "github_org":
 				if hint < 0 {
 					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
