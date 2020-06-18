@@ -439,6 +439,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					channels, err = lib.GetRocketChatChannels(ctx, srv, token, uid)
 					if err != nil {
 						lib.Printf("Error getting channels list for rocketchat server: %s: error: %+v\n", srv, err)
+						continue
 					}
 					cache[srv] = channels
 				}
