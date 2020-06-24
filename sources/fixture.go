@@ -62,9 +62,10 @@ type EndpointProject struct {
 
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
-	Name       string // Endpoint name
-	Project    string // optional project (allows groupping endpoints), for example "Project value"
-	ProjectP2O bool   // if true SDS will pass `--project "Project value"` to p2o.py
+	Name       string        // Endpoint name
+	Project    string        // optional project (allows groupping endpoints), for example "Project value"
+	ProjectP2O bool          // if true SDS will pass `--project "Project value"` to p2o.py
+	Timeout    time.Duration // specifies maximum running time for a given endpoint (if specified)
 	// if false, SDS will post-process index and will add `"project": "Project value"`
 	// column where `"origin": "Endpoint name"`
 	Projects []EndpointProject
@@ -79,6 +80,7 @@ type RawEndpoint struct {
 	Only       []string          `yaml:"only"`
 	Project    string            `yaml:"project"`
 	ProjectP2O *bool             `yaml:"p2o"`
+	Timeout    *string           `yaml:"timeout"`
 	Projects   []EndpointProject `yaml:"endpoint_projects"`
 	SkipREs    []*regexp.Regexp  `yaml:"-"`
 	OnlyREs    []*regexp.Regexp  `yaml:"-"`
