@@ -3577,6 +3577,10 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "sleep-for-rate", Value: []string{}, RedactedValue: []string{}})
 		}
+		_, ok = m["min-rate-to-sleep"]
+		if !ok {
+			c = append(c, lib.MultiConfig{Name: "min-rate-to-sleep", Value: []string{"100"}, RedactedValue: []string{"100"}})
+		}
 		_, ok = m["no-ssl-verify"]
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
