@@ -48,6 +48,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowMerge:        in.DryRunAllowMerge,
 		DryRunAllowHideEmails:   in.DryRunAllowHideEmails,
 		DryRunAllowOrgMap:       in.DryRunAllowOrgMap,
+		DryRunAllowDetAffRange:  in.DryRunAllowDetAffRange,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
 		OnlyP2O:                 in.OnlyP2O,
@@ -93,6 +94,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipMerge:               in.SkipMerge,
 		SkipHideEmails:          in.SkipHideEmails,
 		SkipOrgMap:              in.SkipOrgMap,
+		SkipDetAffRange:         in.SkipDetAffRange,
 		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
 		MaxMtxWait:              in.MaxMtxWait,
@@ -278,6 +280,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowMerge:        false,
 		DryRunAllowHideEmails:   false,
 		DryRunAllowOrgMap:       false,
+		DryRunAllowDetAffRange:  false,
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
 		OnlyP2O:                 false,
@@ -322,6 +325,7 @@ func TestInit(t *testing.T) {
 		SkipMerge:               false,
 		SkipHideEmails:          false,
 		SkipOrgMap:              false,
+		SkipDetAffRange:         false,
 		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
@@ -727,6 +731,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_MERGE":         "1",
 				"SDS_DRY_RUN_ALLOW_HIDE_EMAILS":   "1",
 				"SDS_DRY_RUN_ALLOW_ORG_MAP":       "t",
+				"SDS_DRY_RUN_ALLOW_DET_AFF_RANGE": "t",
 			},
 			dynamicSetFields(
 				t,
@@ -750,6 +755,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowMerge":        true,
 					"DryRunAllowHideEmails":   true,
 					"DryRunAllowOrgMap":       true,
+					"DryRunAllowDetAffRange":  true,
 				},
 			),
 		},
@@ -989,6 +995,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipOrgMap": true,
+				},
+			),
+		},
+		{
+			"Set skip detect affiliations date range",
+			map[string]string{
+				"SDS_SKIP_DET_AFF_RANGE": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipDetAffRange": true,
 				},
 			),
 		},

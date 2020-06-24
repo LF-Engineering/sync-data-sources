@@ -134,6 +134,8 @@ spec:
               value: '{{ $root.Values.skipHideEmails }}'
             - name: SDS_SKIP_ORG_MAP
               value: '{{ $root.Values.skipOrgMap }}'
+            - name: SDS_SKIP_DET_AFF_RANGE
+              value: '{{ $root.Values.skipDetAffRange }}'
             - name: SDS_SKIP_P2O
               value: '{{ $root.Values.skipP2O }}'
             - name: SDS_SKIP_VALIDATE_GITHUB_API

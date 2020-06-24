@@ -4771,6 +4771,14 @@ func mapOrgNames(ctx *lib.Ctx) (err error) {
 	return
 }
 
+func detAffRange(ctx *lib.Ctx) (err error) {
+	if ctx.SkipDetAffRange || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowDetAffRange) {
+		return
+	}
+	err = executeAPICall(ctx, "/v1/affiliation/det_aff_range")
+	return
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
@@ -4781,16 +4789,16 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, getFixtures(&ctx))
 	} else {
-		err := hideEmails(&ctx)
-		if err != nil {
-			lib.Printf("Hide emails result: %+v\n", err)
-		}
-		err = ensureGrimoireStackAvail(&ctx)
+		err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
 		}
 		go finishAfterTimeout(ctx)
 		processFixtureFiles(&ctx, getFixtures(&ctx))
+		err = hideEmails(&ctx)
+		if err != nil {
+			lib.Printf("Hide emails result: %+v\n", err)
+		}
 		err = mergeAll(&ctx)
 		if err != nil {
 			lib.Printf("Merge profiles result: %+v\n", err)
@@ -4798,6 +4806,10 @@ func main() {
 		err = mapOrgNames(&ctx)
 		if err != nil {
 			lib.Printf("Map organization names result: %+v\n", err)
+		}
+		err = detAffRange(&ctx)
+		if err != nil {
+			lib.Printf("Detect affiliations ranges result: %+v\n", err)
 		}
 		dtEnd := time.Now()
 		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))

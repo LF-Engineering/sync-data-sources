@@ -156,6 +156,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_ORG_MAP}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_DET_AFF_RANGE",
+          "value": "${SDS_DRY_RUN_ALLOW_DET_AFF_RANGE}"
+        },
+        {
           "name": "SDS_DRY_RUN_ALLOW_SSAW",
           "value": "${SDS_DRY_RUN_ALLOW_SSAW}"
         },
