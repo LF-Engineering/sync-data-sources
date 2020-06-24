@@ -19,7 +19,7 @@ func logCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) {
 }
 
 // ExecCommand - execute command given by array of strings with eventual environment map
-func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) (string, error) {
+func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string, tmout *time.Duration) (string, error) {
 	// Execution time
 	dtStart := time.Now()
 
@@ -128,7 +128,12 @@ func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) (string, 
 	go func() {
 		done <- cmd.Wait()
 	}()
-	timeout := time.Duration(ctx.TaskTimeoutSeconds) * time.Second
+	var timeout time.Duration
+	if tmout != nil && (*tmout).Seconds() > 0 {
+		timeout = *tmout
+	} else {
+		timeout = time.Duration(ctx.TaskTimeoutSeconds) * time.Second
+	}
 	select {
 	case <-time.After(timeout):
 		err = cmd.Process.Kill()

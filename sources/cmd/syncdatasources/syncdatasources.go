@@ -60,6 +60,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"--version",
 		},
 		nil,
+		nil,
 	)
 	dtEnd := time.Now()
 	if err != nil {
@@ -75,6 +76,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"--help",
 		},
 		nil,
+		nil,
 	)
 	dtEnd = time.Now()
 	if err != nil {
@@ -88,6 +90,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 			"sortinghat",
 			"--version",
 		},
+		nil,
 		nil,
 	)
 	dtEnd = time.Now()
@@ -170,6 +173,7 @@ func getFixtures(ctx *lib.Ctx) (fixtures []string) {
 			"-iname",
 			"*.y*ml",
 		},
+		nil,
 		nil,
 	)
 	dtEnd := time.Now()
@@ -377,6 +381,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Flags:      rawEndpoint.Flags,
 						Skip:       rawEndpoint.Skip,
 						Only:       rawEndpoint.Only,
+						Timeout:    rawEndpoint.Timeout,
 					},
 				)
 			}
@@ -397,6 +402,12 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			if p2o && rawEndpoint.Project != "" {
 				name += ":::" + rawEndpoint.Project
 			}
+			var tmout time.Duration
+			if rawEndpoint.Timeout != nil {
+				var err error
+				tmout, err = time.ParseDuration(*rawEndpoint.Timeout)
+				lib.FatalOnError(err)
+			}
 			if !ok {
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
@@ -405,6 +416,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
 						Projects:   rawEndpoint.Projects,
+						Timeout:    tmout,
 					},
 				)
 				continue
@@ -461,6 +473,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
+							Timeout:    tmout,
 						},
 					)
 				}
@@ -523,6 +536,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
+							Timeout:    tmout,
 						},
 					)
 				}
@@ -585,6 +599,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Project:    rawEndpoint.Project,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
+							Timeout:    tmout,
 						},
 					)
 				}
@@ -601,6 +616,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Project:    rawEndpoint.Project,
 						ProjectP2O: p2o,
 						Projects:   rawEndpoint.Projects,
+						Timeout:    tmout,
 					},
 				)
 				continue
@@ -819,6 +835,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						Project:    endpoint.Project,
 						ProjectP2O: endpoint.ProjectP2O,
 						Projects:   endpoint.Projects,
+						Timeout:    endpoint.Timeout,
 						Endpoint:   name,
 						Config:     dataSource.Config,
 						DsSlug:     dataSource.Slug,
@@ -1609,7 +1626,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				str string
 			)
 			if !ctx.SkipP2O {
-				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.FxSlug})
+				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.FxSlug}, nil)
 			}
 			if keyAdded {
 				gKeyMtx.Unlock()
@@ -4539,7 +4556,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			str string
 		)
 		if !ctx.SkipP2O {
-			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.FxSlug})
+			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.FxSlug}, &task.Timeout)
 		}
 		if keyAdded {
 			gKeyMtx.Unlock()

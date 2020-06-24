@@ -26,6 +26,7 @@ type Task struct {
 	ProjectP2O          bool
 	Projects            []EndpointProject
 	Millis              int64
+	Timeout             time.Duration
 }
 
 // String - default string output for a task (generic)
