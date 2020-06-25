@@ -4776,7 +4776,7 @@ func mapOrgNames(ctx *lib.Ctx) (err error) {
 }
 
 func detAffRange(ctx *lib.Ctx) (err error) {
-	if ctx.SkipDetAffRange || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowDetAffRange) {
+	if !ctx.RunDetAffRange || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowDetAffRange) {
 		return
 	}
 	err = executeAPICall(ctx, "/v1/affiliation/det_aff_range")

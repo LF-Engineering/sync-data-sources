@@ -79,7 +79,7 @@ type Ctx struct {
 	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails          bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
 	SkipOrgMap              bool           // From SDS_SKIP_ORG_MAP, if set - it will skip calling DA-affiliation map_org_name API
-	SkipDetAffRange         bool           // From SDS_SKIP_DET_AFF_RANGE, if set - it will skip calling DA-affiliation det_aff_range API
+	RunDetAffRange          bool           // From SDS_RUN_DET_AFF_RANGE, if set - it will call DA-affiliation det_aff_range API (this is a very resource intensive API)
 	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
 	StripErrorSize          int            // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
 	GitHubOAuth             string         // From SDS_GITHUB_OAUTH, if not set it attempts to use public access, if contains "/" it will assume that it contains file name, if "," found then it will assume that this is a list of OAuth tokens instead of just one
@@ -489,8 +489,8 @@ func (ctx *Ctx) Init() {
 	// Skip calling DA-affiliation map_org_names API
 	ctx.SkipOrgMap = os.Getenv("SDS_SKIP_ORG_MAP") != ""
 
-	// Skip calling DA-affiliation det_aff_range API
-	ctx.SkipDetAffRange = os.Getenv("SDS_SKIP_DET_AFF_RANGE") != ""
+	// Run DA-affiliation det_aff_range API
+	ctx.RunDetAffRange = os.Getenv("SDS_RUN_DET_AFF_RANGE") != ""
 
 	// Skip all p2o commands
 	ctx.SkipP2O = os.Getenv("SDS_SKIP_P2O") != ""
