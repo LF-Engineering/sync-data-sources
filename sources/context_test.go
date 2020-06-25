@@ -94,7 +94,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipMerge:               in.SkipMerge,
 		SkipHideEmails:          in.SkipHideEmails,
 		SkipOrgMap:              in.SkipOrgMap,
-		SkipDetAffRange:         in.SkipDetAffRange,
+		RunDetAffRange:          in.RunDetAffRange,
 		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
 		MaxMtxWait:              in.MaxMtxWait,
@@ -325,7 +325,7 @@ func TestInit(t *testing.T) {
 		SkipMerge:               false,
 		SkipHideEmails:          false,
 		SkipOrgMap:              false,
-		SkipDetAffRange:         false,
+		RunDetAffRange:          false,
 		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
 		MaxMtxWait:              900,
@@ -1001,13 +1001,13 @@ func TestInit(t *testing.T) {
 		{
 			"Set skip detect affiliations date range",
 			map[string]string{
-				"SDS_SKIP_DET_AFF_RANGE": "1",
+				"SDS_RUN_DET_AFF_RANGE": "1",
 			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{
-					"SkipDetAffRange": true,
+					"RunDetAffRange": true,
 				},
 			),
 		},
