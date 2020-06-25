@@ -382,6 +382,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Skip:       rawEndpoint.Skip,
 						Only:       rawEndpoint.Only,
 						Timeout:    rawEndpoint.Timeout,
+						CopyFrom:   rawEndpoint.CopyFrom,
 					},
 				)
 			}
@@ -417,6 +418,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						ProjectP2O: p2o,
 						Projects:   rawEndpoint.Projects,
 						Timeout:    tmout,
+						CopyFrom:   rawEndpoint.CopyFrom,
 					},
 				)
 				continue
@@ -474,6 +476,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
 							Timeout:    tmout,
+							CopyFrom:   rawEndpoint.CopyFrom,
 						},
 					)
 				}
@@ -537,6 +540,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
 							Timeout:    tmout,
+							CopyFrom:   rawEndpoint.CopyFrom,
 						},
 					)
 				}
@@ -600,6 +604,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							ProjectP2O: p2o,
 							Projects:   rawEndpoint.Projects,
 							Timeout:    tmout,
+							CopyFrom:   rawEndpoint.CopyFrom,
 						},
 					)
 				}
@@ -617,6 +622,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						ProjectP2O: p2o,
 						Projects:   rawEndpoint.Projects,
 						Timeout:    tmout,
+						CopyFrom:   rawEndpoint.CopyFrom,
 					},
 				)
 				continue
@@ -836,6 +842,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						ProjectP2O: endpoint.ProjectP2O,
 						Projects:   endpoint.Projects,
 						Timeout:    endpoint.Timeout,
+						CopyFrom:   endpoint.CopyFrom,
 						Endpoint:   name,
 						Config:     dataSource.Config,
 						DsSlug:     dataSource.Slug,
@@ -4111,7 +4118,7 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	}
 }
 
-func getConditionJSON(conds []lib.ProjectCondition) (s string) {
+func getConditionJSON(conds []lib.ColumnCondition) (s string) {
 	for _, cond := range conds {
 		s += fmt.Sprintf(`{"regexp":{"%s":{"value":"%s", "flags":"ALL"}}},`, jsonEscape(cond.Column), jsonEscape(cond.Value))
 	}
@@ -4232,6 +4239,11 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 	}
 }
 
+func handleCopyFrom(ctx *lib.Ctx, task *lib.Task) (err error) {
+	fmt.Printf("copy config: %+v\n", task.CopyFrom)
+	return
+}
+
 // mapOrigin maps fixture's origin to ES "origin" column, depending on data-source type
 func mapOrigin(origin, ds string) string {
 	switch ds {
@@ -4249,10 +4261,10 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 		for _, project := range task.Projects {
 			ep := lib.EndpointProject{Name: project.Name, Origin: mapOrigin(project.Origin, task.DsSlug)}
 			for _, cond := range project.Must {
-				ep.Must = append(ep.Must, lib.ProjectCondition{Column: cond.Column, Value: cond.Value})
+				ep.Must = append(ep.Must, lib.ColumnCondition{Column: cond.Column, Value: cond.Value})
 			}
 			for _, cond := range project.MustNot {
-				ep.MustNot = append(ep.MustNot, lib.ProjectCondition{Column: cond.Column, Value: cond.Value})
+				ep.MustNot = append(ep.MustNot, lib.ColumnCondition{Column: cond.Column, Value: cond.Value})
 			}
 			result.Projects = append(result.Projects, ep)
 		}
@@ -4303,8 +4315,23 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
+	// Filter out by task / task skip RE
 	if taskFilteredOut(ctx, &task) {
 		result.Code[1] = -1
+		return
+	}
+	// Handle copy from another index slug
+	if task.CopyFrom.Pattern != "" {
+		err := handleCopyFrom(ctx, &task)
+		if err != nil {
+			result.Code[1] = 7
+			result.Err = err
+			return
+		}
+		if len(result.Projects) > 0 {
+			setProject(ctx, idxSlug, result.Projects)
+		}
+		result.Code[1] = -2
 		return
 	}
 	commandLine := []string{

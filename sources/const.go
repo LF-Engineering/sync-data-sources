@@ -113,6 +113,7 @@ const Post string = "POST"
 
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
+	-2: "task is configured as a copy from another index pattern",
 	-1: "task was skipped",
 	1:  "datasource slug contains > 1 '/' separators",
 	2:  "incorrect endpoint value for given data source",
@@ -120,4 +121,5 @@ var ErrorStrings = map[int]string{
 	4:  "p2o.py error",
 	5:  "setting SSH private key error",
 	6:  "command timeout error",
+	7:  "index copy error",
 }

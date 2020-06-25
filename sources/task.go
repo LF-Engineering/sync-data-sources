@@ -27,6 +27,7 @@ type Task struct {
 	Projects            []EndpointProject
 	Millis              int64
 	Timeout             time.Duration
+	CopyFrom            CopyConfig
 }
 
 // String - default string output for a task (generic)

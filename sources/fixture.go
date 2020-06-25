@@ -46,18 +46,25 @@ func IsRedacted(name string) bool {
 	return false
 }
 
-// ProjectCondition - holds single must or must_not condition for setting project witing a single endpoint
-type ProjectCondition struct {
+// ColumnCondition - holds single must or must_not condition for setting project witing a single endpoint
+type ColumnCondition struct {
 	Column string `yaml:"column"`
 	Value  string `yaml:"value"`
 }
 
 // EndpointProject - holds data for a single sub-endpoint project configuration
 type EndpointProject struct {
-	Name    string             `yaml:"name"`
-	Origin  string             `yaml:"origin"`
-	Must    []ProjectCondition `yaml:"must"`
-	MustNot []ProjectCondition `yaml:"must_not"`
+	Name    string            `yaml:"name"`
+	Origin  string            `yaml:"origin"`
+	Must    []ColumnCondition `yaml:"must"`
+	MustNot []ColumnCondition `yaml:"must_not"`
+}
+
+// CopyConfig - holds data related to copy from other index configuration
+type CopyConfig struct {
+	Pattern string            `yaml:"pattern"`
+	Must    []ColumnCondition `yaml:"must"`
+	MustNot []ColumnCondition `yaml:"must_not"`
 }
 
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
@@ -66,6 +73,7 @@ type Endpoint struct {
 	Project    string        // optional project (allows groupping endpoints), for example "Project value"
 	ProjectP2O bool          // if true SDS will pass `--project "Project value"` to p2o.py
 	Timeout    time.Duration // specifies maximum running time for a given endpoint (if specified)
+	CopyFrom   CopyConfig    // specifies optional 'copy_from' configuration
 	// if false, SDS will post-process index and will add `"project": "Project value"`
 	// column where `"origin": "Endpoint name"`
 	Projects []EndpointProject
@@ -82,6 +90,7 @@ type RawEndpoint struct {
 	ProjectP2O *bool             `yaml:"p2o"`
 	Timeout    *string           `yaml:"timeout"`
 	Projects   []EndpointProject `yaml:"endpoint_projects"`
+	CopyFrom   CopyConfig        `yaml:"copy_from"`
 	SkipREs    []*regexp.Regexp  `yaml:"-"`
 	OnlyREs    []*regexp.Regexp  `yaml:"-"`
 }
