@@ -4118,9 +4118,13 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	}
 }
 
-func getConditionJSON(conds []lib.ColumnCondition) (s string) {
+func getConditionJSON(conds []lib.ColumnCondition, origin string) (s string) {
 	for _, cond := range conds {
-		s += fmt.Sprintf(`{"regexp":{"%s":{"value":"%s", "flags":"ALL"}}},`, jsonEscape(cond.Column), jsonEscape(cond.Value))
+		val := cond.Value
+		if val == "{{endpoint}}" {
+			val = origin
+		}
+		s += fmt.Sprintf(`{"regexp":{"%s":{"value":"%s", "flags":"ALL"}}},`, jsonEscape(cond.Column), jsonEscape(val))
 	}
 	l := len(s)
 	if l > 0 {
@@ -4146,12 +4150,12 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			lib.Printf("Setting project %+v origin (index '%s')\n", conf, index)
 		}
 		lastEpoch := int64(0)
-		must := getConditionJSON(conf.Must)
+		must := getConditionJSON(conf.Must, origin)
 		mustPartial := ""
 		if must != "" {
 			mustPartial = "," + must
 		}
-		mustNot := getConditionJSON(conf.MustNot)
+		mustNot := getConditionJSON(conf.MustNot, origin)
 		optionalMustNot := ""
 		mustNotPartial := ""
 		if mustNot != "" {
@@ -4239,8 +4243,199 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 	}
 }
 
-func handleCopyFrom(ctx *lib.Ctx, task *lib.Task) (err error) {
-	fmt.Printf("copy config: %+v\n", task.CopyFrom)
+func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch time.Time) {
+	mustPartial := ""
+	if must != "" {
+		mustPartial = "," + must
+	}
+	optionalMustNot := ""
+	if mustNot != "" {
+		optionalMustNot = `,"must_not":[` + mustNot + "]"
+	}
+	data := fmt.Sprintf(
+		`{"query":{"bool":{"must":[{"exists":{"field":"date"}}%s]%s}},"sort":{"date":"desc"}}`,
+		mustPartial,
+		optionalMustNot,
+	)
+	// FIXME
+	fmt.Printf("lastDataDate query: %s:%s\n", index, data)
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc/_search?size=1", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc/_search?size=1", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		if silent {
+			return
+		}
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%s\n%s\n", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	payload := lib.EsSearchResultPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err := ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	if len(payload.Hits.Hits) == 0 {
+		return
+	}
+	epoch = payload.Hits.Hits[0].Source.Date
+	return
+}
+
+func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
+	scrollSize := 10
+	scrollTime := "1m"
+	conf := task.CopyFrom
+	origin := mapOrigin(task.Endpoint, task.DsSlug)
+	//fmt.Printf("%s:%s: copy config: %+v\n", index, origin, conf)
+	must := getConditionJSON(conf.Must, origin)
+	mustPartial := ""
+	if must != "" {
+		mustPartial = "," + must
+	}
+	mustNot := getConditionJSON(conf.MustNot, origin)
+	optionalMustNot := ""
+	mustNotPartial := ""
+	if mustNot != "" {
+		optionalMustNot = `,"must_not":[` + mustNot + "]"
+		mustNotPartial = "," + mustNot
+	}
+	lastDate := lastDataDate(ctx, index, must, mustNot, true)
+	fmt.Printf("lastDataDate: %+v\n", lastDate)
+	payloadBytes := []byte{}
+	data := ""
+	if lastDate.IsZero() {
+		data = fmt.Sprintf(
+			`{"size":%d,"query":{"bool":{"must":[{"exists":{"field":"date"}}%s]%s}}}`,
+			scrollSize,
+			mustPartial,
+			optionalMustNot,
+		)
+		payloadBytes = []byte(data)
+	} else {
+		millis := lastDate.UnixNano() / 1000000
+		// FIXME
+		millis = 1493069017000
+		data = fmt.Sprintf(
+			`{"size":%d,"query":{"bool":{"must_not":[{"range":{"date":{"lte":%d, "format":"epoch_millis"}}}%s],"must":[{"exists":{"field":"date"}}%s]}}}`,
+			scrollSize,
+			millis,
+			mustNotPartial,
+			mustPartial,
+		)
+		payloadBytes = []byte(data)
+	}
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	pattern := conf.Pattern
+	fmt.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
+	url := fmt.Sprintf("%s/%s/_search?scroll=%s", ctx.ElasticURL, pattern, scrollTime)
+	rurl := fmt.Sprintf("/%s/_search?scroll=%s", pattern, scrollTime)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	payload := lib.EsSearchScrollPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	scrollID := payload.ScrollID
+	//fmt.Printf("scrollID: %s\n", scrollID)
+	data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
+	//fmt.Printf("%s\n", data)
+	payloadBytes = []byte(data)
+	payloadBody = bytes.NewReader(payloadBytes)
+	url = ctx.ElasticURL + "/_search/scroll"
+	rurl = "/_search/scroll"
+	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	type unknownDocs struct {
+		Hits struct {
+			Hits []struct {
+				Data map[string]interface{} `json:"-"`
+			} `json:"hits"`
+		} `json:"hits"`
+	}
+	result := unknownDocs{}
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	fmt.Printf("data:\n%+v\n", result)
 	return
 }
 
@@ -4322,7 +4517,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	// Handle copy from another index slug
 	if task.CopyFrom.Pattern != "" {
-		err := handleCopyFrom(ctx, &task)
+		err := handleCopyFrom(ctx, idxSlug, &task)
 		if err != nil {
 			result.Code[1] = 7
 			result.Err = err

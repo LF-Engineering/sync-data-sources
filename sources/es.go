@@ -48,6 +48,7 @@ type EsSearchResultSource struct {
 	Mtx       string    `json:"mtx"`
 	Dt        time.Time `json:"dt"`
 	ProjectTS int64     `json:"project_ts"`
+	Date      time.Time `json:"date"`
 }
 
 // EsSearchResultHit - search result single hit
@@ -70,6 +71,11 @@ type EsSearchResultPayload struct {
 // EsUpdateByQueryPayload - update by query result payload
 type EsUpdateByQueryPayload struct {
 	Updated int64 `json:"updated"`
+}
+
+// EsSearchScrollPayload - search scroll result payload
+type EsSearchScrollPayload struct {
+	ScrollID string `json:"_scroll_id"`
 }
 
 // ES last_run support in sdsdata index
