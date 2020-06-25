@@ -4257,8 +4257,9 @@ func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch
 		mustPartial,
 		optionalMustNot,
 	)
-	// FIXME
-	fmt.Printf("lastDataDate query: %s:%s\n", index, data)
+	if ctx.Debug > 0 {
+		lib.Printf("lastDataDate query: %s:%s\n", index, data)
+	}
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
@@ -4305,12 +4306,119 @@ func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch
 	return
 }
 
+func bulkJSONData(ctx *lib.Ctx, index string, payloadBytes []byte) (err error) {
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_bulk?refresh=wait_for", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_bulk?refresh=wait_for", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, string(payloadBytes))
+		return
+	}
+	req.Header.Set("Content-Type", "application/x-ndjson")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, string(payloadBytes))
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	body, err := ioutil.ReadAll(resp.Body)
+	if resp.StatusCode != 200 {
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, string(payloadBytes))
+			return
+		}
+		err = fmt.Errorf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, string(payloadBytes), body)
+		return
+	}
+	esResult := lib.EsBulkResult{}
+	err = json.Unmarshal(body, &esResult)
+	if err != nil {
+		lib.Printf("Bulk result unmarshal error: %+v", err)
+		return
+	}
+	for i, item := range esResult.Items {
+		if item.Index.Status != 201 {
+			err = fmt.Errorf("Failed to create #%d item, status %d, error %+v\n", i, item.Index.Status, item.Index.Error)
+			return
+		}
+	}
+	return
+}
+
+func processJSON(ctx *lib.Ctx, index string, bulkNum, lineNum int, payloadBytes []byte) (err error) {
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_doc", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s/_doc", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, string(payloadBytes))
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, string(payloadBytes))
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 201 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, string(payloadBytes))
+			return
+		}
+		err = fmt.Errorf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, string(payloadBytes), body)
+		return
+	}
+	return
+}
+
+func bulkCopy(ctx *lib.Ctx, bulkNum int, index string, jsons [][]byte) (err error) {
+	fmt.Printf("Saving #%d bulk %d JSONs\n", bulkNum, len(jsons))
+	hdr := []byte("{\"index\":{\"_index\":\"" + index + "\"}}\n")
+	payloads := []byte{}
+	newLine := []byte("\n")
+	for _, doc := range jsons {
+		payloads = append(payloads, hdr...)
+		payloads = append(payloads, doc...)
+		payloads = append(payloads, newLine...)
+	}
+	nItems := len(jsons)
+	er := bulkJSONData(ctx, index, payloads)
+	ers := []error{}
+	if er != nil {
+		lib.Printf("Warning: critical bulk failure, fallback to line by line mode for bucket %d (%d lines): %+v\n", bulkNum, nItems, er)
+		for i, doc := range jsons {
+			err = processJSON(ctx, index, bulkNum, i, doc)
+			if err != nil {
+				lib.Printf("bulk #%d, line %d/%d, error: %+v\n", bulkNum, i, nItems, err)
+				ers = append(ers, err)
+			}
+		}
+	}
+	if len(ers) > 0 {
+		err = fmt.Errorf("bulk #%d, docuemnts: %d, errors: %d, last: %+v", bulkNum, nItems, len(ers), ers[len(ers)-1])
+	}
+	return
+}
+
 func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
-	scrollSize := 10
-	scrollTime := "1m"
+	scrollSize := 500
+	scrollTime := "10m"
+	bulkSize := 500
 	conf := task.CopyFrom
 	origin := mapOrigin(task.Endpoint, task.DsSlug)
-	//fmt.Printf("%s:%s: copy config: %+v\n", index, origin, conf)
+	if ctx.Debug > 0 {
+		lib.Printf("%s:%s: copy config: %+v\n", index, origin, conf)
+	}
 	must := getConditionJSON(conf.Must, origin)
 	mustPartial := ""
 	if must != "" {
@@ -4324,7 +4432,9 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		mustNotPartial = "," + mustNot
 	}
 	lastDate := lastDataDate(ctx, index, must, mustNot, true)
-	fmt.Printf("lastDataDate: %+v\n", lastDate)
+	if ctx.Debug > 0 {
+		lib.Printf("lastDataDate: %+v\n", lastDate)
+	}
 	payloadBytes := []byte{}
 	data := ""
 	if lastDate.IsZero() {
@@ -4337,10 +4447,9 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		payloadBytes = []byte(data)
 	} else {
 		millis := lastDate.UnixNano() / 1000000
-		// FIXME
-		millis = 1493069017000
+		// millis -= 36000000
 		data = fmt.Sprintf(
-			`{"size":%d,"query":{"bool":{"must_not":[{"range":{"date":{"lte":%d, "format":"epoch_millis"}}}%s],"must":[{"exists":{"field":"date"}}%s]}}}`,
+			`{"size":%d,"query":{"bool":{"must_not":[{"range":{"date":{"lte":%d,"format":"epoch_millis"}}}%s],"must":[{"exists":{"field":"date"}}%s]}}}`,
 			scrollSize,
 			millis,
 			mustNotPartial,
@@ -4351,7 +4460,9 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
 	pattern := conf.Pattern
-	fmt.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
+	if ctx.Debug > 0 {
+		lib.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
+	}
 	url := fmt.Sprintf("%s/%s/_search?scroll=%s", ctx.ElasticURL, pattern, scrollTime)
 	rurl := fmt.Sprintf("/%s/_search?scroll=%s", pattern, scrollTime)
 	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
@@ -4387,14 +4498,134 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		lib.Printf("Body:%s\n", body)
 		return
 	}
+	jsons := [][]byte{}
+	nJSONs := 0
+	bulks := 0
 	scrollID := payload.ScrollID
-	//fmt.Printf("scrollID: %s\n", scrollID)
-	data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
-	//fmt.Printf("%s\n", data)
+	for {
+		data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
+		payloadBytes = []byte(data)
+		payloadBody = bytes.NewReader(payloadBytes)
+		url = ctx.ElasticURL + lib.SearchScroll
+		rurl = lib.SearchScroll
+		method := lib.Get
+		req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+		if err != nil {
+			lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			var body []byte
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+			return
+		}
+		var (
+			result interface{}
+			field  interface{}
+		)
+		err = json.NewDecoder(resp.Body).Decode(&result)
+		root, ok := result.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json root error")
+			return
+		}
+		field, ok = root["_scroll_id"]
+		if !ok {
+			err = fmt.Errorf("parse json field _scroll_id error")
+			return
+		}
+		scrollID, ok = field.(string)
+		if !ok {
+			err = fmt.Errorf("parse json scrollID error")
+			return
+		}
+		field, ok = root["hits"]
+		if !ok {
+			err = fmt.Errorf("parse json field hits error")
+			return
+		}
+		hits, ok := field.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json hits error")
+			return
+		}
+		field, ok = hits["hits"]
+		if !ok {
+			err = fmt.Errorf("parse json field hits2 error")
+			return
+		}
+		hits2, ok := field.([]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json hits2 error")
+			return
+		}
+		if len(hits2) == 0 {
+			break
+		}
+		for i, item := range hits2 {
+			root, ok := item.(map[string]interface{})
+			if !ok {
+				err = fmt.Errorf("parse json #%d item root error %+v", i, item)
+				return
+			}
+			field, ok = root["_source"]
+			if !ok {
+				err = fmt.Errorf("parse json #%d item field _source error %+v", i, item)
+				return
+			}
+			doc, ok := field.(map[string]interface{})
+			if !ok {
+				err = fmt.Errorf("parse json #%d item doc error: %+v", i, item)
+				return
+			}
+			var jsonBytes []byte
+			jsonBytes, err = json.Marshal(doc)
+			if err != nil {
+				return
+			}
+			jsons = append(jsons, jsonBytes)
+			nJSONs++
+			if nJSONs == bulkSize {
+				err = bulkCopy(ctx, bulks, index, jsons)
+				if err != nil {
+					return
+				}
+				jsons = [][]byte{}
+				nJSONs = 0
+				bulks++
+			}
+		}
+	}
+	if nJSONs > 0 {
+		err = bulkCopy(ctx, bulks, index, jsons)
+		if err != nil {
+			return
+		}
+		bulks++
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Releasing scroll_id %s\n", scrollID)
+	}
+	data = fmt.Sprintf(`{"scroll_id":"%s"}`, scrollID)
 	payloadBytes = []byte(data)
 	payloadBody = bytes.NewReader(payloadBytes)
-	url = ctx.ElasticURL + "/_search/scroll"
-	rurl = "/_search/scroll"
+	url = ctx.ElasticURL + lib.SearchScroll
+	rurl = lib.SearchScroll
+	method = lib.Delete
 	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
@@ -4419,23 +4650,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 		return
 	}
-	type unknownDocs struct {
-		Hits struct {
-			Hits []struct {
-				Data map[string]interface{} `json:"-"`
-			} `json:"hits"`
-		} `json:"hits"`
-	}
-	result := unknownDocs{}
-	err = json.NewDecoder(resp.Body).Decode(&result)
-	if err != nil {
-		var body []byte
-		body, err = ioutil.ReadAll(resp.Body)
-		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
-		lib.Printf("Body:%s\n", body)
-		return
-	}
-	fmt.Printf("data:\n%+v\n", result)
+	lib.Printf("Saved %d bulks\n", bulks)
 	return
 }
 
