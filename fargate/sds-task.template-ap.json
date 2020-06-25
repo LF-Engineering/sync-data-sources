@@ -244,6 +244,14 @@
           "value": "${SDS_SKIP_HIDE_EMAILS}"
         },
         {
+          "name": "SDS_SKIP_ORG_MAP",
+          "value": "${SDS_SKIP_ORG_MAP}"
+        },
+        {
+          "name": "SDS_RUN_DET_AFF_RANGE",
+          "value": "${SDS_RUN_DET_AFF_RANGE}"
+        },
+        {
           "name": "SDS_SKIP_P2O",
           "value": "${SDS_SKIP_P2O}"
         },

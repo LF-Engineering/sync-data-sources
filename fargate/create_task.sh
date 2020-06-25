@@ -54,9 +54,9 @@ then
   export SDS_SKIP_MERGE=1
   export SDS_SKIP_HIDE_EMAILS=1
   export SDS_SKIP_ORG_MAP=1
-  export SDS_SKIP_DET_AFF_RANGE=1
   export SDS_SKIP_P2O=1
   export SDS_DRY_RUN=1
+  #export SDS_RUN_DET_AFF_RANGE=1
   #export SDS_DRY_RUN_CODE=3
   #export SDS_DRY_RUN_CODE_RANDOM=1
   #export SDS_DRY_RUN_SECONDS=1
