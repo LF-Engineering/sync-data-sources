@@ -129,6 +129,22 @@ type EsIndexSettingsPayload struct {
 	Settings EsIndexSettings `json:"settings"`
 }
 
+// EsBulkItemStatus - status
+type EsBulkItemStatus struct {
+	Status int         `json:"status"`
+	Error  interface{} `json:"error"`
+}
+
+// EsBulkResultItem - index status
+type EsBulkResultItem struct {
+	Index EsBulkItemStatus `json:"index"`
+}
+
+// EsBulkResult - item statuses
+type EsBulkResult struct {
+	Items []EsBulkResultItem `json:"items"`
+}
+
 // EnsureIndex - ensure that given index exists in ES
 // init: when this flag is set, do not use syncdatasources.Printf which would cause infinite recurence
 func EnsureIndex(ctx *Ctx, index string, init bool) {

@@ -111,6 +111,9 @@ const Head string = "HEAD"
 // Post - POST
 const Post string = "POST"
 
+// SearchScroll - /_search/scroll
+const SearchScroll string = "/_search/scroll"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	-2: "task is configured as a copy from another index pattern",
