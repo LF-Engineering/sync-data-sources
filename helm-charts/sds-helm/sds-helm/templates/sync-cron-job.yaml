@@ -136,6 +136,8 @@ spec:
               value: '{{ $root.Values.skipOrgMap }}'
             - name: SDS_RUN_DET_AFF_RANGE
               value: '{{ $root.Values.runDetAffRange }}'
+            - name: SDS_SKIP_COPY_FROM
+              value: '{{ $root.Values.skipCopyFrom }}'
             - name: SDS_SKIP_P2O
               value: '{{ $root.Values.skipP2O }}'
             - name: SDS_SKIP_VALIDATE_GITHUB_API
