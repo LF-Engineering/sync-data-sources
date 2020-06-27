@@ -249,6 +249,10 @@
           "value": "${SDS_RUN_DET_AFF_RANGE}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_COPY_FROM",
+          "value": "${SDS_DRY_RUN_ALLOW_COPY_FROM}"
+        },
+        {
           "name": "SDS_SKIP_P2O",
           "value": "${SDS_SKIP_P2O}"
         },
