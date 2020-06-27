@@ -4411,6 +4411,9 @@ func bulkCopy(ctx *lib.Ctx, bulkNum int, index string, jsons [][]byte) (err erro
 }
 
 func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
+	if ctx.SkipCopyFrom || (ctx.DryRun && !ctx.DryRunAllowCopyFrom) {
+		return
+	}
 	scrollSize := 500
 	scrollTime := "10m"
 	bulkSize := 500

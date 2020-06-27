@@ -57,6 +57,7 @@ type Ctx struct {
 	DryRunAllowHideEmails   bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
 	DryRunAllowOrgMap       bool           // From SDS_DRY_RUN_ALLOW_ORG_MAP, if set it will allow calling DA-affiliation map_org_names API in dry run mode
 	DryRunAllowDetAffRange  bool           // From SDS_DRY_RUN_ALLOW_DET_AFF_RANGE, if set it will allow calling DA-affiliation det_aff_range API in dry run mode
+	DryRunAllowCopyFrom     bool           // From SDS_DRY_RUN_ALLOW_COPY_FROM, if set it will allow copy index in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds      int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 30
@@ -79,6 +80,7 @@ type Ctx struct {
 	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails          bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
 	SkipOrgMap              bool           // From SDS_SKIP_ORG_MAP, if set - it will skip calling DA-affiliation map_org_name API
+	SkipCopyFrom            bool           // From SDS_SKIP_COPY_FROM, if set - it will skip copying index feature
 	RunDetAffRange          bool           // From SDS_RUN_DET_AFF_RANGE, if set - it will call DA-affiliation det_aff_range API (this is a very resource intensive API)
 	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
 	StripErrorSize          int            // From SDS_STRIP_ERROR_SIZE, default 16384, error messages longer that this value will be stripped by this value from beginning and from end, so for 16384 error 64000 bytes long will be 16384 bytes from the beginning \n(...)\n 16384 from the end
@@ -239,6 +241,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowHideEmails = os.Getenv("SDS_DRY_RUN_ALLOW_HIDE_EMAILS") != ""
 	ctx.DryRunAllowOrgMap = os.Getenv("SDS_DRY_RUN_ALLOW_ORG_MAP") != ""
 	ctx.DryRunAllowDetAffRange = os.Getenv("SDS_DRY_RUN_ALLOW_DET_AFF_RANGE") != ""
+	ctx.DryRunAllowCopyFrom = os.Getenv("SDS_DRY_RUN_ALLOW_COPY_FROM") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -488,6 +491,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip calling DA-affiliation map_org_names API
 	ctx.SkipOrgMap = os.Getenv("SDS_SKIP_ORG_MAP") != ""
+
+	// Skip copy from functionality
+	ctx.SkipCopyFrom = os.Getenv("SDS_SKIP_COPY_FROM") != ""
 
 	// Run DA-affiliation det_aff_range API
 	ctx.RunDetAffRange = os.Getenv("SDS_RUN_DET_AFF_RANGE") != ""
