@@ -49,6 +49,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowHideEmails:   in.DryRunAllowHideEmails,
 		DryRunAllowOrgMap:       in.DryRunAllowOrgMap,
 		DryRunAllowDetAffRange:  in.DryRunAllowDetAffRange,
+		DryRunAllowCopyFrom:     in.DryRunAllowCopyFrom,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
 		OnlyValidate:            in.OnlyValidate,
 		OnlyP2O:                 in.OnlyP2O,
@@ -94,6 +95,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipMerge:               in.SkipMerge,
 		SkipHideEmails:          in.SkipHideEmails,
 		SkipOrgMap:              in.SkipOrgMap,
+		SkipCopyFrom:            in.SkipCopyFrom,
 		RunDetAffRange:          in.RunDetAffRange,
 		SkipP2O:                 in.SkipP2O,
 		MaxDeleteTrials:         in.MaxDeleteTrials,
@@ -281,6 +283,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowHideEmails:   false,
 		DryRunAllowOrgMap:       false,
 		DryRunAllowDetAffRange:  false,
+		DryRunAllowCopyFrom:     false,
 		DryRunAllowSSAW:         false,
 		OnlyValidate:            false,
 		OnlyP2O:                 false,
@@ -325,6 +328,7 @@ func TestInit(t *testing.T) {
 		SkipMerge:               false,
 		SkipHideEmails:          false,
 		SkipOrgMap:              false,
+		SkipCopyFrom:            false,
 		RunDetAffRange:          false,
 		SkipP2O:                 false,
 		MaxDeleteTrials:         10,
@@ -732,6 +736,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_HIDE_EMAILS":   "1",
 				"SDS_DRY_RUN_ALLOW_ORG_MAP":       "t",
 				"SDS_DRY_RUN_ALLOW_DET_AFF_RANGE": "t",
+				"SDS_DRY_RUN_ALLOW_COPY_FROM":     "1",
 			},
 			dynamicSetFields(
 				t,
@@ -756,6 +761,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowHideEmails":   true,
 					"DryRunAllowOrgMap":       true,
 					"DryRunAllowDetAffRange":  true,
+					"DryRunAllowCopyFrom":     true,
 				},
 			),
 		},
@@ -982,6 +988,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipHideEmails": true,
+				},
+			),
+		},
+		{
+			"Set skip copy from",
+			map[string]string{
+				"SDS_SKIP_COPY_FROM": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipCopyFrom": true,
 				},
 			),
 		},
