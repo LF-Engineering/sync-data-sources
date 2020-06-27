@@ -1,0 +1,12 @@
+---
+native:
+  slug: hyperledger/aries
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.hyperledger.org/
+    copy_from:
+      pattern: sds-hyperledger-shared-confluence
+      must:
+      - column: space
+        value: '.*ARIES.*'
