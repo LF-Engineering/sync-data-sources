@@ -4382,7 +4382,9 @@ func processJSON(ctx *lib.Ctx, index string, bulkNum, lineNum int, payloadBytes 
 }
 
 func bulkCopy(ctx *lib.Ctx, bulkNum int, index string, jsons [][]byte) (err error) {
-	fmt.Printf("Saving #%d bulk %d JSONs\n", bulkNum, len(jsons))
+	if ctx.Debug > 0 {
+		lib.Printf("Saving #%d bulk %d JSONs\n", bulkNum, len(jsons))
+	}
 	hdr := []byte("{\"index\":{\"_index\":\"" + index + "\"}}\n")
 	payloads := []byte{}
 	newLine := []byte("\n")
@@ -4434,6 +4436,25 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		optionalMustNot = `,"must_not":[` + mustNot + "]"
 		mustNotPartial = "," + mustNot
 	}
+	// There can already be an index alias under index name, we need to drop it
+	method := lib.Delete
+	url := fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, index)
+	rurl := "/_all/_alias/" + index
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	resp, err := http.DefaultClient.Do(req)
+	_ = resp.Body.Close()
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+		return
+	}
+	if resp.StatusCode == 200 {
+		lib.Printf("Dropped conflicting alias: %s\n", index)
+	}
+	// Now check last date on index (not alias) if present
 	lastDate := lastDataDate(ctx, index, must, mustNot, true)
 	if ctx.Debug > 0 {
 		lib.Printf("lastDataDate: %+v\n", lastDate)
@@ -4461,30 +4482,28 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		payloadBytes = []byte(data)
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
-	method := lib.Post
+	method = lib.Post
 	pattern := conf.Pattern
 	if ctx.Debug > 0 {
 		lib.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
 	}
-	url := fmt.Sprintf("%s/%s/_search?scroll=%s", ctx.ElasticURL, pattern, scrollTime)
-	rurl := fmt.Sprintf("/%s/_search?scroll=%s", pattern, scrollTime)
-	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	url = fmt.Sprintf("%s/%s/_search?scroll=%s", ctx.ElasticURL, pattern, scrollTime)
+	rurl = fmt.Sprintf("/%s/_search?scroll=%s", pattern, scrollTime)
+	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 		return
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
+	resp, err = http.DefaultClient.Do(req)
 	if err != nil {
 		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 		return
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 	if resp.StatusCode != 200 {
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
 		if err != nil {
 			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 			return
@@ -4497,10 +4516,12 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if err != nil {
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
 		lib.Printf("Body:%s\n", body)
 		return
 	}
+	_ = resp.Body.Close()
 	jsons := [][]byte{}
 	nJSONs := 0
 	bulks := 0
@@ -4523,12 +4544,10 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 			lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 			return
 		}
-		defer func() {
-			_ = resp.Body.Close()
-		}()
 		if resp.StatusCode != 200 {
 			var body []byte
 			body, err = ioutil.ReadAll(resp.Body)
+			_ = resp.Body.Close()
 			if err != nil {
 				lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 				return
@@ -4541,6 +4560,15 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 			field  interface{}
 		)
 		err = json.NewDecoder(resp.Body).Decode(&result)
+		if err != nil {
+			var body []byte
+			body, err = ioutil.ReadAll(resp.Body)
+			_ = resp.Body.Close()
+			lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			lib.Printf("Body:%s\n", body)
+			return
+		}
+		_ = resp.Body.Close()
 		root, ok := result.(map[string]interface{})
 		if !ok {
 			err = fmt.Errorf("parse json root error")
@@ -4575,6 +4603,9 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		if !ok {
 			err = fmt.Errorf("parse json hits2 error")
 			return
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("%s -> %s: Fetched %d documents\n", pattern, index, len(hits2))
 		}
 		if len(hits2) == 0 {
 			break
@@ -4640,12 +4671,10 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 		return
 	}
-	defer func() {
-		_ = resp.Body.Close()
-	}()
 	if resp.StatusCode != 200 {
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
 		if err != nil {
 			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
 			return
@@ -4653,6 +4682,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 		return
 	}
+	_ = resp.Body.Close()
 	lib.Printf("Saved %d bulks\n", bulks)
 	return
 }
