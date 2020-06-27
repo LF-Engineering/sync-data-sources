@@ -1,0 +1,17 @@
+---
+native:
+  slug: hyperledger/burrow
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.hyperledger.org/
+    endpoint_projects:
+    - name: Burrow
+      must:
+      - column: space
+        value: '.*burrow.*'
+    copy_from:
+      pattern: sds-hyperledger-shared-confluence
+      must_not:
+      - column: space
+        value: '.*(ARIES|avalon|BESU|cactus|caliper|cello|explorer|fabric|GRID|indy|iroha|quilt|sawtooth|transact|ursa).*'

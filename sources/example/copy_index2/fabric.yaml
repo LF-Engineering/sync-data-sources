@@ -1,0 +1,13 @@
+---
+native:
+  slug: hyperledger/fabric
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.hyperledger.org/
+    project: Fabric
+    copy_from:
+      pattern: sds-hyperledger-shared-confluence
+      must:
+      - column: space
+        value: '.*fabric.*'

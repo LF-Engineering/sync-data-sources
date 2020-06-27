@@ -1,0 +1,71 @@
+native:
+  slug: hyperledger/shared
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.hyperledger.org/
+    endpoint_projects:
+    - name: '(null)'
+      must_not:
+      - column: space
+        value: '.*(ARIES|avalon|BESU|burrow|cactus|caliper|cello|explorer|fabric|GRID|indy|iroha|quilt|sawtooth|transact|ursa).*'
+    - name: Aries
+      must:
+      - column: space
+        value: '.*ARIES.*'
+    - name: Avalon
+      must:
+      - column: space
+        value: '.*avalon.*'
+    - name: Besu
+      must:
+      - column: space
+        value: '.*BESU.*'
+    - name: Burrow
+      must:
+      - column: space
+        value: '.*burrow.*'
+    - name: Cactus
+      must:
+      - column: space
+        value: '.*cactus.*'
+    - name: Caliper
+      must:
+      - column: space
+        value: '.*caliper.*'
+    - name: Cello
+      must:
+      - column: space
+        value: '.*cello.*'
+    - name: Explorer
+      must:
+      - column: space
+        value: '.*explorer.*'
+    - name: Fabric
+      must:
+      - column: space
+        value: '.*fabric.*'
+    - name: Grid
+      must:
+      - column: space
+        value: '.*GRID.*'
+    - name: Indy
+      must:
+      - column: space
+        value: '.*indy.*'
+    - name: Iroha
+      must:
+      - column: space
+        value: '.*iroha.*'
+    - name: Quilt
+      must:
+      - column: space
+        value: '.*quilt.*'
+    - name: Sawtooth
+      must:
+      - column: space
+        value: '.*sawtooth.*'
+    - name: Transact
+      must:
+      - column: space
+        value: '.*transact.*'

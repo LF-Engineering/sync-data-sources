@@ -1,0 +1,6 @@
+native:
+  slug: hyperledger/shared
+data_sources:
+- slug: confluence
+  endpoints:
+  - name: https://wiki.hyperledger.org/
