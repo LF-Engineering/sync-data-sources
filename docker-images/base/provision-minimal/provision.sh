@@ -4,6 +4,7 @@ set -eo pipefail
 
 pip3 install --upgrade setuptools
 pip3 install --upgrade pip
+pip3 install emoji
 
 repos=(grimoirelab-perceval grimoirelab-elk grimoirelab-sortinghat grimoirelab-kingarthur)
 
