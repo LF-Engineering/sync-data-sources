@@ -4412,6 +4412,269 @@ func bulkCopy(ctx *lib.Ctx, bulkNum int, index string, jsons [][]byte) (err erro
 	return
 }
 
+func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
+	// Get mapping(s) from pattern
+	rurl := "/" + pattern + "/_mapping"
+	url := ctx.ElasticURL + rurl
+	method := lib.Get
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	if resp.StatusCode != 200 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
+		return
+	}
+	var (
+		result interface{}
+		field  interface{}
+	)
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	_ = resp.Body.Close()
+	// Attempt to create index
+	rurl = "/" + index
+	url = ctx.ElasticURL + rurl
+	method = lib.Put
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 400 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
+		return
+	}
+	if ctx.Debug > 0 {
+		if resp.StatusCode == 200 {
+			lib.Printf("Created new index: %s\n", index)
+		} else if resp.StatusCode == 400 {
+			lib.Printf("Index %s already exists\n", index)
+		}
+	}
+	_ = resp.Body.Close()
+	root, ok := result.(map[string]interface{})
+	if !ok {
+		err = fmt.Errorf("parse json root error")
+		return
+	}
+	// Iterate mapping(s) from pattern
+	i := 0
+	nPatternIndices := len(root)
+	mapping := make(map[string]map[string]interface{})
+	mapping["properties"] = make(map[string]interface{})
+	for patternIndex := range root {
+		i++
+		field = root[patternIndex]
+		if err != nil {
+			return
+		}
+		item, ok := field.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json item error")
+			return
+		}
+		mappings, ok := item["mappings"]
+		if !ok {
+			err = fmt.Errorf("parse json item mappings error")
+			return
+		}
+		item, ok = mappings.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json item 2 error")
+			return
+		}
+		properties, ok := item["properties"]
+		if !ok {
+			err = fmt.Errorf("parse json item properties error")
+			return
+		}
+		items, ok := properties.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json items error")
+			return
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Pattern index %d/%d: %s\n", i, nPatternIndices, patternIndex)
+		}
+		j := 0
+		nCols := len(items)
+		for col, data := range items {
+			j++
+			if ctx.Debug > 1 {
+				lib.Printf("Column %d/%d: %s: %+v\n", j, nCols, col, data)
+			}
+			// First column def across all pattern indices win
+			_, ok := mapping["properties"][col]
+			if !ok {
+				mapping["properties"][col] = data
+			}
+		}
+	}
+	// Final mapping write
+	var jsonBytes []byte
+	jsonBytes, err = json.Marshal(mapping)
+	if err != nil {
+		return
+	}
+	data := string(jsonBytes)
+	// jsonBytes = []byte(`{"properties":{"ancestors_links":{"type":"keyword"}}}`)
+	payloadBody := bytes.NewReader(jsonBytes)
+	rurl = "/" + index + "/_mapping"
+	url = ctx.ElasticURL + rurl
+	method = lib.Put
+	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 400 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode == 400 {
+		thrN := lib.GetThreadsNum(ctx)
+		lib.Printf("Put entire mapping at once failed, fallback to column by column mode (%d threads)\n", thrN)
+		rurl = "/" + index + "/_mapping"
+		url = ctx.ElasticURL + rurl
+		method = lib.Put
+		// This will be used in parallel thread when putting all columns at once fails
+		putColumn := func(ch chan error, col string, def interface{}) (err error) {
+			if ch != nil {
+				defer func() {
+					ch <- err
+				}()
+			}
+			mp := make(map[string]map[string]interface{})
+			mp["properties"] = make(map[string]interface{})
+			mp["properties"][col] = def
+			var jsonBytes []byte
+			jsonBytes, err = json.Marshal(mp)
+			if err != nil {
+				return
+			}
+			data := string(jsonBytes)
+			payloadBody := bytes.NewReader(jsonBytes)
+			var req *http.Request
+			req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+			if err != nil {
+				lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+			var resp *http.Response
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			if resp.StatusCode != 200 {
+				var body []byte
+				body, err = ioutil.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+				if err != nil {
+					lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+					return
+				}
+				err = fmt.Errorf("method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+				return
+			}
+			_ = resp.Body.Close()
+			return
+		}
+		ers := 0
+		if thrN > 1 {
+			ch := make(chan error)
+			nThreads := 0
+			for col, data := range mapping["properties"] {
+				go func() {
+					_ = putColumn(ch, col, data)
+				}()
+				nThreads++
+				if nThreads == thrN {
+					err := <-ch
+					if err != nil {
+						lib.Printf("Column mapping error: %+v\n", err)
+						ers++
+					}
+					nThreads--
+				}
+			}
+			for nThreads > 0 {
+				err := <-ch
+				if err != nil {
+					lib.Printf("Column mapping error: %+v\n", err)
+					ers++
+				}
+				nThreads--
+			}
+		} else {
+			for col, data := range mapping["properties"] {
+				err := putColumn(nil, col, data)
+				if err != nil {
+					lib.Printf("Column mapping error: %+v\n", err)
+					ers++
+				}
+			}
+		}
+		if ers > 0 {
+			lib.Printf("Failed %d/%d columns\n", ers, len(mapping["properties"]))
+		}
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("%s -> %s: copied %d mappings (%d columns)\n", pattern, index, i, len(mapping["properties"]))
+	}
+	return
+}
+
 func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if ctx.SkipCopyFrom || (ctx.DryRun && !ctx.DryRunAllowCopyFrom) {
 		return
@@ -4454,6 +4717,11 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if resp.StatusCode == 200 {
 		lib.Printf("Dropped conflicting alias: %s\n", index)
 	}
+	pattern := conf.Pattern
+	err = copyMapping(ctx, pattern, index)
+	if err != nil {
+		lib.Printf("copyMapping(%s,%s): %v\n", pattern, index, err)
+	}
 	// Now check last date on index (not alias) if present
 	lastDate := lastDataDate(ctx, index, must, mustNot, true)
 	if ctx.Debug > 0 {
@@ -4483,7 +4751,6 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method = lib.Post
-	pattern := conf.Pattern
 	if ctx.Debug > 0 {
 		lib.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
 	}
