@@ -12,3 +12,5 @@ for r in "${repos[@]}"; do
   echo "INSTALLING ${r}"
   pip3 install -e "${REPOS_DIR}/$r";
 done
+
+pip3 install geopy==2.0.0
