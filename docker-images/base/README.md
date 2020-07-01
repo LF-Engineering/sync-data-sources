@@ -10,3 +10,7 @@ Manually:
 - Run `docker push "lukaszgryglicki/dev-analytics-grimoire-docker-minimal"` to push image to the Docker Hub.
 - Run `docker run -it "lukaszgryglicki/dev-analytics-grimoire-docker-minimal" /bin/bash` to test.
 
+# Test image
+
+- Run: `DOCKER_USER=lukaszgryglicki ./test_image.sh`.
+
