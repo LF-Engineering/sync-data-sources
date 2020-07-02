@@ -4479,11 +4479,11 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 		lib.Printf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
 		return
 	}
-	if ctx.Debug > 0 {
+	if ctx.Debug >= 0 {
 		if resp.StatusCode == 200 {
-			lib.Printf("Created new index: %s\n", index)
+			lib.Printf("copy_from: created new index: %s\n", index)
 		} else if resp.StatusCode == 400 {
-			lib.Printf("Index %s already exists\n", index)
+			lib.Printf("copy_from: index %s already exists\n", index)
 		}
 	}
 	_ = resp.Body.Close()
@@ -4582,7 +4582,10 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 	_ = resp.Body.Close()
 	if resp.StatusCode == 400 {
 		thrN := lib.GetThreadsNum(ctx)
-		lib.Printf("Put entire mapping at once failed, fallback to column by column mode (%d threads)\n", thrN)
+		if thrN > 8 {
+			thrN = 8
+		}
+		lib.Printf("copy_from: Put entire mapping at once failed, fallback to column by column mode (%d threads)\n", thrN)
 		rurl = "/" + index + "/_mapping"
 		url = ctx.ElasticURL + rurl
 		method = lib.Put
@@ -4793,6 +4796,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	nJSONs := 0
 	bulks := 0
 	scrollID := payload.ScrollID
+	docs := 0
 	for {
 		data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
 		payloadBytes = []byte(data)
@@ -4871,12 +4875,14 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 			err = fmt.Errorf("parse json hits2 error")
 			return
 		}
+		nHits := len(hits2)
 		if ctx.Debug > 0 {
-			lib.Printf("%s -> %s: Fetched %d documents\n", pattern, index, len(hits2))
+			lib.Printf("%s -> %s: Fetched %d documents\n", pattern, index, nHits)
 		}
-		if len(hits2) == 0 {
+		if nHits == 0 {
 			break
 		}
+		docs += nHits
 		for i, item := range hits2 {
 			root, ok := item.(map[string]interface{})
 			if !ok {
@@ -4950,7 +4956,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	_ = resp.Body.Close()
-	lib.Printf("Saved %d bulks\n", bulks)
+	lib.Printf("Saved %d bulks (%d documents)\n", bulks, docs)
 	return
 }
 
