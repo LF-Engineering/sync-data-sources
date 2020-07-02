@@ -4672,7 +4672,7 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 			lib.Printf("Failed %d/%d columns\n", ers, len(mapping["properties"]))
 		}
 	}
-	if ctx.Debug > 0 {
+	if ctx.Debug >= 0 {
 		lib.Printf("%s -> %s: copied %d mappings (%d columns)\n", pattern, index, i, len(mapping["properties"]))
 	}
 	return
@@ -4956,7 +4956,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	_ = resp.Body.Close()
-	lib.Printf("Saved %d bulks (%d documents)\n", bulks, docs)
+	lib.Printf("copy_from: %s -> %s: saved %d bulks (%d documents)\n", pattern, index, bulks, docs)
 	return
 }
 
