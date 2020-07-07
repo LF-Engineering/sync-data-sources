@@ -436,6 +436,40 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
 			switch epType {
+			case "gerrit_org":
+				gerrit := strings.TrimSpace(rawEndpoint.Name)
+				repos, ok := cache[gerrit]
+				if !ok {
+					var err error
+					repos, err = lib.GetGerritRepos(ctx, gerrit)
+					if err != nil {
+						lib.Printf("Error getting gerrit repos list for: %s: error: %+v\n", gerrit, err)
+						continue
+					}
+					cache[gerrit] = repos
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("Gerrit %s repos: %+v\n", gerrit, repos)
+				}
+				for _, repo := range repos {
+					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						repo += ":::" + rawEndpoint.Project
+					}
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:       repo,
+							Project:    rawEndpoint.Project,
+							ProjectP2O: p2o,
+							Projects:   rawEndpoint.Projects,
+							Timeout:    tmout,
+							CopyFrom:   rawEndpoint.CopyFrom,
+						},
+					)
+				}
 			case "rocketchat_server":
 				srv := strings.TrimSpace(rawEndpoint.Name)
 				channels, ok := cache[srv]
