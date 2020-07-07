@@ -1,0 +1,35 @@
+---
+native:
+  slug: gerrit-org
+data_sources:
+- slug: git
+  endpoints:
+  - name: https://gerrit.onap.org
+    flags:
+      type: gerrit_org
+    skip:
+    - '(?i)demo'
+    - '(?i)(example|doc)'
+    only:
+    - '(?i)(a|e)'
+  - name: https://gerrit.opnfv.org
+    flags:
+      type: gerrit_org
+  - name: https://git.opendaylight.org
+    flags:
+      type: gerrit_org
+  - name: https://gerrit.fd.io
+    flags:
+      type: gerrit_org
+  - name: https://gerrit.tungsten.io
+    flags:
+      type: gerrit_org
+  - name: https://gerrit.akraino.org
+    flags:
+      type: gerrit_org
+  - name: https://gerrit.acumos.org
+    flags:
+      type: gerrit_org
+  - name: https://gerrit.o-ran-sc.org
+    flags:
+      type: gerrit_org
