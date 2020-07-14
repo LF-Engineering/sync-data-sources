@@ -434,31 +434,37 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			switch epType {
 			case "gerrit_org":
 				gerrit := strings.TrimSpace(rawEndpoint.Name)
-				repos, ok := cache[gerrit]
-				if !ok {
+				projects, ok1 := cache["p"+gerrit]
+				repos, ok2 := cache["r"+gerrit]
+				if !ok1 || !ok2 {
 					var err error
-					repos, err = lib.GetGerritRepos(ctx, gerrit)
+					projects, repos, err = lib.GetGerritRepos(ctx, gerrit)
 					if err != nil {
 						lib.Printf("Error getting gerrit repos list for: %s: error: %+v\n", gerrit, err)
 						continue
 					}
-					cache[gerrit] = repos
+					cache["p"+gerrit] = projects
+					cache["r"+gerrit] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("Gerrit %s repos: %+v\n", gerrit, repos)
 				}
-				for _, repo := range repos {
+				for idx, repo := range repos {
 					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
 						continue
 					}
 					if p2o && rawEndpoint.Project != "" {
 						repo += ":::" + rawEndpoint.Project
 					}
+					prj := rawEndpoint.Project
+					if prj == "" {
+						prj = projects[idx]
+					}
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
 							Name:              repo,
-							Project:           rawEndpoint.Project,
+							Project:           prj,
 							ProjectP2O:        p2o,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,

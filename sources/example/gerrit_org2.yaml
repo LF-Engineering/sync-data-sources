@@ -1,0 +1,16 @@
+---
+native:
+  slug: gerrit-org
+  affiliation_source: fixture-source
+data_sources:
+- slug: git
+  endpoints:
+  - name: https://gerrit.onap.org
+    flags:
+      type: gerrit_org
+    skip:
+    - '(?i)log'
+    - '(?i)(example|doc|data)'
+    only:
+    - '(?i)aai'
+    affiliation_source: endpoint-source
