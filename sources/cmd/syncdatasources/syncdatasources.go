@@ -145,7 +145,7 @@ func validateFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Then for all fixtures defined, all slugs must be unique - check this also
 	st := make(map[string]lib.Fixture)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
 		fixture2, ok := st[slug]
 		if ok {
@@ -265,13 +265,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 }
 
 func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
-	if len(fixture.Native) == 0 {
-		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
-	}
-	slug, ok := fixture.Native["slug"]
-	if !ok {
-		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
-	}
+	slug := fixture.Native.Slug
 	if slug == "" {
 		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
 	}
@@ -704,9 +698,9 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	slug, ok := fixture.Native["slug"]
-	if !ok {
-		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
+	slug := fixture.Native.Slug
+	if slug == "" {
+		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property (or is empty)\n", fixtureFile)
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
@@ -805,7 +799,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Then for all fixtures defined, all slugs must be unique - check this also
 	st := make(map[string]lib.Fixture)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
 		fixture2, ok := st[slug]
 		if ok {
@@ -1933,7 +1927,7 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 	fixtures := *pfixtures
 	eps := make(map[[3]string][]string)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		for _, ds := range fixture.DataSources {
 			cfgs := []string{}
 			for _, cfg := range ds.Config {
