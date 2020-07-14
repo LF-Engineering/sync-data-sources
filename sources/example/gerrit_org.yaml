@@ -1,6 +1,7 @@
 ---
 native:
   slug: gerrit-org
+  affiliation_source: fixture-source
 data_sources:
 - slug: git
   endpoints:
@@ -15,6 +16,7 @@ data_sources:
   - name: https://gerrit.opnfv.org
     flags:
       type: gerrit_org
+    affiliation_source: endpoint-source
   - name: https://git.opendaylight.org
     flags:
       type: gerrit_org

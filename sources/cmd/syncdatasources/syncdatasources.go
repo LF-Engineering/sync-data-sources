@@ -369,14 +369,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].RawEndpoints = append(
 					fixture.DataSources[i].RawEndpoints,
 					lib.RawEndpoint{
-						Name:       name,
-						Project:    proj,
-						ProjectP2O: projP2O,
-						Flags:      rawEndpoint.Flags,
-						Skip:       rawEndpoint.Skip,
-						Only:       rawEndpoint.Only,
-						Timeout:    rawEndpoint.Timeout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           proj,
+						ProjectP2O:        projP2O,
+						Flags:             rawEndpoint.Flags,
+						Skip:              rawEndpoint.Skip,
+						Only:              rawEndpoint.Only,
+						Timeout:           rawEndpoint.Timeout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 			}
@@ -407,12 +408,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       name,
-						Project:    rawEndpoint.Project,
-						ProjectP2O: p2o,
-						Projects:   rawEndpoint.Projects,
-						Timeout:    tmout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           rawEndpoint.Project,
+						ProjectP2O:        p2o,
+						Projects:          rawEndpoint.Projects,
+						Timeout:           tmout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 				continue
@@ -455,12 +457,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       repo,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              repo,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -499,12 +502,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -563,12 +567,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -627,12 +632,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -645,12 +651,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       name,
-						Project:    rawEndpoint.Project,
-						ProjectP2O: p2o,
-						Projects:   rawEndpoint.Projects,
-						Timeout:    tmout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           rawEndpoint.Project,
+						ProjectP2O:        p2o,
+						Projects:          rawEndpoint.Projects,
+						Timeout:           tmout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 				continue
@@ -863,21 +870,37 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					ary := strings.Split(name, ":::")
 					name = ary[0]
 				}
+				affiliationSource := fixture.Slug
+				if fixture.Native.AffiliationSource != "" {
+					affiliationSource = fixture.Native.AffiliationSource
+				}
+				if endpoint.AffiliationSource != "" {
+					affiliationSource = endpoint.AffiliationSource
+				}
+				if affiliationSource != fixture.Slug {
+					lib.Printf(
+						"Using non-default '%s' affiliation source for '%s' endpoint (default would be '%s')\n",
+						affiliationSource,
+						name,
+						fixture.Slug,
+					)
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
-						Project:    endpoint.Project,
-						ProjectP2O: endpoint.ProjectP2O,
-						Projects:   endpoint.Projects,
-						Timeout:    endpoint.Timeout,
-						CopyFrom:   endpoint.CopyFrom,
-						Endpoint:   name,
-						Config:     dataSource.Config,
-						DsSlug:     dataSource.Slug,
-						DsFullSlug: dataSource.FullSlug,
-						FxSlug:     fixture.Slug,
-						FxFn:       fixture.Fn,
-						MaxFreq:    dataSource.MaxFreq,
+						Project:           endpoint.Project,
+						ProjectP2O:        endpoint.ProjectP2O,
+						Projects:          endpoint.Projects,
+						Timeout:           endpoint.Timeout,
+						CopyFrom:          endpoint.CopyFrom,
+						Endpoint:          name,
+						Config:            dataSource.Config,
+						DsSlug:            dataSource.Slug,
+						DsFullSlug:        dataSource.FullSlug,
+						FxSlug:            fixture.Slug,
+						FxFn:              fixture.Fn,
+						MaxFreq:           dataSource.MaxFreq,
+						AffiliationSource: affiliationSource,
 					},
 				)
 			}
@@ -1300,16 +1323,17 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 						newTasks = append(
 							newTasks,
 							lib.Task{
-								Project:       "",
-								ProjectP2O:    false,
-								Endpoint:      endpoint,
-								Config:        randomSdsTask.Config,
-								DsSlug:        ds,
-								DsFullSlug:    randomSdsTask.DsFullSlug,
-								FxSlug:        "random:" + randomSdsTask.FxSlug,
-								FxFn:          "random:" + randomSdsTask.FxFn,
-								MaxFreq:       randomSdsTask.MaxFreq,
-								ExternalIndex: bitergiaIndex,
+								Project:           "",
+								ProjectP2O:        false,
+								Endpoint:          endpoint,
+								Config:            randomSdsTask.Config,
+								DsSlug:            ds,
+								DsFullSlug:        randomSdsTask.DsFullSlug,
+								FxSlug:            "random:" + randomSdsTask.FxSlug,
+								AffiliationSource: randomSdsTask.FxSlug,
+								FxFn:              "random:" + randomSdsTask.FxFn,
+								MaxFreq:           randomSdsTask.MaxFreq,
+								ExternalIndex:     bitergiaIndex,
 							},
 						)
 						processedIndices[bitergiaIndex] = struct{}{}
@@ -1351,16 +1375,17 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				newTasks = append(
 					newTasks,
 					lib.Task{
-						Project:       "",
-						ProjectP2O:    false,
-						Endpoint:      endpoint,
-						Config:        sdsTask.Config,
-						DsSlug:        sdsTask.DsSlug,
-						DsFullSlug:    sdsTask.DsFullSlug,
-						FxSlug:        sdsTask.FxSlug,
-						FxFn:          sdsTask.FxFn,
-						MaxFreq:       sdsTask.MaxFreq,
-						ExternalIndex: bitergiaIndex,
+						Project:           "",
+						ProjectP2O:        false,
+						Endpoint:          endpoint,
+						Config:            sdsTask.Config,
+						DsSlug:            sdsTask.DsSlug,
+						DsFullSlug:        sdsTask.DsFullSlug,
+						FxSlug:            sdsTask.FxSlug,
+						AffiliationSource: sdsTask.AffiliationSource,
+						FxFn:              sdsTask.FxFn,
+						MaxFreq:           sdsTask.MaxFreq,
+						ExternalIndex:     bitergiaIndex,
 					},
 				)
 				processedIndices[bitergiaIndex] = struct{}{}
@@ -1661,7 +1686,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				str string
 			)
 			if !ctx.SkipP2O {
-				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.FxSlug}, nil)
+				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.AffiliationSource}, nil)
 			}
 			if keyAdded {
 				gKeyMtx.Unlock()
@@ -5331,7 +5356,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			str string
 		)
 		if !ctx.SkipP2O {
-			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.FxSlug}, &task.Timeout)
+			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.AffiliationSource}, &task.Timeout)
 		}
 		if keyAdded {
 			gKeyMtx.Unlock()
