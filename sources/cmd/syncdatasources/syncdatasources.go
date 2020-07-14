@@ -456,10 +456,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					if p2o && rawEndpoint.Project != "" {
 						repo += ":::" + rawEndpoint.Project
 					}
+					gPrj := projects[idx]
 					prj := rawEndpoint.Project
-					if prj == "" {
-						prj = projects[idx]
+					if prj == "" && gPrj != "" {
+						prj = gPrj
 					}
+					if ctx.Debug > 0 {
+						lib.Printf("gerrit: %s, project: %s, repo: %s\n", gerrit, prj, repo)
+					}
+					// fmt.Printf("\"%s\",\"%s\",\"%s\"\n", gerrit, prj, repo)
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
@@ -883,7 +888,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 				if endpoint.AffiliationSource != "" {
 					affiliationSource = endpoint.AffiliationSource
 				}
-				if affiliationSource != fixture.Slug {
+				if ctx.Debug > 0 && affiliationSource != fixture.Slug {
 					lib.Printf(
 						"Using non-default '%s' affiliation source for '%s' endpoint (default would be '%s')\n",
 						affiliationSource,
