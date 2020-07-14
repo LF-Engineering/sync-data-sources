@@ -1,6 +1,6 @@
 ---
 native:
-  slug: gerrit-org
+  slug: gerrit-org-ex
   affiliation_source: fixture-source
 data_sources:
 - slug: git
