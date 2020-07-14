@@ -447,7 +447,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					cache["r"+gerrit] = repos
 				}
 				if ctx.Debug > 0 {
-					lib.Printf("Gerrit %s repos: %+v\n", gerrit, repos)
+					lib.Printf("Gerrit %s repos: %+v, projects: %+v\n", gerrit, repos, projects)
 				}
 				for idx, repo := range repos {
 					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
