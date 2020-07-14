@@ -65,9 +65,9 @@ func GetGerritRepos(ctx *Ctx, gerritURL string) (projects, repos []string, err e
 			return
 		}
 		for project := range result {
-			if project == "All-Projects" || project == "All-Users" {
-				continue
-			}
+			//if project == "All-Projects" || project == "All-Users" {
+			//	continue
+			//}
 			ary := strings.Split(project, "/")
 			org := ary[0]
 			endpoint := gerritURL + partial + "/" + project
