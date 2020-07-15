@@ -1,0 +1,31 @@
+diff --git a/grimoire_elk/enriched/confluence.py b/grimoire_elk/enriched/confluence.py
+index 64b0540..0833eee 100644
+--- a/grimoire_elk/enriched/confluence.py
++++ b/grimoire_elk/enriched/confluence.py
+@@ -23,9 +23,11 @@ import logging
+ 
+ from .enrich import Enrich, metadata
+ from ..elastic_mapping import Mapping as BaseMapping
++from .identity import emails, get_token, get_email
+ 
+ 
+ logger = logging.getLogger(__name__)
++access_token = get_token()
+ 
+ 
+ NO_ANCESTOR_TITLE = "NO_TITLE"
+@@ -90,6 +92,14 @@ class ConfluenceEnrich(Enrich):
+         identity['email'] = user.get('email', None)
+         identity['name'] = user.get('displayName', None)
+ 
++        if not identity['email']:
++            email = emails.get(identity['username'], None)
++            if not email:
++                email = get_email(access_token, identity['username'])
++            if email:
++                emails[identity['username']] = email
++                identity['email'] = email
++
+         return identity
+ 
+     @metadata
