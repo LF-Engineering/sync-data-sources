@@ -1,0 +1,27 @@
+---
+native:
+  slug: gerrit-org
+  affiliation_source: fixture-source
+data_sources:
+- slug: git
+  projects:
+  - name: OPNFV
+    endpoints:
+    - name: https://gerrit.opnfv.org
+      flags:
+        type: gerrit_org  # here we're under already defined project, so it will fetch all repos and use 'OPNFV' project for all of them
+      affiliation_source: endpoint-source2
+  endpoints:
+  - name: https://gerrit.onap.org
+    flags:
+      type: gerrit_org # no projects configured, so this will get projects configuration too
+    skip:
+    - '(?i)log'
+    - '(?i)(example|doc|data)'
+    only:
+    - '(?i)aai'
+    affiliation_source: endpoint-source
+  - name: https://gerrit.tungsten.io
+    flags:
+      type: gerrit_org # no projects configured, so this will get projects configuration too (and Tungsten also has repos without org/repo format)
+                       # for those with just "repo" format it assigns project = repo
