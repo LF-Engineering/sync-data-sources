@@ -95,7 +95,7 @@ do
   fi
   envstr="${envstr} -e ${renv}=\"${renvval}\""
 done
-for uenv in SSO_API_KEY SSO_SECRET_KEY SSO_AUDIENCE SSO_USER_SERVICE USER_SERVICE_URL
+for uenv in SSO_API_KEY SSO_API_SECRET SSO_AUDIENCE SSO_USER_SERVICE USER_SERVICE_URL
 do
   secret_value=`cat helm-charts/sds-helm/sds-helm/secrets/${uenv}.prod.secret`
   envstr="${envstr} -e ${uenv}=\"${secret_value}\""
