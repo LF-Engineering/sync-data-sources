@@ -1,0 +1,35 @@
+diff --git a/grimoire_elk/enriched/jira.py b/grimoire_elk/enriched/jira.py
+index b2093e9..4bfdbf5 100644
+--- a/grimoire_elk/enriched/jira.py
++++ b/grimoire_elk/enriched/jira.py
+@@ -28,7 +28,7 @@ from .enrich import Enrich, metadata, SH_UNKNOWN_VALUE
+ from ..elastic_mapping import Mapping as BaseMapping
+ 
+ from .utils import get_time_diff_days
+-
++from .identity import emails, get_token, get_email
+ 
+ MAX_SIZE_BULK_ENRICHED_ITEMS = 200
+ ISSUE_TYPE = 'issue'
+@@ -36,6 +36,7 @@ COMMENT_TYPE = 'comment'
+ 
+ logger = logging.getLogger(__name__)
+ 
++access_token = get_token()
+ 
+ class Mapping(BaseMapping):
+ 
+@@ -103,6 +104,13 @@ class JiraEnrich(Enrich):
+             identity['username'] = user['name']
+         if 'emailAddress' in user:
+             identity['email'] = user['emailAddress']
++        else:
++            email = emails.get(identity['username'], None)
++            if not email:
++                email = get_email(access_token, identity['username'])
++            if email:
++                emails[identity['username']] = email
++                identity['email'] = email
+ 
+         return identity
+ 

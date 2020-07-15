@@ -1,0 +1,35 @@
+diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
+index 50fa4f7..a92e6e0 100644
+--- a/grimoire_elk/enriched/github.py
++++ b/grimoire_elk/enriched/github.py
+@@ -39,6 +39,7 @@ from .utils import get_time_diff_days
+ 
+ from .enrich import Enrich, metadata, anonymize_url
+ from ..elastic_mapping import Mapping as BaseMapping
++from .identity import emails, get_token, get_email
+ 
+ from .github_study_evolution import (get_unique_repository_with_project_name,
+                                      get_issues_dates,
+@@ -51,7 +52,7 @@ from .github_study_evolution import (get_unique_repository_with_project_name,
+ GITHUB = 'https://github.com/'
+ 
+ logger = logging.getLogger(__name__)
+-
++access_token = get_token()
+ 
+ class Mapping(BaseMapping):
+ 
+@@ -157,6 +158,13 @@ class GitHubEnrich(Enrich):
+         identity['name'] = None
+         if 'email' in user:
+             identity['email'] = user['email']
++        else:
++            email = emails.get(identity['username'], None)
++            if not email:
++                email = get_email(access_token, identity['username'])
++            if email:
++                emails[identity['username']] = email
++                identity['email'] = email
+         if 'name' in user:
+             identity['name'] = user['name']
+         return identity
