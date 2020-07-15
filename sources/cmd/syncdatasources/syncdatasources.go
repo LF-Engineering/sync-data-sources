@@ -145,7 +145,7 @@ func validateFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Then for all fixtures defined, all slugs must be unique - check this also
 	st := make(map[string]lib.Fixture)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
 		fixture2, ok := st[slug]
 		if ok {
@@ -265,13 +265,7 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 }
 
 func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
-	if len(fixture.Native) == 0 {
-		lib.Fatalf("Fixture file %s has no 'native' property which is required\n", fixtureFile)
-	}
-	slug, ok := fixture.Native["slug"]
-	if !ok {
-		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
-	}
+	slug := fixture.Native.Slug
 	if slug == "" {
 		lib.Fatalf("Fixture file %s 'native' property 'slug' is empty which is forbidden\n", fixtureFile)
 	}
@@ -375,14 +369,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].RawEndpoints = append(
 					fixture.DataSources[i].RawEndpoints,
 					lib.RawEndpoint{
-						Name:       name,
-						Project:    proj,
-						ProjectP2O: projP2O,
-						Flags:      rawEndpoint.Flags,
-						Skip:       rawEndpoint.Skip,
-						Only:       rawEndpoint.Only,
-						Timeout:    rawEndpoint.Timeout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           proj,
+						ProjectP2O:        projP2O,
+						Flags:             rawEndpoint.Flags,
+						Skip:              rawEndpoint.Skip,
+						Only:              rawEndpoint.Only,
+						Timeout:           rawEndpoint.Timeout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 			}
@@ -413,12 +408,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       name,
-						Project:    rawEndpoint.Project,
-						ProjectP2O: p2o,
-						Projects:   rawEndpoint.Projects,
-						Timeout:    tmout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           rawEndpoint.Project,
+						ProjectP2O:        p2o,
+						Projects:          rawEndpoint.Projects,
+						Timeout:           tmout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 				continue
@@ -436,6 +432,52 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
 			switch epType {
+			case "gerrit_org":
+				gerrit := strings.TrimSpace(rawEndpoint.Name)
+				projects, ok1 := cache["p"+gerrit]
+				repos, ok2 := cache["r"+gerrit]
+				if !ok1 || !ok2 {
+					var err error
+					projects, repos, err = lib.GetGerritRepos(ctx, gerrit)
+					if err != nil {
+						lib.Printf("Error getting gerrit repos list for: %s: error: %+v\n", gerrit, err)
+						continue
+					}
+					cache["p"+gerrit] = projects
+					cache["r"+gerrit] = repos
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("Gerrit %s repos: %+v, projects: %+v\n", gerrit, repos, projects)
+				}
+				for idx, repo := range repos {
+					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						repo += ":::" + rawEndpoint.Project
+					}
+					gPrj := projects[idx]
+					prj := rawEndpoint.Project
+					if prj == "" && gPrj != "" {
+						prj = gPrj
+					}
+					if ctx.Debug > 0 {
+						lib.Printf("gerrit: %s, project: %s, repo: %s\n", gerrit, prj, repo)
+					}
+					// fmt.Printf("\"%s\",\"%s\",\"%s\"\n", gerrit, prj, repo)
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:              repo,
+							Project:           prj,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
+						},
+					)
+				}
 			case "rocketchat_server":
 				srv := strings.TrimSpace(rawEndpoint.Name)
 				channels, ok := cache[srv]
@@ -471,12 +513,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -535,12 +578,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -599,12 +643,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:       name,
-							Project:    rawEndpoint.Project,
-							ProjectP2O: p2o,
-							Projects:   rawEndpoint.Projects,
-							Timeout:    tmout,
-							CopyFrom:   rawEndpoint.CopyFrom,
+							Name:              name,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
 						},
 					)
 				}
@@ -617,12 +662,13 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].Endpoints = append(
 					fixture.DataSources[i].Endpoints,
 					lib.Endpoint{
-						Name:       name,
-						Project:    rawEndpoint.Project,
-						ProjectP2O: p2o,
-						Projects:   rawEndpoint.Projects,
-						Timeout:    tmout,
-						CopyFrom:   rawEndpoint.CopyFrom,
+						Name:              name,
+						Project:           rawEndpoint.Project,
+						ProjectP2O:        p2o,
+						Projects:          rawEndpoint.Projects,
+						Timeout:           tmout,
+						CopyFrom:          rawEndpoint.CopyFrom,
+						AffiliationSource: rawEndpoint.AffiliationSource,
 					},
 				)
 				continue
@@ -670,9 +716,9 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	if ctx.Debug > 0 {
 		lib.Printf("Loaded %s fixture: %+v\n", fixtureFile, fixture)
 	}
-	slug, ok := fixture.Native["slug"]
-	if !ok {
-		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property which is required\n", fixtureFile)
+	slug := fixture.Native.Slug
+	if slug == "" {
+		lib.Fatalf("Fixture file %s 'native' property has no 'slug' property (or is empty)\n", fixtureFile)
 	}
 	fixture.Fn = fixtureFile
 	fixture.Slug = slug
@@ -771,7 +817,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Then for all fixtures defined, all slugs must be unique - check this also
 	st := make(map[string]lib.Fixture)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		slug = strings.Replace(slug, "/", "-", -1)
 		fixture2, ok := st[slug]
 		if ok {
@@ -835,21 +881,37 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					ary := strings.Split(name, ":::")
 					name = ary[0]
 				}
+				affiliationSource := fixture.Slug
+				if fixture.Native.AffiliationSource != "" {
+					affiliationSource = fixture.Native.AffiliationSource
+				}
+				if endpoint.AffiliationSource != "" {
+					affiliationSource = endpoint.AffiliationSource
+				}
+				if ctx.Debug > 0 && affiliationSource != fixture.Slug {
+					lib.Printf(
+						"Using non-default '%s' affiliation source for '%s' endpoint (default would be '%s')\n",
+						affiliationSource,
+						name,
+						fixture.Slug,
+					)
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
-						Project:    endpoint.Project,
-						ProjectP2O: endpoint.ProjectP2O,
-						Projects:   endpoint.Projects,
-						Timeout:    endpoint.Timeout,
-						CopyFrom:   endpoint.CopyFrom,
-						Endpoint:   name,
-						Config:     dataSource.Config,
-						DsSlug:     dataSource.Slug,
-						DsFullSlug: dataSource.FullSlug,
-						FxSlug:     fixture.Slug,
-						FxFn:       fixture.Fn,
-						MaxFreq:    dataSource.MaxFreq,
+						Project:           endpoint.Project,
+						ProjectP2O:        endpoint.ProjectP2O,
+						Projects:          endpoint.Projects,
+						Timeout:           endpoint.Timeout,
+						CopyFrom:          endpoint.CopyFrom,
+						Endpoint:          name,
+						Config:            dataSource.Config,
+						DsSlug:            dataSource.Slug,
+						DsFullSlug:        dataSource.FullSlug,
+						FxSlug:            fixture.Slug,
+						FxFn:              fixture.Fn,
+						MaxFreq:           dataSource.MaxFreq,
+						AffiliationSource: affiliationSource,
 					},
 				)
 			}
@@ -1272,16 +1334,17 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 						newTasks = append(
 							newTasks,
 							lib.Task{
-								Project:       "",
-								ProjectP2O:    false,
-								Endpoint:      endpoint,
-								Config:        randomSdsTask.Config,
-								DsSlug:        ds,
-								DsFullSlug:    randomSdsTask.DsFullSlug,
-								FxSlug:        "random:" + randomSdsTask.FxSlug,
-								FxFn:          "random:" + randomSdsTask.FxFn,
-								MaxFreq:       randomSdsTask.MaxFreq,
-								ExternalIndex: bitergiaIndex,
+								Project:           "",
+								ProjectP2O:        false,
+								Endpoint:          endpoint,
+								Config:            randomSdsTask.Config,
+								DsSlug:            ds,
+								DsFullSlug:        randomSdsTask.DsFullSlug,
+								FxSlug:            "random:" + randomSdsTask.FxSlug,
+								AffiliationSource: randomSdsTask.FxSlug,
+								FxFn:              "random:" + randomSdsTask.FxFn,
+								MaxFreq:           randomSdsTask.MaxFreq,
+								ExternalIndex:     bitergiaIndex,
 							},
 						)
 						processedIndices[bitergiaIndex] = struct{}{}
@@ -1323,16 +1386,17 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				newTasks = append(
 					newTasks,
 					lib.Task{
-						Project:       "",
-						ProjectP2O:    false,
-						Endpoint:      endpoint,
-						Config:        sdsTask.Config,
-						DsSlug:        sdsTask.DsSlug,
-						DsFullSlug:    sdsTask.DsFullSlug,
-						FxSlug:        sdsTask.FxSlug,
-						FxFn:          sdsTask.FxFn,
-						MaxFreq:       sdsTask.MaxFreq,
-						ExternalIndex: bitergiaIndex,
+						Project:           "",
+						ProjectP2O:        false,
+						Endpoint:          endpoint,
+						Config:            sdsTask.Config,
+						DsSlug:            sdsTask.DsSlug,
+						DsFullSlug:        sdsTask.DsFullSlug,
+						FxSlug:            sdsTask.FxSlug,
+						AffiliationSource: sdsTask.AffiliationSource,
+						FxFn:              sdsTask.FxFn,
+						MaxFreq:           sdsTask.MaxFreq,
+						ExternalIndex:     bitergiaIndex,
 					},
 				)
 				processedIndices[bitergiaIndex] = struct{}{}
@@ -1633,7 +1697,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				str string
 			)
 			if !ctx.SkipP2O {
-				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.FxSlug}, nil)
+				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.AffiliationSource}, nil)
 			}
 			if keyAdded {
 				gKeyMtx.Unlock()
@@ -1899,7 +1963,7 @@ func checkForSharedEndpoints(pfixtures *[]lib.Fixture) {
 	fixtures := *pfixtures
 	eps := make(map[[3]string][]string)
 	for _, fixture := range fixtures {
-		slug := fixture.Native["slug"]
+		slug := fixture.Native.Slug
 		for _, ds := range fixture.DataSources {
 			cfgs := []string{}
 			for _, cfg := range ds.Config {
@@ -4412,6 +4476,272 @@ func bulkCopy(ctx *lib.Ctx, bulkNum int, index string, jsons [][]byte) (err erro
 	return
 }
 
+func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
+	// Get mapping(s) from pattern
+	rurl := "/" + pattern + "/_mapping"
+	url := ctx.ElasticURL + rurl
+	method := lib.Get
+	req, err := http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	if resp.StatusCode != 200 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
+		return
+	}
+	var (
+		result interface{}
+		field  interface{}
+	)
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
+		lib.Printf("Body:%s\n", body)
+		return
+	}
+	_ = resp.Body.Close()
+	// Attempt to create index
+	rurl = "/" + index
+	url = ctx.ElasticURL + rurl
+	method = lib.Put
+	req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s", err, method, rurl)
+		return
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 400 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s", err, method, rurl)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
+		return
+	}
+	if ctx.Debug >= 0 {
+		if resp.StatusCode == 200 {
+			lib.Printf("copy_from: created new index: %s\n", index)
+		} else if resp.StatusCode == 400 {
+			lib.Printf("copy_from: index %s already exists\n", index)
+		}
+	}
+	_ = resp.Body.Close()
+	root, ok := result.(map[string]interface{})
+	if !ok {
+		err = fmt.Errorf("parse json root error")
+		return
+	}
+	// Iterate mapping(s) from pattern
+	i := 0
+	nPatternIndices := len(root)
+	mapping := make(map[string]map[string]interface{})
+	mapping["properties"] = make(map[string]interface{})
+	for patternIndex := range root {
+		i++
+		field = root[patternIndex]
+		if err != nil {
+			return
+		}
+		item, ok := field.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json item error")
+			return
+		}
+		mappings, ok := item["mappings"]
+		if !ok {
+			err = fmt.Errorf("parse json item mappings error")
+			return
+		}
+		item, ok = mappings.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json item 2 error")
+			return
+		}
+		properties, ok := item["properties"]
+		if !ok {
+			err = fmt.Errorf("parse json item properties error")
+			return
+		}
+		items, ok := properties.(map[string]interface{})
+		if !ok {
+			err = fmt.Errorf("parse json items error")
+			return
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Pattern index %d/%d: %s\n", i, nPatternIndices, patternIndex)
+		}
+		j := 0
+		nCols := len(items)
+		for col, data := range items {
+			j++
+			if ctx.Debug > 1 {
+				lib.Printf("Column %d/%d: %s: %+v\n", j, nCols, col, data)
+			}
+			// First column def across all pattern indices win
+			_, ok := mapping["properties"][col]
+			if !ok {
+				mapping["properties"][col] = data
+			}
+		}
+	}
+	// Final mapping write
+	var jsonBytes []byte
+	jsonBytes, err = json.Marshal(mapping)
+	if err != nil {
+		return
+	}
+	data := string(jsonBytes)
+	// jsonBytes = []byte(`{"properties":{"ancestors_links":{"type":"keyword"}}}`)
+	payloadBody := bytes.NewReader(jsonBytes)
+	rurl = "/" + index + "/_mapping"
+	url = ctx.ElasticURL + rurl
+	method = lib.Put
+	req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err = http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	if resp.StatusCode != 200 && resp.StatusCode != 400 {
+		var body []byte
+		body, err = ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	_ = resp.Body.Close()
+	if resp.StatusCode == 400 {
+		thrN := lib.GetThreadsNum(ctx)
+		if thrN > 8 {
+			thrN = 8
+		}
+		lib.Printf("copy_from: Put entire mapping at once failed, fallback to column by column mode (%d threads)\n", thrN)
+		rurl = "/" + index + "/_mapping"
+		url = ctx.ElasticURL + rurl
+		method = lib.Put
+		// This will be used in parallel thread when putting all columns at once fails
+		putColumn := func(ch chan error, col string, def interface{}) (err error) {
+			if ch != nil {
+				defer func() {
+					ch <- err
+				}()
+			}
+			mp := make(map[string]map[string]interface{})
+			mp["properties"] = make(map[string]interface{})
+			mp["properties"][col] = def
+			var jsonBytes []byte
+			jsonBytes, err = json.Marshal(mp)
+			if err != nil {
+				return
+			}
+			data := string(jsonBytes)
+			payloadBody := bytes.NewReader(jsonBytes)
+			var req *http.Request
+			req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+			if err != nil {
+				lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+			var resp *http.Response
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			if resp.StatusCode != 200 {
+				var body []byte
+				body, err = ioutil.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+				if err != nil {
+					lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+					return
+				}
+				err = fmt.Errorf("method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+				return
+			}
+			_ = resp.Body.Close()
+			return
+		}
+		ers := 0
+		if thrN > 1 {
+			ch := make(chan error)
+			nThreads := 0
+			for col, data := range mapping["properties"] {
+				go func() {
+					_ = putColumn(ch, col, data)
+				}()
+				nThreads++
+				if nThreads == thrN {
+					err := <-ch
+					if err != nil {
+						lib.Printf("Column mapping error: %+v\n", err)
+						ers++
+					}
+					nThreads--
+				}
+			}
+			for nThreads > 0 {
+				err := <-ch
+				if err != nil {
+					lib.Printf("Column mapping error: %+v\n", err)
+					ers++
+				}
+				nThreads--
+			}
+		} else {
+			for col, data := range mapping["properties"] {
+				err := putColumn(nil, col, data)
+				if err != nil {
+					lib.Printf("Column mapping error: %+v\n", err)
+					ers++
+				}
+			}
+		}
+		if ers > 0 {
+			lib.Printf("Failed %d/%d columns\n", ers, len(mapping["properties"]))
+		}
+	}
+	if ctx.Debug >= 0 {
+		lib.Printf("%s -> %s: copied %d mappings (%d columns)\n", pattern, index, i, len(mapping["properties"]))
+	}
+	return
+}
+
 func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if ctx.SkipCopyFrom || (ctx.DryRun && !ctx.DryRunAllowCopyFrom) {
 		return
@@ -4454,6 +4784,11 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if resp.StatusCode == 200 {
 		lib.Printf("Dropped conflicting alias: %s\n", index)
 	}
+	pattern := conf.Pattern
+	err = copyMapping(ctx, pattern, index)
+	if err != nil {
+		lib.Printf("copyMapping(%s,%s): %v\n", pattern, index, err)
+	}
 	// Now check last date on index (not alias) if present
 	lastDate := lastDataDate(ctx, index, must, mustNot, true)
 	if ctx.Debug > 0 {
@@ -4483,7 +4818,6 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	}
 	payloadBody := bytes.NewReader(payloadBytes)
 	method = lib.Post
-	pattern := conf.Pattern
 	if ctx.Debug > 0 {
 		lib.Printf("handleCopyFrom query: %s:%s\n", pattern, data)
 	}
@@ -4526,6 +4860,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	nJSONs := 0
 	bulks := 0
 	scrollID := payload.ScrollID
+	docs := 0
 	for {
 		data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
 		payloadBytes = []byte(data)
@@ -4604,12 +4939,14 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 			err = fmt.Errorf("parse json hits2 error")
 			return
 		}
+		nHits := len(hits2)
 		if ctx.Debug > 0 {
-			lib.Printf("%s -> %s: Fetched %d documents\n", pattern, index, len(hits2))
+			lib.Printf("%s -> %s: Fetched %d documents\n", pattern, index, nHits)
 		}
-		if len(hits2) == 0 {
+		if nHits == 0 {
 			break
 		}
+		docs += nHits
 		for i, item := range hits2 {
 			root, ok := item.(map[string]interface{})
 			if !ok {
@@ -4683,7 +5020,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	_ = resp.Body.Close()
-	lib.Printf("Saved %d bulks\n", bulks)
+	lib.Printf("copy_from: %s -> %s: saved %d bulks (%d documents)\n", pattern, index, bulks, docs)
 	return
 }
 
@@ -5030,7 +5367,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			str string
 		)
 		if !ctx.SkipP2O {
-			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.FxSlug}, &task.Timeout)
+			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.AffiliationSource}, &task.Timeout)
 		}
 		if keyAdded {
 			gKeyMtx.Unlock()

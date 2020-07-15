@@ -69,30 +69,32 @@ type CopyConfig struct {
 
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
-	Name       string        // Endpoint name
-	Project    string        // optional project (allows groupping endpoints), for example "Project value"
-	ProjectP2O bool          // if true SDS will pass `--project "Project value"` to p2o.py
-	Timeout    time.Duration // specifies maximum running time for a given endpoint (if specified)
-	CopyFrom   CopyConfig    // specifies optional 'copy_from' configuration
+	Name       string // Endpoint name
+	Project    string // optional project (allows groupping endpoints), for example "Project value"
+	ProjectP2O bool   // if true SDS will pass `--project "Project value"` to p2o.py
 	// if false, SDS will post-process index and will add `"project": "Project value"`
 	// column where `"origin": "Endpoint name"`
-	Projects []EndpointProject
+	Timeout           time.Duration // specifies maximum running time for a given endpoint (if specified)
+	CopyFrom          CopyConfig    // specifies optional 'copy_from' configuration
+	AffiliationSource string
+	Projects          []EndpointProject
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
 // flags can be "type: github_org/github_user" which means that we need to get actual repository list from github org/user
 type RawEndpoint struct {
-	Name       string            `yaml:"name"`
-	Flags      map[string]string `yaml:"flags"`
-	Skip       []string          `yaml:"skip"`
-	Only       []string          `yaml:"only"`
-	Project    string            `yaml:"project"`
-	ProjectP2O *bool             `yaml:"p2o"`
-	Timeout    *string           `yaml:"timeout"`
-	Projects   []EndpointProject `yaml:"endpoint_projects"`
-	CopyFrom   CopyConfig        `yaml:"copy_from"`
-	SkipREs    []*regexp.Regexp  `yaml:"-"`
-	OnlyREs    []*regexp.Regexp  `yaml:"-"`
+	Name              string            `yaml:"name"`
+	Flags             map[string]string `yaml:"flags"`
+	Skip              []string          `yaml:"skip"`
+	Only              []string          `yaml:"only"`
+	Project           string            `yaml:"project"`
+	ProjectP2O        *bool             `yaml:"p2o"`
+	Timeout           *string           `yaml:"timeout"`
+	Projects          []EndpointProject `yaml:"endpoint_projects"`
+	CopyFrom          CopyConfig        `yaml:"copy_from"`
+	AffiliationSource string            `yaml:"affiliation_source"`
+	SkipREs           []*regexp.Regexp  `yaml:"-"`
+	OnlyREs           []*regexp.Regexp  `yaml:"-"`
 }
 
 // EndpointIncluded - checks if given endpoint's origin should be included or excluded based on endpoint's skip/only regular expressions lists
@@ -170,12 +172,18 @@ func (ds DataSource) String() string {
 	)
 }
 
+// Native - keeps fixture slug and eventual global affiliation source
+type Native struct {
+	Slug              string `yaml:"slug"`
+	AffiliationSource string `yaml:"affiliation_source"`
+}
+
 // Fixture contains full YAML structure of dev-analytics-api fixture files
 type Fixture struct {
-	Disabled    bool              `yaml:"disabled"`
-	Native      map[string]string `yaml:"native"`
-	DataSources []DataSource      `yaml:"data_sources"`
-	Aliases     []Alias           `yaml:"aliases"`
+	Disabled    bool         `yaml:"disabled"`
+	Native      Native       `yaml:"native"`
+	DataSources []DataSource `yaml:"data_sources"`
+	Aliases     []Alias      `yaml:"aliases"`
 	Fn          string
 	Slug        string
 }

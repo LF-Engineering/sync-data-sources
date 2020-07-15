@@ -28,6 +28,7 @@ type Task struct {
 	Millis              int64
 	Timeout             time.Duration
 	CopyFrom            CopyConfig
+	AffiliationSource   string
 }
 
 // String - default string output for a task (generic)
@@ -38,8 +39,9 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	return fmt.Sprintf(
-		"{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d, Error:%v, Duration: %v, MaxFreq: %v, ExternalIndex: %s}",
-		t.Endpoint, t.Project, t.ProjectP2O, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr, t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex,
+		"{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d Error:%v Duration: %v MaxFreq: %v ExternalIndex: %s AffSrc:%s}",
+		t.Endpoint, t.Project, t.ProjectP2O, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr,
+		t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex, t.AffiliationSource,
 	)
 }
 

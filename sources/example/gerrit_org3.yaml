@@ -1,0 +1,29 @@
+native:
+  slug: gerrit-org-example
+data_sources:
+- slug: git
+  projects:
+  - name:  CI-Management
+    endpoints:
+    - name: https://gerrit.o-ran-sc.org
+      flags:
+        type: gerrit_org
+      only:
+      - '(?i)(ci-management)'
+  - name: ODL
+    endpoints:
+    - name: https://git.opendaylight.org
+      flags:
+        type: gerrit_org
+  - name: OPNFV
+    endpoints:
+    - name: https://gerrit.opnfv.org
+      flags:
+        type: gerrit_org
+    - name: https://git.opnfv.org/airship
+    - name: https://git.opnfv.org/cirv
+  - name: TF
+    endpoints:
+    - name: https://gerrit.tungsten.io
+      flags:
+        type: gerrit_org
