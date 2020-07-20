@@ -243,6 +243,31 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.auth0Secret }}
           key: AUTH0_CLIENT_SECRET.secret
+    - name: SSO_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.ssoSecret }}
+          key: SSO_API_KEY.secret
+    - name: SSO_API_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.ssoSecret }}
+          key: SSO_API_SECRET.secret
+    - name: SSO_AUDIENCE
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.ssoSecret }}
+          key: SSO_AUDIENCE.secret
+    - name: SSO_USER_SERVICE
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.ssoSecret }}
+          key: SSO_USER_SERVICE.secret
+    - name: USER_SERVICE_URL
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.ssoSecret }}
+          key: USER_SERVICE_URL.secret
     - name: ZIPPASS
       valueFrom:
         secretKeyRef:
