@@ -14,6 +14,11 @@
 # auth0ClientSecret: ''
 # ssawURL: ''
 # affiliationAPIURL: ''
+# ssoAPIKey: ''
+# ssoAPISecret: ''
+# ssoAudience: ''
+# ssoUserService: ''
+# userServiceURL: ''
 #
 # You can skip some parts of the deployment (useful when deploying partailly again)
 # skipCron (will not create a new cron job, you should set it when cron job is already created, if you want to recreate a cron job, delete the existing one first and do not set this flag)
@@ -22,6 +27,7 @@
 # skipESSecret (will skip creating ES (ElasticSearch) secret)
 # skipZipSecret (will skip creating ZIP file password secret)
 # skipGithubSecret (will skip creating GitHub file password secret)
+# skipSSOSecret (will skip creating SSO secret)
 # skipRepoSecret (will skip creating repo access secret)
 # skipAuth0Secret (will skip creating Auth0 secret)
 # skipSSAWSecret (will skip creating SSAW secret)
@@ -35,6 +41,7 @@
 # skipESSecret: 1
 # skipZipSecret: 1
 # skipGithubSecret: 1
+# skipSSOSecret: 1
 # skipNamespace: 1
 # skipRepoSecret: 1
 # skipAuth0Secret: 1
@@ -197,6 +204,7 @@ shSecret: sh-db
 esSecret: es-db
 zipSecret: zip-pass
 githubSecret: github-oauth
+ssoSecret: sso-secret
 repoSecret: repo-secret
 auth0Secret: auth0-secret
 ssawSecret: ssaw-secret
