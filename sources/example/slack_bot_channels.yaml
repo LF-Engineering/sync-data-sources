@@ -1,6 +1,6 @@
 ---
 native:
-  slug: test/slcak
+  slug: test/slack
 data_sources:
 - slug: slack
   projects:
