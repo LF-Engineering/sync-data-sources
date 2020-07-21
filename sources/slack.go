@@ -9,8 +9,10 @@ import (
 )
 
 type slackChannel struct {
-	ID   string `json:"id"`
-	Name string `json:"name_normalized"`
+	ID       string `json:"id"`
+	Name     string `json:"name_normalized"`
+	Archived bool   `json:"is_archived"`
+	Channel  bool   `json:"is_channel"`
 }
 
 type responseMetadata struct {
@@ -21,13 +23,15 @@ type slackChannels struct {
 	Channels []slackChannel   `json:"channels"`
 	Metadata responseMetadata `json:"response_metadata"`
 	OK       bool             `json:"ok"`
+	Error    string           `json:"error"`
 }
 
 // GetSlackBotUsersConversation - return list of channels (Slack users.converstations API) available for a given slack bot user (specified by a bearer token)
 func GetSlackBotUsersConversation(ctx *Ctx, token string) (ids, channels []string, err error) {
 	// curl -s -X POST -H 'Authorization: Bearer ...' -H 'Content-type: application/x-www-form-urlencoded' https://slack.com/api/users.conversations -d "limit=200&cursor=..." | jq .
+	rtoken := token[len(token)-len(token)/4:]
 	if ctx.Debug > 0 {
-		Printf("GetSlackBotUsersConversation(%s)\n", token)
+		Printf("GetSlackBotUsersConversation(%s)\n", rtoken)
 	}
 	method := Post
 	cursor := ""
@@ -72,10 +76,13 @@ func GetSlackBotUsersConversation(ctx *Ctx, token string) (ids, channels []strin
 			return
 		}
 		if !chans.OK {
-			Printf("API returned an error state: %+v\n", chans)
+			Printf("%s: API returned an error state: %+v\n", rtoken, chans)
 			return
 		}
 		for _, channel := range chans.Channels {
+			if channel.Archived || !channel.Channel {
+				continue
+			}
 			ids = append(ids, channel.ID)
 			channels = append(channels, channel.Name)
 		}

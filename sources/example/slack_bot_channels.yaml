@@ -1,0 +1,39 @@
+---
+native:
+  slug: test/slcak
+data_sources:
+- slug: slack
+  projects:
+  - name: cloud-foundry
+    endpoints:
+    - name: 'abc'
+      flags:
+        type: slack_bot_channels
+      only:
+      - '^C\d+'
+    - name: 'xoxb-47...'
+      flags:
+        type: slack_bot_channels
+        is_token: true
+      skip:
+      - 'csit'
+      - 'hicn'
+      - '^CE'
+    - name: 'xoxb-76...'
+      flags:
+        type: slack_bot_channels
+        is_token: true
+      only:
+      - '(?i)cloud'
+      - '(?i)^CG'
+    - name: 'xoxp-12...'
+      flags:
+        type: slack_bot_channels
+        is_token: true
+    - name: 'xoxp-18...'
+      flags:
+        type: slack_bot_channels
+        is_token: true
+  config:
+  - name: api-token
+    value: 'xoxp-25...'
