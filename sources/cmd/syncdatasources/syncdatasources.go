@@ -432,6 +432,63 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
 			switch epType {
+			case "slack_bot":
+				token := ""
+				for _, cfg := range dataSource.Config {
+					if cfg.Name == lib.APIToken {
+						token = cfg.Value
+						lib.AddRedacted(token, true)
+						break
+					}
+				}
+				if token == "" {
+					lib.Printf("Error getting slack token\n")
+					continue
+				}
+				ids, ok1 := cache["i"+token]
+				channels, ok2 := cache["c"+token]
+				if !ok1 || !ok2 {
+					var err error
+					ids, channels, err = lib.GetSlackBotUsersConversation(ctx, token)
+					if err != nil {
+						lib.Printf("Error getting slack conversations list for: %s: error: %+v\n", token, err)
+						continue
+					}
+					cache["i"+token] = ids
+					cache["c"+token] = channels
+				}
+				// FIXME
+				if ctx.Debug >= 0 {
+					lib.Printf("Slack %s ids: %+v, channels: %+v\n", token, ids, channels)
+				}
+				for idx, id := range ids {
+					channel := channels[idx]
+					_, state1 := lib.EndpointIncluded(ctx, &rawEndpoint, id)
+					_, state2 := lib.EndpointIncluded(ctx, &rawEndpoint, channel)
+					// If neither id nor channel were included by 'only' condition
+					// And id or channel were excluded by 'skip condition - then skip that endpoint
+					if state1 != 1 && state2 != 1 && (state1 == 2 || state2 == 2) {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						id += ":::" + rawEndpoint.Project
+					}
+					if ctx.Debug > 0 {
+						lib.Printf("slack: %s, id: %s,channel: %s\n", token, id, channel)
+					}
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:              id,
+							Project:           rawEndpoint.Project,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
+						},
+					)
+				}
 			case "gerrit_org":
 				gerrit := strings.TrimSpace(rawEndpoint.Name)
 				projects, ok1 := cache["p"+gerrit]
@@ -450,7 +507,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Gerrit %s repos: %+v, projects: %+v\n", gerrit, repos, projects)
 				}
 				for idx, repo := range repos {
-					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
 						continue
 					}
 					if p2o && rawEndpoint.Project != "" {
@@ -485,11 +543,20 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					token := ""
 					uid := ""
 					for _, cfg := range dataSource.Config {
-						if cfg.Name == "api-token" {
+						if cfg.Name == lib.APIToken {
 							token = cfg.Value
+							lib.AddRedacted(token, true)
 						} else if cfg.Name == "user-id" {
 							uid = cfg.Value
+							lib.AddRedacted(uid, true)
 						}
+						if uid != "" && token != "" {
+							break
+						}
+					}
+					if uid == "" || token == "" {
+						lib.Printf("Error getting rocket chat uid or token: (%s,%s)\n", uid, token)
+						continue
 					}
 					var err error
 					channels, err = lib.GetRocketChatChannels(ctx, srv, token, uid)
@@ -503,7 +570,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("RocketChat srv %s channels: %+v\n", srv, channels)
 				}
 				for _, channel := range channels {
-					if !lib.EndpointIncluded(ctx, &rawEndpoint, channel) {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, channel)
+					if !included {
 						continue
 					}
 					name := srv + " " + channel
@@ -568,7 +636,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("Org %s repos: %+v\n", org, repos)
 				}
 				for _, repo := range repos {
-					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
 						continue
 					}
 					name := repo
@@ -633,7 +702,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					lib.Printf("User %s repos: %+v\n", user, repos)
 				}
 				for _, repo := range repos {
-					if !lib.EndpointIncluded(ctx, &rawEndpoint, repo) {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
 						continue
 					}
 					name := repo
