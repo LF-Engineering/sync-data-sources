@@ -1,0 +1,30 @@
+diff --git a/utils/p2o.py b/utils/p2o.py
+index 49315fc..fdc1332 100755
+--- a/utils/p2o.py
++++ b/utils/p2o.py
+@@ -54,11 +54,14 @@ if __name__ == '__main__':
+                 ElasticItems.scroll_size = args.scroll_size
+             if args.scroll_wait:
+                 ElasticItems.scroll_wait = args.scroll_wait
++            last_update = None
+             if not args.enrich_only:
+-                feed_backend(url, clean, args.fetch_cache,
++                last_update, err = feed_backend(url, clean, args.fetch_cache,
+                              args.backend, args.backend_args,
+                              args.index, args.index_enrich, args.project)
+                 logging.info("Backend feed completed")
++                if err:
++                    logging.info(err)
+ 
+             studies_args = None
+             if args.studies_list:
+@@ -86,7 +89,8 @@ if __name__ == '__main__':
+                                args.author_id, args.author_uuid,
+                                args.filter_raw,
+                                args.jenkins_rename_file, unaffiliated_group,
+-                               args.pair_programming, studies_args)
++                               False, args.pair_programming, studies_args,
++                               None, last_update, None, None)
+                 logging.info("Enrich backend completed")
+             elif args.events_enrich:
+                 logging.info("Enrich option is needed for events_enrich")
