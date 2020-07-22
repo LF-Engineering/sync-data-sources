@@ -126,13 +126,13 @@ else
   cmd="/bin/bash"
   flg="${flg} -it"
 fi
-cmd="docker run ${envstr} ${flg} \"lukaszgryglicki/sync-data-sources-${1}:latest\" \"${cmd}\""
+cmd="docker run ${envstr} ${flg} \"dajohn/sync-data-sources-${1}:latest\" \"${cmd}\""
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
 fi
 if [ -z "${NO}" ]
 then
-  docker pull "lukaszgryglicki/sync-data-sources-${1}:latest"
+  docker pull "dajohn/sync-data-sources-${1}:latest"
   eval $cmd
 fi

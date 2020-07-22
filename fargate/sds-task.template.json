@@ -19,7 +19,7 @@
   "containerDefinitions": [
     {
       "name": "${SDS_TASK_NAME}", 
-      "image": "lukaszgryglicki/sync-data-sources-${SDS_BRANCH}",
+      "image": "dajohn/sync-data-sources-${SDS_BRANCH}",
       "essential": true, 
       "command": [
         "${SDS_COMMAND}"

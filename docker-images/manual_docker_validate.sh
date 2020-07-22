@@ -12,7 +12,7 @@ then
 fi
 if [ ! -z "$EXEC" ]
 then
-  docker run -e SDS_ONLY_VALIDATE=1 -e BRANCH="$1" -e SDS_GITHUB_OAUTH=`cat /etc/github/oauths` -e REPO_ACCESS=`cat repo_access.secret` --rm -i -t "lukaszgryglicki/validate-sync-data-sources" /bin/bash
+  docker run -e SDS_ONLY_VALIDATE=1 -e BRANCH="$1" -e SDS_GITHUB_OAUTH=`cat /etc/github/oauths` -e REPO_ACCESS=`cat repo_access.secret` --rm -i -t "dajohn/validate-sync-data-sources" /bin/bash
 else
-  docker run -e SDS_ONLY_VALIDATE=1 -e BRANCH="$1" -e SDS_GITHUB_OAUTH=`cat /etc/github/oauths` -e REPO_ACCESS=`cat repo_access.secret` --rm -i -t "lukaszgryglicki/validate-sync-data-sources" "${cmd}"
+  docker run -e SDS_ONLY_VALIDATE=1 -e BRANCH="$1" -e SDS_GITHUB_OAUTH=`cat /etc/github/oauths` -e REPO_ACCESS=`cat repo_access.secret` --rm -i -t "dajohn/validate-sync-data-sources" "${cmd}"
 fi
