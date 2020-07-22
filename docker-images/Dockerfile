@@ -11,4 +11,5 @@ COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY sources/data.zip /data.zip
 #COPY sources/sds.yaml /data/sds.txt
+COPY docker-images/.vimrc /root/.vimrc
 CMD /bin/bash
