@@ -1,0 +1,30 @@
+diff --git a/grimoire_elk/elk.py b/grimoire_elk/elk.py
+index 5f8eda2..881441d 100755
+--- a/grimoire_elk/elk.py
++++ b/grimoire_elk/elk.py
+@@ -49,6 +49,7 @@ def feed_backend(url, clean, fetch_archive, backend_name, backend_params,
+     """ Feed Ocean with backend data """
+ 
+     error_msg = None
++    last_update = None
+     backend = None
+     repo = {'backend_name': backend_name, 'backend_params': backend_params}  # repository data to be stored in conf
+ 
+@@ -159,7 +160,7 @@ def feed_backend(url, clean, fetch_archive, backend_name, backend_params,
+         if offset:
+             params['from_offset'] = offset
+ 
+-        ocean_backend.feed(**params)
++        last_update = ocean_backend.feed(**params)
+ 
+     except RateLimitError as ex:
+         logger.error("Error feeding raw from {} ({}): rate limit exceeded".format(backend_name, backend.origin))
+@@ -173,7 +174,7 @@ def feed_backend(url, clean, fetch_archive, backend_name, backend_params,
+             logger.error(error_msg, exc_info=True)
+ 
+     logger.info("[{}] Done collection for {}".format(backend_name, anonymize_url(backend.origin)))
+-    return error_msg
++    return last_update, error_msg
+ 
+ 
+ def refresh_projects(enrich_backend):

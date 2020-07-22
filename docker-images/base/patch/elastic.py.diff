@@ -1,0 +1,21 @@
+diff --git a/grimoire_elk/raw/elastic.py b/grimoire_elk/raw/elastic.py
+index a392ebe..29d58a4 100644
+--- a/grimoire_elk/raw/elastic.py
++++ b/grimoire_elk/raw/elastic.py
+@@ -159,7 +159,7 @@ class ElasticOcean(ElasticItems):
+         if self.fetch_archive:
+             items = self.perceval_backend.fetch_from_archive()
+             self.feed_items(items)
+-            return
++            return None
+ 
+         if from_date and from_offset:
+             raise RuntimeError("Can't not feed using from_date and from_offset.")
+@@ -227,6 +227,7 @@ class ElasticOcean(ElasticItems):
+ 
+         self.feed_items(items)
+         self.update_items()
++        return last_update
+ 
+     def update_items(self):
+         """Perform update operations over a raw index, just after the collection.
