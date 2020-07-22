@@ -1,6 +1,6 @@
 #!/bin/bash
-# DOCKER_USER=lukaszgryglicki [SKIP_BUILD=1] [SKIP_PUSH=1] [PRUNE=1] ./docker-images/build-validate.sh
-# DOCKER_USER=lukaszgryglicki [BRANCH=test|prod] [PRUNE=1] ./docker-images/remove.sh
+# DOCKER_USER=dajohn [SKIP_BUILD=1] [SKIP_PUSH=1] [PRUNE=1] ./docker-images/build-validate.sh
+# DOCKER_USER=dajohn [BRANCH=test|prod] [PRUNE=1] ./docker-images/remove.sh
 if [ -z "${DOCKER_USER}" ]
 then
   echo "$0: you need to set docker user via DOCKER_USER=username"
