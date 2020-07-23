@@ -5708,6 +5708,16 @@ func detAffRange(ctx *lib.Ctx) (err error) {
 	return
 }
 
+func metricsEnrich(ctx *lib.Ctx, slug, ds string) (err error) {
+	// We want this API to be called even in ONLY p2o mode - because it is tied to a single endpoint enrichment
+	// if ctx.SkipEnrichDS || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
+	if ctx.SkipEnrichDS || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
+		return
+	}
+	err = executeMetricsAPICall(ctx, fmt.Sprintf("/v1/enrich/%s/datasource/%s", slug, ds))
+	return
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
