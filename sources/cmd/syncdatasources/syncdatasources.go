@@ -3016,6 +3016,27 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 	modesStr := []string{"data", "affs"}
 	nThreads := 0
 	skippedTasks := 0
+	var enrichCallsMtx *sync.Mutex
+	enrichCalls := make(map[string]struct{})
+	var addEnrichCall func(tr *lib.TaskResult)
+	if ctx.SkipEnrichDS || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
+		addEnrichCall = func(tr *lib.TaskResult) {
+		}
+	} else {
+		addEnrichCall = func(tr *lib.TaskResult) {
+			// TODO: only support dockerhub for now.
+			if tr.Ds != "dockerhub" {
+				return
+			}
+			if enrichCallsMtx != nil {
+				enrichCallsMtx.Lock()
+			}
+			enrichCalls[tr.Fx+"@"+tr.Ds] = struct{}{}
+			if enrichCallsMtx != nil {
+				enrichCallsMtx.Unlock()
+			}
+		}
+	}
 	ch := make(chan lib.TaskResult)
 	for modeIdx, affs := range modes {
 		stTime := time.Now()
@@ -3029,6 +3050,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			continue
 		}
 		if thrN > 1 {
+			enrichCallsMtx = &sync.Mutex{}
 			if ctx.Debug >= 0 {
 				lib.Printf("Processing %d tasks using MT%d version (affiliations mode: %+v)\n", len(tasks), thrN, affs)
 			}
@@ -3104,6 +3126,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					if result.Err == nil && len(result.Projects) > 0 {
 						setProject(ctx, result.Index, result.Projects)
 					}
+					addEnrichCall(&result)
 				}
 			}
 		} else {
@@ -3162,6 +3185,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				if result.Err == nil && len(result.Projects) > 0 {
 					setProject(ctx, result.Index, result.Projects)
 				}
+				addEnrichCall(&result)
 			}
 		}
 		enTime := time.Now()
@@ -3230,9 +3254,47 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			if result.Err == nil && len(result.Projects) > 0 {
 				setProject(ctx, result.Index, result.Projects)
 			}
+			addEnrichCall(&result)
 		}
 		enTime := time.Now()
 		lib.Printf("Pass (threads join) finished in %v\n", enTime.Sub(stTime))
+	}
+	if len(enrichCalls) > 0 {
+		enrich := func(ch chan struct{}, d string) {
+			defer func() {
+				if ch != nil {
+					ch <- struct{}{}
+				}
+			}()
+			ary := strings.Split(d, "@")
+			metricsEnrich(ctx, ary[0], ary[1])
+		}
+		if thrN > 1 {
+			if ctx.Debug > 0 {
+				lib.Printf("Now post-processing %d metrics enrichments using MT%d version\n", len(enrichCalls), thrN)
+			}
+			ch := make(chan struct{})
+			nThreads := 0
+			for d := range enrichCalls {
+				go enrich(ch, d)
+				nThreads++
+				if nThreads == thrN {
+					<-ch
+					nThreads--
+				}
+			}
+			for nThreads > 0 {
+				<-ch
+				nThreads--
+			}
+		} else {
+			if ctx.Debug > 0 {
+				lib.Printf("Now post-processing %d metrics enrichments using ST version\n", len(enrichCalls))
+			}
+			for d := range enrichCalls {
+				enrich(nil, d)
+			}
+		}
 	}
 	info("final")
 	lib.Printf("Skipped tasks: %d\n", skippedTasks)
@@ -5173,6 +5235,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
+	result.Ds = strings.Replace(task.DsSlug, "/", "-", -1)
+	result.Fx = strings.Replace(task.FxSlug, "/", "-", -1)
 	// Filter out by task / task skip RE
 	if taskFilteredOut(ctx, &task) {
 		result.Code[1] = -1
@@ -5581,6 +5645,9 @@ func executeMetricsAPICall(ctx *lib.Ctx, path string) (err error) {
 	method := http.MethodGet
 	rurl := path
 	url := ctx.MetricsAPIURL + rurl
+	if ctx.Debug > 0 {
+		lib.Printf("%s\n", url)
+	}
 	req, e := http.NewRequest(method, url, nil)
 	if e != nil {
 		err = fmt.Errorf("new request error: %+v for %s url: %s", e, method, rurl)
@@ -5708,13 +5775,16 @@ func detAffRange(ctx *lib.Ctx) (err error) {
 	return
 }
 
-func metricsEnrich(ctx *lib.Ctx, slug, ds string) (err error) {
+func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	// We want this API to be called even in ONLY p2o mode - because it is tied to a single endpoint enrichment
 	// if ctx.SkipEnrichDS || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
 	if ctx.SkipEnrichDS || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
 		return
 	}
-	err = executeMetricsAPICall(ctx, fmt.Sprintf("/v1/enrich/%s/datasource/%s", slug, ds))
+	err := executeMetricsAPICall(ctx, fmt.Sprintf("/v1/enrich/%s/datasource/%s", slug, ds))
+	if err != nil {
+		lib.Printf("Error metrics API enriching '%s'/'%s': %+v\n", slug, ds, err)
+	}
 	return
 }
 

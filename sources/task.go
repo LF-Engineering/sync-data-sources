@@ -142,6 +142,8 @@ type TaskResult struct {
 	Err                 error
 	Index               string
 	Endpoint            string
+	Ds                  string
+	Fx                  string
 	Projects            []EndpointProject
 }
 
