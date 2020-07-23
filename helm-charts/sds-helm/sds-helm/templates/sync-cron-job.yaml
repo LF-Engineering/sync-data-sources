@@ -134,6 +134,8 @@ spec:
               value: '{{ $root.Values.skipHideEmails }}'
             - name: SDS_SKIP_ORG_MAP
               value: '{{ $root.Values.skipOrgMap }}'
+            - name: SDS_SKIP_ENRICH_DS
+              value: '{{ $root.Values.skipEnrichDS }}'
             - name: SDS_RUN_DET_AFF_RANGE
               value: '{{ $root.Values.runDetAffRange }}'
             - name: SDS_SKIP_COPY_FROM
@@ -202,6 +204,11 @@ spec:
                 secretKeyRef:
                   name: {{ $root.Values.apiSecret }}
                   key: AFFILIATION_API_URL.secret
+            - name: METRICS_API_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $root.Values.apiSecret }}
+                  key: METRICS_API_URL.secret
             - name: SH_USER
               valueFrom:
                 secretKeyRef:
