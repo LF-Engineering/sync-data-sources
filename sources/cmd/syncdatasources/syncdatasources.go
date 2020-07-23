@@ -5573,7 +5573,47 @@ func getToken(ctx *lib.Ctx) (err error) {
 	return
 }
 
-func executeAPICall(ctx *lib.Ctx, path string) (err error) {
+func executeMetricsAPICall(ctx *lib.Ctx, path string) (err error) {
+	if ctx.MetricsAPIURL == "" {
+		err = fmt.Errorf("Cannot execute DA metrics API calls, no API URL specified")
+		return
+	}
+	method := http.MethodGet
+	rurl := path
+	url := ctx.MetricsAPIURL + rurl
+	req, e := http.NewRequest(method, url, nil)
+	if e != nil {
+		err = fmt.Errorf("new request error: %+v for %s url: %s", e, method, rurl)
+		return
+	}
+	resp, e := http.DefaultClient.Do(req)
+	if e != nil {
+		err = fmt.Errorf("do request error: %+v for %s url: %s", e, method, rurl)
+		return
+	}
+	if resp.StatusCode != 200 {
+		body, e := ioutil.ReadAll(resp.Body)
+		_ = resp.Body.Close()
+		if e != nil {
+			err = fmt.Errorf("ReadAll non-ok request error: %+v for %s url: %s", e, method, rurl)
+			return
+		}
+		err = fmt.Errorf("Method:%s url:%s status:%d\n%s", method, rurl, resp.StatusCode, body)
+		return
+	}
+	var rdata struct {
+		Text string `json:"status"`
+	}
+	err = json.NewDecoder(resp.Body).Decode(&rdata)
+	_ = resp.Body.Close()
+	if err != nil {
+		return
+	}
+	lib.Printf("%s\n", rdata.Text)
+	return
+}
+
+func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 	if ctx.AffiliationAPIURL == "" {
 		err = fmt.Errorf("Cannot execute DA affiliation API calls, no API URL specified")
 		return
@@ -5640,7 +5680,7 @@ func hideEmails(ctx *lib.Ctx) (err error) {
 	if ctx.SkipHideEmails || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowHideEmails) {
 		return
 	}
-	err = executeAPICall(ctx, "/v1/affiliation/hide_emails")
+	err = executeAffiliationsAPICall(ctx, "/v1/affiliation/hide_emails")
 	return
 }
 
@@ -5648,7 +5688,7 @@ func mergeAll(ctx *lib.Ctx) (err error) {
 	if ctx.SkipMerge || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowMerge) {
 		return
 	}
-	err = executeAPICall(ctx, "/v1/affiliation/merge_all")
+	err = executeAffiliationsAPICall(ctx, "/v1/affiliation/merge_all")
 	return
 }
 
@@ -5656,7 +5696,7 @@ func mapOrgNames(ctx *lib.Ctx) (err error) {
 	if ctx.SkipOrgMap || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowOrgMap) {
 		return
 	}
-	err = executeAPICall(ctx, "/v1/affiliation/map_org_names")
+	err = executeAffiliationsAPICall(ctx, "/v1/affiliation/map_org_names")
 	return
 }
 
@@ -5664,7 +5704,7 @@ func detAffRange(ctx *lib.Ctx) (err error) {
 	if !ctx.RunDetAffRange || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowDetAffRange) {
 		return
 	}
-	err = executeAPICall(ctx, "/v1/affiliation/det_aff_range")
+	err = executeAffiliationsAPICall(ctx, "/v1/affiliation/det_aff_range")
 	return
 }
 
