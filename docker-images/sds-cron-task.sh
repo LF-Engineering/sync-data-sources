@@ -11,6 +11,7 @@ then
   exit 2
 fi
 cd /root/go/src/github.com/LF-Engineering/sync-data-sources/ || exit 3
+git pull || exit 4
 lock_file="/tmp/$1.lock"
 function cleanup {
   rm -f "${lock_file}"
