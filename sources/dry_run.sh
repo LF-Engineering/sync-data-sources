@@ -39,6 +39,7 @@ export SDS_SKIP_SORT_DURATION=1
 export SDS_SKIP_MERGE=1
 export SDS_SKIP_HIDE_EMAILS=1
 export SDS_SKIP_ORG_MAP=1
+export SDS_SKIP_ENRICH_DS=1
 export SDS_SKIP_COPY_FROM=1
 export SDS_SKIP_P2O=1
 export SDS_DRY_RUN=1
@@ -59,6 +60,7 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_MERGE=1
 #export SDS_DRY_RUN_ALLOW_HIDE_EMAILS=1
 #export SDS_DRY_RUN_ALLOW_ORG_MAP=1
+#export SDS_DRY_RUN_ALLOW_ENRICH_DS=1
 #export SDS_DRY_RUN_ALLOW_DET_AFF_RANGE=1
 #export SDS_DRY_RUN_ALLOW_COPY_FROM=1
 #export SDS_DRY_RUN_ALLOW_SSAW=1
@@ -111,6 +113,10 @@ fi
 if [ -z "${AFFILIATION_API_URL}" ]
 then
   export AFFILIATION_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AFFILIATION_API_URL.$1.secret`
+fi
+if [ -z "${METRICS_API_URL}" ]
+then
+  export METRICS_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/METRICS_API_URL.$1.secret`
 fi
 if [ -z "${SDS_GITHUB_OAUTH}" ]
 then

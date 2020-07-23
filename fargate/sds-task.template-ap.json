@@ -156,6 +156,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_ORG_MAP}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_ENRICH_DS",
+          "value": "${SDS_DRY_RUN_ALLOW_ENRICH_DS}"
+        },
+        {
           "name": "SDS_DRY_RUN_ALLOW_DET_AFF_RANGE",
           "value": "${SDS_DRY_RUN_ALLOW_DET_AFF_RANGE}"
         },
@@ -250,6 +254,10 @@
         {
           "name": "SDS_SKIP_ORG_MAP",
           "value": "${SDS_SKIP_ORG_MAP}"
+        },
+        {
+          "name": "SDS_SKIP_ENRICH_DS",
+          "value": "${SDS_SKIP_ENRICH_DS}"
         },
         {
           "name": "SDS_RUN_DET_AFF_RANGE",
@@ -358,6 +366,10 @@
         {
           "name": "AFFILIATION_API_URL",
           "value": "${SDS_AFFILIATION_API_URL}"
+        },
+        {
+          "name": "METRICS_API_URL",
+          "value": "${SDS_METRICS_API_URL}"
         },
         {
           "name": "SH_USER",
