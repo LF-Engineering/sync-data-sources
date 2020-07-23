@@ -20,6 +20,10 @@ git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
 #vim --not-a-term -c "%s/'group_id': group_id/'group_id': group_id, 'start_msg_num': 0/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/groupsio.py
 #vim --not-a-term -c "%s/if entry is not None:/if entry is not None and 'sortKey' in entry:/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/gerrit.py
 #git diff > api.py.diff
+
+# revert slack api commit from perceval
+cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master && cd ..
+
 # rocketchat support
 cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase master && cd ..
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
