@@ -56,6 +56,7 @@ type Ctx struct {
 	DryRunAllowMerge        bool           // From SDS_DRY_RUN_ALLOW_MERGE, if set it will allow calling DA-affiliation merge_all API after all tasks finished in dry run mode
 	DryRunAllowHideEmails   bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
 	DryRunAllowOrgMap       bool           // From SDS_DRY_RUN_ALLOW_ORG_MAP, if set it will allow calling DA-affiliation map_org_names API in dry run mode
+	DryRunAllowEnrichDS     bool           // From SDS_DRY_RUN_ALLOW_ENRICH_DS, if set it will allow calling DA-metrics enrich API in dry run mode
 	DryRunAllowDetAffRange  bool           // From SDS_DRY_RUN_ALLOW_DET_AFF_RANGE, if set it will allow calling DA-affiliation det_aff_range API in dry run mode
 	DryRunAllowCopyFrom     bool           // From SDS_DRY_RUN_ALLOW_COPY_FROM, if set it will allow copy index in dry run mode
 	TimeoutSeconds          int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
@@ -80,6 +81,7 @@ type Ctx struct {
 	SkipMerge               bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails          bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
 	SkipOrgMap              bool           // From SDS_SKIP_ORG_MAP, if set - it will skip calling DA-affiliation map_org_name API
+	SkipEnrichDS            bool           // From SDS_SKIP_ENRICH_DS, if set - it will skip calling DA-matrics enrich API
 	SkipCopyFrom            bool           // From SDS_SKIP_COPY_FROM, if set - it will skip copying index feature
 	RunDetAffRange          bool           // From SDS_RUN_DET_AFF_RANGE, if set - it will call DA-affiliation det_aff_range API (this is a very resource intensive API)
 	SkipP2O                 bool           // From SDS_SKIP_P2O, if set - it will skip all p2o tasks and execute everything else
@@ -102,6 +104,7 @@ type Ctx struct {
 	OnlyP2O                 bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
 	SkipReenrich            string         // From SDS_SKIP_REENRICH, list of backend types where re-enrich phase is not needed, because they always fetch full data (don't support incremental updates), probably we can specify "jira,gerrit,confluence,bugzilla"
 	AffiliationAPIURL       string         // From AFFILIATION_API_URL - DA affiliations API url
+	MetricsAPIURL           string         // From METRICS_API_URL - DA metrics API url
 	Auth0URL                string         // From AUTH0_URL: Auth0 parameters for obtaining DA-affiliation API token
 	Auth0Audience           string         // From AUTH0_AUDIENCE
 	Auth0ClientID           string         // From AUTH0_CLIENT_ID
@@ -240,6 +243,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowMerge = os.Getenv("SDS_DRY_RUN_ALLOW_MERGE") != ""
 	ctx.DryRunAllowHideEmails = os.Getenv("SDS_DRY_RUN_ALLOW_HIDE_EMAILS") != ""
 	ctx.DryRunAllowOrgMap = os.Getenv("SDS_DRY_RUN_ALLOW_ORG_MAP") != ""
+	ctx.DryRunAllowEnrichDS = os.Getenv("SDS_DRY_RUN_ALLOW_ENRICH_DS") != ""
 	ctx.DryRunAllowDetAffRange = os.Getenv("SDS_DRY_RUN_ALLOW_DET_AFF_RANGE") != ""
 	ctx.DryRunAllowCopyFrom = os.Getenv("SDS_DRY_RUN_ALLOW_COPY_FROM") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
@@ -289,6 +293,8 @@ func (ctx *Ctx) Init() {
 	// DA affiliation API URL
 	ctx.AffiliationAPIURL = os.Getenv("AFFILIATION_API_URL")
 	AddRedacted(ctx.AffiliationAPIURL, false)
+	ctx.MetricsAPIURL = os.Getenv("METRICS_API_URL")
+	AddRedacted(ctx.MetricsAPIURL, false)
 
 	// Only validate support
 	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
@@ -491,6 +497,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip calling DA-affiliation map_org_names API
 	ctx.SkipOrgMap = os.Getenv("SDS_SKIP_ORG_MAP") != ""
+
+	// Skip calling DA-metrics enrich API
+	ctx.SkipEnrichDS = os.Getenv("SDS_SKIP_ENRICH_DS") != ""
 
 	// Skip copy from functionality
 	ctx.SkipCopyFrom = os.Getenv("SDS_SKIP_COPY_FROM") != ""

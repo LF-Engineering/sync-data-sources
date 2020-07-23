@@ -48,6 +48,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowMerge:        in.DryRunAllowMerge,
 		DryRunAllowHideEmails:   in.DryRunAllowHideEmails,
 		DryRunAllowOrgMap:       in.DryRunAllowOrgMap,
+		DryRunAllowEnrichDS:     in.DryRunAllowEnrichDS,
 		DryRunAllowDetAffRange:  in.DryRunAllowDetAffRange,
 		DryRunAllowCopyFrom:     in.DryRunAllowCopyFrom,
 		DryRunAllowSSAW:         in.DryRunAllowSSAW,
@@ -95,6 +96,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipMerge:               in.SkipMerge,
 		SkipHideEmails:          in.SkipHideEmails,
 		SkipOrgMap:              in.SkipOrgMap,
+		SkipEnrichDS:            in.SkipEnrichDS,
 		SkipCopyFrom:            in.SkipCopyFrom,
 		RunDetAffRange:          in.RunDetAffRange,
 		SkipP2O:                 in.SkipP2O,
@@ -115,6 +117,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		Auth0ClientID:           in.Auth0ClientID,
 		Auth0ClientSecret:       in.Auth0ClientSecret,
 		AffiliationAPIURL:       in.AffiliationAPIURL,
+		MetricsAPIURL:           in.MetricsAPIURL,
 	}
 	return &out
 }
@@ -282,6 +285,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowMerge:        false,
 		DryRunAllowHideEmails:   false,
 		DryRunAllowOrgMap:       false,
+		DryRunAllowEnrichDS:     false,
 		DryRunAllowDetAffRange:  false,
 		DryRunAllowCopyFrom:     false,
 		DryRunAllowSSAW:         false,
@@ -328,6 +332,7 @@ func TestInit(t *testing.T) {
 		SkipMerge:               false,
 		SkipHideEmails:          false,
 		SkipOrgMap:              false,
+		SkipEnrichDS:            false,
 		SkipCopyFrom:            false,
 		RunDetAffRange:          false,
 		SkipP2O:                 false,
@@ -348,6 +353,7 @@ func TestInit(t *testing.T) {
 		Auth0ClientID:           "",
 		Auth0ClientSecret:       "",
 		AffiliationAPIURL:       "",
+		MetricsAPIURL:           "",
 	}
 
 	// Test cases
@@ -735,6 +741,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_MERGE":         "1",
 				"SDS_DRY_RUN_ALLOW_HIDE_EMAILS":   "1",
 				"SDS_DRY_RUN_ALLOW_ORG_MAP":       "t",
+				"SDS_DRY_RUN_ALLOW_ENRICH_DS":     "t",
 				"SDS_DRY_RUN_ALLOW_DET_AFF_RANGE": "t",
 				"SDS_DRY_RUN_ALLOW_COPY_FROM":     "1",
 			},
@@ -760,6 +767,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowMerge":        true,
 					"DryRunAllowHideEmails":   true,
 					"DryRunAllowOrgMap":       true,
+					"DryRunAllowEnrichDS":     true,
 					"DryRunAllowDetAffRange":  true,
 					"DryRunAllowCopyFrom":     true,
 				},
@@ -1018,6 +1026,19 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
+			"Set skip enrich",
+			map[string]string{
+				"SDS_SKIP_ENRICH_DS": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipEnrichDS": true,
+				},
+			),
+		},
+		{
 			"Set skip detect affiliations date range",
 			map[string]string{
 				"SDS_RUN_DET_AFF_RANGE": "1",
@@ -1147,15 +1168,17 @@ func TestInit(t *testing.T) {
 			),
 		},
 		{
-			"Set DA affiliation API url",
+			"Set DA affiliation/metrics API url",
 			map[string]string{
 				"AFFILIATION_API_URL": "https://affs-api.com",
+				"METRICS_API_URL":     "https://metrics-api.com",
 			},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"AffiliationAPIURL": "https://affs-api.com",
+					"MetricsAPIURL":     "https://metrics-api.com",
 				},
 			),
 		},
