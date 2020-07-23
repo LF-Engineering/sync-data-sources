@@ -1,8 +1,8 @@
 diff --git a/grimoire_elk/enriched/confluence.py b/grimoire_elk/enriched/confluence.py
-index 64b0540..0833eee 100644
+index 64b0540..d27b8d6 100644
 --- a/grimoire_elk/enriched/confluence.py
 +++ b/grimoire_elk/enriched/confluence.py
-@@ -23,9 +23,11 @@ import logging
+@@ -23,20 +23,20 @@ import logging
  
  from .enrich import Enrich, metadata
  from ..elastic_mapping import Mapping as BaseMapping
@@ -10,20 +10,36 @@ index 64b0540..0833eee 100644
  
  
  logger = logging.getLogger(__name__)
-+access_token = get_token()
  
  
  NO_ANCESTOR_TITLE = "NO_TITLE"
-@@ -90,6 +92,14 @@ class ConfluenceEnrich(Enrich):
+-
++access_token = get_token()
+ 
+ class Mapping(BaseMapping):
+ 
+     @staticmethod
+     def get_elastic_mappings(es_major):
+         """Get Elasticsearch mapping.
+-
+         :param es_major: major version of Elasticsearch, as string
+         :returns:        dictionary with a key, 'items', with the mapping
+         """
+@@ -90,6 +90,19 @@ class ConfluenceEnrich(Enrich):
          identity['email'] = user.get('email', None)
          identity['name'] = user.get('displayName', None)
  
++        if not identity['username']:
++            return identity
++
 +        if not identity['email']:
 +            email = emails.get(identity['username'], None)
 +            if not email:
 +                email = get_email(access_token, identity['username'])
-+            if email:
-+                emails[identity['username']] = email
++                if email:
++                    emails[identity['username']] = email
++                    identity['email'] = email
++            else:
 +                identity['email'] = email
 +
          return identity
