@@ -13,9 +13,9 @@ def get_token():
 
     resp = requests.post(getenv('SSO_USER_SERVICE'), json=task)
     if resp.status_code != 200:
-        raise Exception('POST auth {}'.format(resp.status_code))
-
-    access_token = 'Bearer ' + resp.json()['access_token']
+        access_token = None
+    else:
+        access_token = 'Bearer ' + resp.json()['access_token']
 
     return access_token
 
@@ -29,20 +29,24 @@ def get_email(access_token, username):
     header = {
         'Authorization': access_token,
     }
+
+    if not username:
+        return username
+
     url = getenv('USER_SERVICE_URL') + username
     resp = requests.get(url, headers=header)
-    if resp.status_code != 200:
-        raise Exception('GET Get User {}'.format(resp.status_code))
+    if resp.status_code == 401:
+        access_token = get_token()
+        resp = requests.get(url, headers=header)
 
     result = resp.json().get('Data', None)
     if result:
         if len(result) > 0:
             for r in result:
                 if r['Username'] == username:
-                    r = r['Emails'][0]
-                    email = r.get('EmailAddress', None)
-                    if email:
-                        return email
+                    for email in r['Emails']:
+                        if email['IsPrimary']:
+                            email = email.get('EmailAddress', None)
+                            return email
 
-access_token = get_token()
 emails = {}
