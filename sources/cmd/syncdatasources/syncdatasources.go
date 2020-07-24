@@ -329,7 +329,7 @@ func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixt
 	}
 	fixture.DataSources = dataSources
 	if ctx.Debug > 0 {
-		fmt.Printf("%s has %d after filter\n", fixture.Fn, n)
+		lib.Printf("%s has %d after filter\n", fixture.Fn, n)
 	}
 	if len(fixture.Aliases) > 0 {
 		if n == 0 {
