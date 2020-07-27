@@ -1,0 +1,73 @@
+diff --git a/perceval/backends/core/gerrit.py b/perceval/backends/core/gerrit.py
+index 6539186..bd72845 100644
+--- a/perceval/backends/core/gerrit.py
++++ b/perceval/backends/core/gerrit.py
+@@ -74,7 +74,7 @@ class Gerrit(Backend):
+ 
+     def __init__(self, hostname,
+                  user=None, port=PORT, max_reviews=MAX_REVIEWS,
+-                 disable_host_key_check=False,
++                 disable_host_key_check=False, path=None,
+                  tag=None, archive=None, blacklist_ids=None):
+         origin = hostname
+ 
+@@ -82,6 +82,7 @@ class Gerrit(Backend):
+         self.hostname = hostname
+         self.user = user
+         self.port = port
++        self.path = path
+         self.max_reviews = max(1, max_reviews)
+         self.blacklist_ids = blacklist_ids
+         self.disable_host_key_check = disable_host_key_check
+@@ -189,7 +190,7 @@ class Gerrit(Backend):
+ 
+         return GerritClient(self.hostname, self.user, self.max_reviews,
+                             self.blacklist_ids, self.disable_host_key_check,
+-                            self.port, self.archive, from_archive)
++                            self.port, self.path, self.archive, from_archive)
+ 
+     def _fetch_gerrit28(self, from_date=DEFAULT_DATETIME):
+         """ Specific fetch for gerrit 2.8 version.
+@@ -296,6 +297,7 @@ class GerritClient():
+     :param blacklist_reviews: exclude the reviews of this list while fetching
+     :param disable_host_key_check: disable host key controls
+     :param port: SSH port
++    :param path: SSH key patch
+     :param archive: collect issues already retrieved from an archive
+     :param from_archive: it tells whether to write/read the archive
+     """
+@@ -306,7 +308,7 @@ class GerritClient():
+     RETRY_WAIT = 60  # number of seconds when retrying a ssh command
+ 
+     def __init__(self, repository, user=None, max_reviews=MAX_REVIEWS, blacklist_reviews=None,
+-                 disable_host_key_check=False, port=PORT,
++                 disable_host_key_check=False, port=PORT, path=None,
+                  archive=None, from_archive=False):
+         self.gerrit_user = user
+         self.max_reviews = max_reviews
+@@ -316,6 +318,7 @@ class GerritClient():
+         self.project = None
+         self._version = None
+         self.port = port
++        self.path = path
+         self.archive = archive
+         self.from_archive = from_archive
+ 
+@@ -323,6 +326,9 @@ class GerritClient():
+         if disable_host_key_check:
+             ssh_opts += "-o StrictHostKeyChecking=no "
+ 
++        if self.path:
++            ssh_opts += "-i %s " % self.path
++
+         if self.port:
+             self.gerrit_cmd = "ssh %s -p %s %s@%s" % (ssh_opts, self.port,
+                                                       self.gerrit_user, self.repository)
+@@ -520,6 +526,7 @@ class GerritCommand(BackendCommand):
+         group.add_argument('--ssh-port', dest='port',
+                            default=PORT, type=int,
+                            help="Set SSH port of the Gerrit server")
++        group.add_argument('--ssh-path', dest='path', help="Set SSH path")
+ 
+         # Required arguments
+         parser.parser.add_argument('hostname',
