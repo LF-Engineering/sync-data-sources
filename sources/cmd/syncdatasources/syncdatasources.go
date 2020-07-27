@@ -3457,8 +3457,8 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		_, ok := m["ssh-path"]
 		if !ok {
 			home := os.Getenv("HOME")
-			dir := home + "/.ssh-" + idxSlug
-			c = append(c, lib.MultiConfig{Name: "ssh-path", Value: []string{dir}, RedactedValue: []string{dir}})
+			fn := home + "/.ssh-" + idxSlug + "/id_rsa"
+			c = append(c, lib.MultiConfig{Name: "ssh-path", Value: []string{fn}, RedactedValue: []string{fn}})
 		}
 		_, ok = m["disable-host-key-check"]
 		if !ok {
