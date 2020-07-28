@@ -543,6 +543,47 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						},
 					)
 				}
+			case "dockerhub_org":
+				dockerhubOwner := strings.TrimSpace(rawEndpoint.Name)
+				repos, ok := cache[dockerhubOwner]
+				if !ok {
+					var err error
+					repos, err = lib.GetDockerHubRepos(ctx, dockerhubOwner)
+					if err != nil {
+						lib.Printf("Error getting dockerhub repos list for: %s: error: %+v\n", dockerhubOwner, err)
+						continue
+					}
+					cache[dockerhubOwner] = repos
+				}
+
+				for _, repo := range repos {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						repo += ":::" + rawEndpoint.Project
+					}
+
+					prj := rawEndpoint.Project
+
+					if ctx.Debug > 0 {
+						lib.Printf("Dockerhub Owner: %s, repo: %s\n", dockerhubOwner, repo)
+					}
+
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:              repo,
+							Project:           prj,
+							ProjectP2O:        p2o,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
+						},
+					)
+				}
 			case "rocketchat_server":
 				srv := strings.TrimSpace(rawEndpoint.Name)
 				channels, ok := cache[srv]
@@ -3454,11 +3495,11 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
-		_, ok := m["ssh-id-filepath"]
+		_, ok := m["ssh-path"]
 		if !ok {
 			home := os.Getenv("HOME")
 			fn := home + "/.ssh-" + idxSlug + "/id_rsa"
-			c = append(c, lib.MultiConfig{Name: "ssh-id-filepath", Value: []string{fn}, RedactedValue: []string{fn}})
+			c = append(c, lib.MultiConfig{Name: "ssh-path", Value: []string{fn}, RedactedValue: []string{fn}})
 		}
 		_, ok = m["disable-host-key-check"]
 		if !ok {
