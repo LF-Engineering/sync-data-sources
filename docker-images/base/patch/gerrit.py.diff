@@ -1,5 +1,5 @@
 diff --git a/perceval/backends/core/gerrit.py b/perceval/backends/core/gerrit.py
-index 6539186..bd72845 100644
+index 6539186..3c4dcea 100644
 --- a/perceval/backends/core/gerrit.py
 +++ b/perceval/backends/core/gerrit.py
 @@ -74,7 +74,7 @@ class Gerrit(Backend):
@@ -67,7 +67,7 @@ index 6539186..bd72845 100644
          group.add_argument('--ssh-port', dest='port',
                             default=PORT, type=int,
                             help="Set SSH port of the Gerrit server")
-+        group.add_argument('--ssh-path', dest='path', help="Set SSH path")
++        group.add_argument('--ssh-id-filepath', dest='path', help="Set SSH private key path")
  
          # Required arguments
          parser.parser.add_argument('hostname',
