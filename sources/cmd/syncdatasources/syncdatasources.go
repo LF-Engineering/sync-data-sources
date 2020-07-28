@@ -3454,11 +3454,11 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
-		_, ok := m["ssh-path"]
+		_, ok := m["ssh-id-filepath"]
 		if !ok {
 			home := os.Getenv("HOME")
 			fn := home + "/.ssh-" + idxSlug + "/id_rsa"
-			c = append(c, lib.MultiConfig{Name: "ssh-path", Value: []string{fn}, RedactedValue: []string{fn}})
+			c = append(c, lib.MultiConfig{Name: "ssh-id-filepath", Value: []string{fn}, RedactedValue: []string{fn}})
 		}
 		_, ok = m["disable-host-key-check"]
 		if !ok {
