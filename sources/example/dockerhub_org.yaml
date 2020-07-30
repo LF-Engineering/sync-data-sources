@@ -1,0 +1,21 @@
+---
+native:
+  slug: dockerhub-org-ex
+data_sources:
+- slug: dockerhub
+  endpoints:
+  - name: onap
+    flags:
+      type: dockerhub_org
+    only:
+    - '(?i)search-data-service'
+    - '(?i)policy-jdk-alpine'
+  - name: opnfv
+    flags:
+      type: dockerhub_org
+    skip:
+    - '(?i)functest-smoke'
+    - '(?i)releng-anteater'
+  - name: presto
+    flags:
+      type: dockerhub_org
