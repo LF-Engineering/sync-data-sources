@@ -1,0 +1,26 @@
+---
+native:
+  slug: cloud-foundry/cloud-foundry
+data_sources:
+- slug: git
+  projects:
+  - name: cloud-foundry
+    endpoints:
+    - name: https://github.com/cloudfoundry/cli
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/bosh
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/cloud_controller_ng
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/uaa
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/java-buildpack
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/cf-java-client
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/cf-deployment
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/docs-bosh
+      pair_programming: true
+    - name: https://github.com/cloudfoundry/bosh-cli
+      pair_programming: false
