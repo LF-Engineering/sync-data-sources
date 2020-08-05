@@ -377,6 +377,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Timeout:           rawEndpoint.Timeout,
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
+						PairProgramming:   rawEndpoint.PairProgramming,
 					},
 				)
 			}
@@ -414,6 +415,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Timeout:           tmout,
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
+						PairProgramming:   rawEndpoint.PairProgramming,
 					},
 				)
 				continue
@@ -493,6 +495,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -540,6 +543,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -581,6 +585,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -636,6 +641,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -702,6 +708,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -768,6 +775,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
 				}
@@ -787,6 +795,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						Timeout:           tmout,
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
+						PairProgramming:   rawEndpoint.PairProgramming,
 					},
 				)
 				continue
@@ -1022,6 +1031,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						Projects:          endpoint.Projects,
 						Timeout:           endpoint.Timeout,
 						CopyFrom:          endpoint.CopyFrom,
+						PairProgramming:   endpoint.PairProgramming,
 						Endpoint:          name,
 						Config:            dataSource.Config,
 						DsSlug:            dataSource.Slug,
@@ -5240,6 +5250,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		idxSlug,
 		"-e",
 		ctx.ElasticURL,
+	}
+	if task.PairProgramming {
+		commandLine = append(commandLine, "--pair-programming")
 	}
 	redactedCommandLine := make([]string, len(commandLine))
 	copy(redactedCommandLine, commandLine)

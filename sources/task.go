@@ -28,6 +28,7 @@ type Task struct {
 	Millis              int64
 	Timeout             time.Duration
 	CopyFrom            CopyConfig
+	PairProgramming     bool
 	AffiliationSource   string
 }
 

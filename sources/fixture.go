@@ -78,6 +78,7 @@ type Endpoint struct {
 	CopyFrom          CopyConfig    // specifies optional 'copy_from' configuration
 	AffiliationSource string
 	Projects          []EndpointProject
+	PairProgramming   bool
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
@@ -93,6 +94,7 @@ type RawEndpoint struct {
 	Projects          []EndpointProject `yaml:"endpoint_projects"`
 	CopyFrom          CopyConfig        `yaml:"copy_from"`
 	AffiliationSource string            `yaml:"affiliation_source"`
+	PairProgramming   bool              `yaml:"pair_programming"`
 	SkipREs           []*regexp.Regexp  `yaml:"-"`
 	OnlyREs           []*regexp.Regexp  `yaml:"-"`
 }

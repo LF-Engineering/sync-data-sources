@@ -7,12 +7,14 @@ import (
 	"os"
 )
 
+// DockerHubData - docker hub response format
 type DockerHubData struct {
 	Count   int                `json:"count"`
 	Next    string             `json:"next"`
 	Results []DockerHubResults `json:"results"`
 }
 
+// DockerHubResults - holds user data
 type DockerHubResults struct {
 	User string `json:"user"`
 	Name string `json:"name"`
