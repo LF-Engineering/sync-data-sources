@@ -5251,9 +5251,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		"-e",
 		ctx.ElasticURL,
 	}
-	if task.PairProgramming {
-		commandLine = append(commandLine, "--pair-programming")
-	}
 	redactedCommandLine := make([]string, len(commandLine))
 	copy(redactedCommandLine, commandLine)
 	redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
@@ -5261,6 +5258,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		refresh := []string{"--only-enrich", "--refresh-identities", "--no_incremental"}
 		commandLine = append(commandLine, refresh...)
 		redactedCommandLine = append(redactedCommandLine, refresh...)
+	}
+	if task.PairProgramming {
+		commandLine = append(commandLine, "--pair-programming")
+		redactedCommandLine = append(redactedCommandLine, "--pair-programming")
 	}
 	// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
 	if !ctx.Silent {
