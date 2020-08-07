@@ -1,1 +1,0 @@
-k8s,prometheus,opentracing,fluentd,linkerd,grpc,coredns,containerd,rkt,container-networking-interface,envoy,jaeger,notary,tuf,rook,
