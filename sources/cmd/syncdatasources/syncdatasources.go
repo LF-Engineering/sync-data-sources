@@ -664,6 +664,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				root := strings.Join(ary[0:lAry-1], "/")
 				repos, ok := cache[org]
 				if !ok {
+					if ctx.Debug > 0 {
+						lib.Printf("Repositories.ListByOrg(%s)\n", org)
+					}
 					opt := &github.RepositoryListByOrgOptions{Type: "public"} // can also use "all"
 					opt.PerPage = 100
 					repos = []string{}
@@ -731,6 +734,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				root := strings.Join(ary[0:lAry-1], "/")
 				repos, ok := cache[user]
 				if !ok {
+					if ctx.Debug > 0 {
+						lib.Printf("Repositories.List(%s)\n", user)
+					}
 					opt := &github.RepositoryListOptions{Type: "public"}
 					opt.PerPage = 100
 					repos = []string{}
