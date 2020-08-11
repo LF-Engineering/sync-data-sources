@@ -4313,13 +4313,16 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	}
 }
 
-func getConditionJSON(conds []lib.ColumnCondition, origin string) (s string) {
+func getConditionJSON(conds []lib.ColumnCondition, origin string, withOrigin bool) (s string) {
 	for _, cond := range conds {
 		val := cond.Value
 		if val == "{{endpoint}}" {
 			val = origin
 		}
 		s += fmt.Sprintf(`{"regexp":{"%s":{"value":"%s", "flags":"ALL"}}},`, jsonEscape(cond.Column), jsonEscape(val))
+	}
+	if withOrigin {
+		s += fmt.Sprintf(`{"term":{"origin":"%s"}},`, origin)
 	}
 	l := len(s)
 	if l > 0 {
@@ -4345,12 +4348,12 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			lib.Printf("Setting project %+v origin (index '%s')\n", conf, index)
 		}
 		lastEpoch := int64(0)
-		must := getConditionJSON(conf.Must, origin)
+		must := getConditionJSON(conf.Must, origin, false)
 		mustPartial := ""
 		if must != "" {
 			mustPartial = "," + must
 		}
-		mustNot := getConditionJSON(conf.MustNot, origin)
+		mustNot := getConditionJSON(conf.MustNot, origin, false)
 		optionalMustNot := ""
 		mustNotPartial := ""
 		if mustNot != "" {
@@ -4448,9 +4451,11 @@ func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch
 		optionalMustNot = `,"must_not":[` + mustNot + "]"
 	}
 	data := fmt.Sprintf(
-		`{"query":{"bool":{"must":[{"exists":{"field":"date"}}%s]%s}},"sort":{"date":"desc"}}`,
+		`{"query":{"bool":{"must":[{"exists":{"field":"%s"}}%s]%s}},"sort":{"%s":"desc"}}`,
+		lib.CopyFromDateField,
 		mustPartial,
 		optionalMustNot,
+		lib.CopyFromDateField,
 	)
 	if ctx.Debug > 0 {
 		lib.Printf("lastDataDate query: %s:%s\n", index, data)
@@ -4489,15 +4494,27 @@ func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch
 	payload := lib.EsSearchResultPayload{}
 	err = json.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
-		body, err := ioutil.ReadAll(resp.Body)
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
-		lib.Printf("Body:%s\n", body)
+		body, err := ioutil.ReadAll(resp.Body)
+		if err == nil {
+			lib.Printf("Body:%s\n", body)
+		}
 		return
 	}
 	if len(payload.Hits.Hits) == 0 {
 		return
 	}
-	epoch = payload.Hits.Hits[0].Source.Date
+	switch lib.CopyFromDateField {
+	case "metadata__enriched_on":
+		epoch = payload.Hits.Hits[0].Source.MDEnrichedOn
+	case "metadata__timestamp":
+		epoch = payload.Hits.Hits[0].Source.MDTimestamp
+	case "metadata__updated_on":
+		epoch = payload.Hits.Hits[0].Source.MDUpdatedOn
+	case "grimoire_creation_date":
+		epoch = payload.Hits.Hits[0].Source.GrimoireCreationDate
+	default:
+	}
 	return
 }
 
@@ -4885,12 +4902,14 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if ctx.Debug > 0 {
 		lib.Printf("%s:%s: copy config: %+v\n", index, origin, conf)
 	}
-	must := getConditionJSON(conf.Must, origin)
-	mustPartial := ""
-	if must != "" {
-		mustPartial = "," + must
+	mustNoOrigin := getConditionJSON(conf.Must, origin, false)
+	mustWithOrigin := getConditionJSON(conf.Must, origin, true)
+	mustPartialNoOrigin := ""
+	if mustNoOrigin != "" {
+		mustPartialNoOrigin = "," + mustNoOrigin
 	}
-	mustNot := getConditionJSON(conf.MustNot, origin)
+	mustPartialWithOrigin := "," + mustWithOrigin
+	mustNot := getConditionJSON(conf.MustNot, origin, false)
 	optionalMustNot := ""
 	mustNotPartial := ""
 	if mustNot != "" {
@@ -4920,17 +4939,29 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if err != nil {
 		lib.Printf("copyMapping(%s,%s): %v\n", pattern, index, err)
 	}
+	// Can be used to cleanup origin based copies (reset them)
+	// deleted := deleteByQuery(ctx, index, "origin:\""+origin+"\"")
+	// lib.Printf("deleted:%v\n", deleted)
 	// Now check last date on index (not alias) if present
-	lastDate := lastDataDate(ctx, index, must, mustNot, true)
+	lastDateNoOrigin := lastDataDate(ctx, index, mustNoOrigin, mustNot, false)
+	lastDateWithOrigin := lastDataDate(ctx, index, mustWithOrigin, mustNot, false)
 	if ctx.Debug > 0 {
-		lib.Printf("lastDataDate: %+v\n", lastDate)
+		lib.Printf("copy_from: %s -> %s (origin: %s): from: %+v (%+v without origin)\n", pattern, index, origin, lastDateWithOrigin, lastDateNoOrigin)
 	}
+	lastDate := lastDateWithOrigin
+	mustPartial := mustPartialWithOrigin
+	if task.CopyFrom.NoOrigin {
+		lastDate = lastDateNoOrigin
+		mustPartial = mustPartialNoOrigin
+	}
+	lib.Printf("copy_from: %s -> %s (origin: %s): from: %+v\n", pattern, index, origin, lastDate)
 	payloadBytes := []byte{}
 	data := ""
 	if lastDate.IsZero() {
 		data = fmt.Sprintf(
-			`{"size":%d,"query":{"bool":{"must":[{"exists":{"field":"date"}}%s]%s}}}`,
+			`{"size":%d,"query":{"bool":{"must":[{"exists":{"field":"%s"}}%s]%s}}}`,
 			scrollSize,
+			lib.CopyFromDateField,
 			mustPartial,
 			optionalMustNot,
 		)
@@ -4939,10 +4970,12 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		millis := lastDate.UnixNano() / 1000000
 		// millis -= 36000000
 		data = fmt.Sprintf(
-			`{"size":%d,"query":{"bool":{"must_not":[{"range":{"date":{"lte":%d,"format":"epoch_millis"}}}%s],"must":[{"exists":{"field":"date"}}%s]}}}`,
+			`{"size":%d,"query":{"bool":{"must_not":[{"range":{"%s":{"lte":%d,"format":"epoch_millis"}}}%s],"must":[{"exists":{"field":"%s"}}%s]}}}`,
 			scrollSize,
+			lib.CopyFromDateField,
 			millis,
 			mustNotPartial,
+			lib.CopyFromDateField,
 			mustPartial,
 		)
 		payloadBytes = []byte(data)
@@ -4977,55 +5010,64 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	payload := lib.EsSearchScrollPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	var plBody []byte
+	plBody, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		var body []byte
-		body, err = ioutil.ReadAll(resp.Body)
-		_ = resp.Body.Close()
-		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
-		lib.Printf("Body:%s\n", body)
+		lib.Printf("Read response body error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
 		return
 	}
 	_ = resp.Body.Close()
+	err = json.Unmarshal(plBody, &payload)
+	if err != nil {
+		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		lib.Printf("Body:%s\n", plBody)
+		return
+	}
 	jsons := [][]byte{}
 	nJSONs := 0
 	bulks := 0
 	scrollID := payload.ScrollID
 	docs := 0
+	header := true
 	for {
-		data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
-		payloadBytes = []byte(data)
-		payloadBody = bytes.NewReader(payloadBytes)
-		url = ctx.ElasticURL + lib.SearchScroll
-		rurl = lib.SearchScroll
-		method := lib.Get
-		req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
-		if err != nil {
-			lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-			return
-		}
-		req.Header.Set("Content-Type", "application/json")
-		resp, err = http.DefaultClient.Do(req)
-		if err != nil {
-			lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-			return
-		}
-		if resp.StatusCode != 200 {
-			var body []byte
-			body, err = ioutil.ReadAll(resp.Body)
-			_ = resp.Body.Close()
-			if err != nil {
-				lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-				return
-			}
-			lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
-			return
-		}
 		var (
 			result interface{}
 			field  interface{}
 		)
-		err = json.NewDecoder(resp.Body).Decode(&result)
+		if header {
+			err = json.Unmarshal(plBody, &result)
+			header = false
+		} else {
+			data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
+			payloadBytes = []byte(data)
+			payloadBody = bytes.NewReader(payloadBytes)
+			url = ctx.ElasticURL + lib.SearchScroll
+			rurl = lib.SearchScroll
+			method := lib.Get
+			req, err = http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+			if err != nil {
+				lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			req.Header.Set("Content-Type", "application/json")
+			resp, err = http.DefaultClient.Do(req)
+			if err != nil {
+				lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+				return
+			}
+			if resp.StatusCode != 200 {
+				var body []byte
+				body, err = ioutil.ReadAll(resp.Body)
+				_ = resp.Body.Close()
+				if err != nil {
+					lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+					return
+				}
+				lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+				return
+			}
+			err = json.NewDecoder(resp.Body).Decode(&result)
+		}
 		if err != nil {
 			var body []byte
 			body, err = ioutil.ReadAll(resp.Body)
@@ -5162,6 +5204,8 @@ func mapOrigin(origin, ds string) string {
 		return strings.Replace(strings.Replace(strings.TrimSpace(origin), "  ", " ", -1), " ", "/", -1)
 	case lib.DockerHub:
 		return "https://hub.docker.com/" + strings.Replace(strings.Replace(strings.TrimSpace(origin), "  ", " ", -1), " ", "/", -1)
+	case lib.GroupsIO:
+		return "https://groups.io/g/" + origin
 	default:
 		return origin
 	}

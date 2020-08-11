@@ -42,13 +42,16 @@ type EsSearchPayload struct {
 
 // EsSearchResultSource - search result single hit's  source document
 type EsSearchResultSource struct {
-	Index     string    `json:"index"`
-	Endpoint  string    `json:"endpoint"`
-	Type      string    `json:"type"`
-	Mtx       string    `json:"mtx"`
-	Dt        time.Time `json:"dt"`
-	ProjectTS int64     `json:"project_ts"`
-	Date      time.Time `json:"date"`
+	Index                string    `json:"index"`
+	Endpoint             string    `json:"endpoint"`
+	Type                 string    `json:"type"`
+	Mtx                  string    `json:"mtx"`
+	Dt                   time.Time `json:"dt"`
+	ProjectTS            int64     `json:"project_ts"`
+	MDTimestamp          time.Time `json:"metadata__timestamp"`
+	MDEnrichedOn         time.Time `json:"metadata__enriched_on"`
+	MDUpdatedOn          time.Time `json:"metadata__updated_on"`
+	GrimoireCreationDate time.Time `json:"grimoire_creation_date"`
 }
 
 // EsSearchResultHit - search result single hit
