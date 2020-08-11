@@ -62,7 +62,12 @@ type EndpointProject struct {
 
 // CopyConfig - holds data related to copy from other index configuration
 type CopyConfig struct {
-	Pattern string            `yaml:"pattern"`
+	Pattern  string `yaml:"pattern"`
+	NoOrigin bool   `yaml:"no_origin"` // skip checking origin when calculating start date to copy
+	// if no_origin is set, then copying will start from the date of the last document stored in the destination index
+	//    (can be used when the source has multiple origins or origin(s) different than endpoint's origin)
+	// if no_origin is not set it will query destination index for origin of the destination endpoint
+	//    and will start copying source -> dest from that date (this is the default)
 	Must    []ColumnCondition `yaml:"must"`
 	MustNot []ColumnCondition `yaml:"must_not"`
 }
