@@ -22,6 +22,7 @@ type deployment struct {
 	CommandPrefix string            `yaml:"command_prefix"`
 	Master        bool              `yaml:"master"`
 	CSVPrefix     string            `yaml:"csv_prefix"`
+	TempDir       string            `yaml:"temp_dir"`
 	Env           map[string]string `yaml:"env"`
 }
 
@@ -34,14 +35,54 @@ type sdsDeployment struct {
 	Environments []environment `yaml:"environments"`
 }
 
-func crontabDeployments(ctx *lib.Ctx, deps []deployment) (err error) {
-	// */10 * * * * PATH=$PATH:/snap/bin /usr/bin/sds-main.sh
+func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 	// SDS_CSV_PREFIX='/root/jobs' SDS_SILENT=1 SDS_TASK_TIMEOUT_SECONDS=43200 SDS_NCPUS_SCALE=2 SDS_SCROLL_SIZE=500 SDS_ES_BULKSIZE=500 SDS_TASKS_SKIP_RE='^sds-cncf-' /usr/bin/sds-cron-task.sh sds_main prod 1>> /tmp/sds_main.log 2>>/tmp/sds_main.err
-	// 0 8 * * * PATH=$PATH:/snap/bin /usr/bin/sds-cncf.sh
 	// SDS_CSV_PREFIX='/root/cncf_jobs' SDS_NCPUS_SCALE=0.3 SDS_SILENT=1 SDS_TASK_TIMEOUT_SECONDS=43200 SDS_SCROLL_SIZE=1000 SDS_ES_BULKSIZE=1000 SDS_ONLY_P2O=1 SDS_TASKS_RE='^sds-cncf-' /usr/bin/sds-cron-task.sh sds_cncf prod 1>> /tmp/sds_cncf.log 2>>/tmp/sds_cncf.err
-	// 0 * * * * PATH=$PATH:/snap/bin SDS_CSV_PREFIX='/root/jobs' SDS_SILENT=1 SDS_NCPUS_SCALE=2 SDS_SCROLL_SIZE=500 SDS_ES_BULKSIZE=500 SDS_TASKS_SKIP_RE='(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)' /usr/bin/sds-cron-task.sh sds_main test 1>> /tmp/sds_main.log 2>>/tmp/sds_main.err
-	// */10 * * * * PATH=$PATH:/snap/bin SDS_CSV_PREFIX='/root/slow_jobs' SDS_SKIP_REENRICH='jira,gerrit,confluence,bugzilla' SDS_SILENT=1 SDS_ES_BULKSIZE=100 SDS_ONLY_P2O=1 SDS_TASKS_RE='(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)' /usr/bin/sds-cron-task.sh sds_slow test 1>> /tmp/sds_slow.log 2>>/tmp/sds_slow.err
-	// fmt.Printf("%+v\n", deps)
+	root := "#/bin/bash\n"
+	if !dep.Master {
+		root += "SDS_ONLY_P2O=1 "
+	}
+	var (
+		pref   string
+		prefix string
+		ok     bool
+	)
+	pref, ok = dep.Env["SDS_CSV_PREFIX"]
+	if ok {
+		prefix = pref
+		delete(dep.Env, "SDS_CSV_PREFIX")
+	} else {
+		prefix = dep.CSVPrefix
+	}
+	prefix = strings.TrimSpace(prefix)
+	if prefix[len(prefix)-1:] != "/" {
+		prefix += "/"
+	}
+	name := "sds-" + strings.Replace(strings.TrimSpace(dep.Name), " ", "-", -1)
+	root += "SDS_CSV_PREFIX=" + prefix + name + " "
+	//  /usr/bin/sds-cron-task.sh sds_main prod 1>> /tmp/sds_main.log 2>>/tmp/sds_main.err
+	//  /usr/bin/sds-cron-task.sh sds_cncf prod 1>> /tmp/sds_cncf.log 2>>/tmp/sds_cncf.err
+	for k, v := range dep.Env {
+		root += k + "='" + v + "' "
+	}
+	prefix = strings.TrimSpace(dep.CommandPrefix)
+	if prefix[len(prefix)-1:] != "/" {
+		prefix += "/"
+	}
+	tmp := strings.TrimSpace(dep.TempDir)
+	if tmp[len(tmp)-1:] != "/" {
+		tmp += "/"
+	}
+	root += fmt.Sprintf("%ssds-cron-task.sh %s %s 1>> %s%s.log 2>>%s%s.err", prefix, name, deployEnv, tmp, name, tmp, name)
+	fmt.Printf("%s\n", cmd)
+	err = ioutil.WriteFile(cmd, []byte(root), 0755)
+	if err != nil {
+		return
+	}
+	return
+}
+
+func crontabDeployments(ctx *lib.Ctx, deployEnv string, deps []deployment) (err error) {
 	reS := "("
 	for _, d := range deps {
 		reS += "sds-" + d.Name + "|"
@@ -64,6 +105,7 @@ func crontabDeployments(ctx *lib.Ctx, deps []deployment) (err error) {
 	}
 	root := strings.Join(lines, "\n")
 	for _, dep := range deps {
+		// */10 * * * * PATH=$PATH:/snap/bin /usr/bin/sds-main.sh
 		prefix := strings.TrimSpace(dep.CommandPrefix)
 		if prefix[len(prefix)-1:] != "/" {
 			prefix += "/"
@@ -72,6 +114,10 @@ func crontabDeployments(ctx *lib.Ctx, deps []deployment) (err error) {
 		fullCommand := prefix + "sds-" + command
 		line := strings.TrimSpace(dep.Cron) + " " + strings.TrimSpace(dep.CronEnv) + " " + fullCommand
 		root += "\n" + line
+		err = createCommand(deployEnv, dep, fullCommand)
+		if err != nil {
+			return
+		}
 	}
 	root += "\n"
 	var tmp *os.File
@@ -109,19 +155,30 @@ func deployCrontab(ctx *lib.Ctx, deployEnv string) (err error) {
 			continue
 		}
 		m := make(map[string]struct{})
+		hasMaster := false
 		for _, d := range env.Deployments {
 			_, ok := m[d.Name]
 			if ok {
 				return fmt.Errorf("non-unique name %s in %s deploy env", d.Name, deployEnv)
 			}
+			if d.Master {
+				if !hasMaster {
+					hasMaster = true
+				} else {
+					return fmt.Errorf("there must be exactly one master deployment in %s deploy env, found multiple", deployEnv)
+				}
+			}
 			m[d.Name] = struct{}{}
 			deployments = append(deployments, d)
+		}
+		if !hasMaster {
+			return fmt.Errorf("there must be exactly one master deployment in %s deploy env, found none", deployEnv)
 		}
 	}
 	if len(deployments) == 0 {
 		return fmt.Errorf("nothing to deploy for %s env", deployEnv)
 	}
-	return crontabDeployments(ctx, deployments)
+	return crontabDeployments(ctx, deployEnv, deployments)
 }
 
 func main() {
