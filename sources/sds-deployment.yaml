@@ -2,7 +2,7 @@
 environments:
 - name: prod
   deployments:
-  - name: main
+  - name: prod-main
     master: true                        # main task, this one will also process all special SDS task, other tasks will receive "SDS_ONLY_P2O=1"
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
@@ -15,7 +15,7 @@ environments:
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '^sds-cncf-'
-  - name: cncf
+  - name: prod-cncf
     cron: '0 8 * * *'
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
@@ -30,7 +30,7 @@ environments:
       SDS_TASKS_RE: '^sds-cncf-'
 - name: test
   deployments:
-  - name: main
+  - name: test-main
     master: true
     cron: '0 * * * *'
     command_prefix: '/usr/bin'
@@ -42,7 +42,7 @@ environments:
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
-  - name: slow
+  - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
     csv_prefix: '/root'

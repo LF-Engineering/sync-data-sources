@@ -73,7 +73,21 @@ func crontabDeployments(ctx *lib.Ctx, deps []deployment) (err error) {
 		line := strings.TrimSpace(dep.Cron) + " " + strings.TrimSpace(dep.CronEnv) + " " + fullCommand
 		root += "\n" + line
 	}
-	fmt.Printf("%s\n", root)
+	root += "\n"
+	var tmp *os.File
+	tmp, err = ioutil.TempFile("", "")
+	if err != nil {
+		return
+	}
+	defer func() { _ = os.Remove(tmp.Name()) }()
+	err = ioutil.WriteFile(tmp.Name(), []byte(root), 0644)
+	if err != nil {
+		return
+	}
+	res, err = lib.ExecCommand(ctx, []string{"crontab", tmp.Name()}, nil, nil)
+	if err != nil {
+		return
+	}
 	return
 }
 
@@ -118,6 +132,7 @@ func main() {
 	var ctx lib.Ctx
 	ctx.TestMode = true
 	ctx.Init()
+	_ = os.Setenv("SDS_SIMPLE_PRINTF", "1")
 	err := deployCrontab(&ctx, os.Args[1])
 	if err != nil {
 		fmt.Printf("deployCrontab: %+v\n", err)
