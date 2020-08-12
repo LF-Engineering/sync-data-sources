@@ -9,7 +9,7 @@ environments:
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
     temp_dir: '/tmp'
-    env:
+    env:                                # List of all possible SDS env variables is here: https://github.com/LF-Engineering/sync-data-sources/blob/master/sources/context.go#L12
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
       SDS_NCPUS_SCALE: 1.5              # attempt to create 1.5 * number of CPU cores tasks for this deployment
