@@ -1,23 +1,23 @@
 ---
 environments:
-- name: prod
+- name: prod                            # this will run on the 'prod' env
   deployments:
   - name: prod-main
-    master: true                        # main task, this one will also process all special SDS task, other tasks will receive "SDS_ONLY_P2O=1"
-    cron: '*/10 * * * *'
-    command_prefix: '/usr/bin'
+    master: true                        # main task, this one will also process all special SDS tasks, other tasks will receive "SDS_ONLY_P2O=1"
+    cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
+    command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
     temp_dir: '/tmp'
     env:
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
-      SDS_NCPUS_SCALE: 1.5
+      SDS_NCPUS_SCALE: 1.5              # attempt to create 1.5 * number of CPU cores tasks for this deployment
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '^sds-cncf-'
+      SDS_TASKS_SKIP_RE: '^sds-cncf-'   # specifying which tasks should be skipped, can be something like '^sds-(foundation1|foundation2|...|foundationN)-'
   - name: prod-cncf
-    cron: '0 8 * * *'
+    cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -29,8 +29,8 @@ environments:
       SDS_NCPUS_SCALE: 0.3
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
-      SDS_TASKS_RE: '^sds-cncf-'
-- name: test
+      SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
+- name: test                            # this will run on the 'test' env
   deployments:
   - name: test-main
     master: true
