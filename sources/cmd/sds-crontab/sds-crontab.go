@@ -74,7 +74,8 @@ func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 	if tmp[len(tmp)-1:] != "/" {
 		tmp += "/"
 	}
-	root += fmt.Sprintf("%ssds-cron-task.sh %s %s 1>> %s%s.log 2>>%s%s.err", prefix, name, deployEnv, tmp, name, tmp, name)
+	tmpName := tmp + name
+	root += fmt.Sprintf("%ssds-cron-task.sh %s %s 1>> %s.log 2>>%s.err", prefix, name, deployEnv, tmpName, tmpName)
 	err = ioutil.WriteFile(cmd, []byte("#/bin/bash\n"+root+"\n"), 0755)
 	if err != nil {
 		return
@@ -86,7 +87,8 @@ func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 func crontabDeployments(ctx *lib.Ctx, deployEnv string, deps []deployment) (err error) {
 	reS := "("
 	for _, d := range deps {
-		reS += "sds-" + d.Name + "|"
+		name := strings.Replace(strings.TrimSpace(d.Name), " ", "-", -1)
+		reS += "sds-" + name + "|"
 	}
 	reS = reS[0:len(reS)-1] + ")"
 	re := regexp.MustCompile(reS)
