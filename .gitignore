@@ -17,6 +17,7 @@
 # project specific
 /sources/data
 /sources/syncdatasources
+/sources/sds-crontab
 /sources/data.zip
 /sources/sds.yaml
 out
