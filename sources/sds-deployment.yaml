@@ -8,6 +8,7 @@ environments:
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
     env:
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
@@ -20,6 +21,7 @@ environments:
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
     deploy_env: prod
     env:
       SDS_SILENT: 1
@@ -36,6 +38,7 @@ environments:
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
     env:
       SDS_SILENT: 1
       SDS_NCPUS_SCALE: 2
@@ -47,6 +50,7 @@ environments:
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
     env:
       SDS_SKIP_REENRICH: 'jira,gerrit,confluence,bugzilla'
       SDS_SILENT: 1
