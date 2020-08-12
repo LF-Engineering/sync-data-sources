@@ -74,7 +74,6 @@ func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 		tmp += "/"
 	}
 	root += fmt.Sprintf("%ssds-cron-task.sh %s %s 1>> %s%s.log 2>>%s%s.err", prefix, name, deployEnv, tmp, name, tmp, name)
-	fmt.Printf("%s\n", cmd)
 	err = ioutil.WriteFile(cmd, []byte(root), 0755)
 	if err != nil {
 		return
