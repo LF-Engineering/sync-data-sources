@@ -184,6 +184,7 @@ func deployCrontab(ctx *lib.Ctx, deployEnv string) (err error) {
 }
 
 func main() {
+	fmt.Printf("sds-crontab: %+v: start\n", time.Now())
 	if len(os.Args) < 2 {
 		fmt.Printf("Required deployment environment name: [prod|test]\n")
 		os.Exit(1)
