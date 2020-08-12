@@ -4554,7 +4554,7 @@ func bulkJSONData(ctx *lib.Ctx, index string, payloadBytes []byte) (err error) {
 	}
 	for i, item := range esResult.Items {
 		if item.Index.Status != 201 {
-			err = fmt.Errorf("Failed to create #%d item, status %d, error %+v\n", i, item.Index.Status, item.Index.Error)
+			err = fmt.Errorf("failed to create #%d item, status %d, error %+v", i, item.Index.Status, item.Index.Error)
 			return
 		}
 	}
