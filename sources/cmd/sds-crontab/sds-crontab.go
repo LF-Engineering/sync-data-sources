@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
 	yaml "gopkg.in/yaml.v2"
@@ -38,7 +39,7 @@ type sdsDeployment struct {
 func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 	// SDS_CSV_PREFIX='/root/jobs' SDS_SILENT=1 SDS_TASK_TIMEOUT_SECONDS=43200 SDS_NCPUS_SCALE=2 SDS_SCROLL_SIZE=500 SDS_ES_BULKSIZE=500 SDS_TASKS_SKIP_RE='^sds-cncf-' /usr/bin/sds-cron-task.sh sds_main prod 1>> /tmp/sds_main.log 2>>/tmp/sds_main.err
 	// SDS_CSV_PREFIX='/root/cncf_jobs' SDS_NCPUS_SCALE=0.3 SDS_SILENT=1 SDS_TASK_TIMEOUT_SECONDS=43200 SDS_SCROLL_SIZE=1000 SDS_ES_BULKSIZE=1000 SDS_ONLY_P2O=1 SDS_TASKS_RE='^sds-cncf-' /usr/bin/sds-cron-task.sh sds_cncf prod 1>> /tmp/sds_cncf.log 2>>/tmp/sds_cncf.err
-	root := "#/bin/bash\n"
+	root := ""
 	if !dep.Master {
 		root += "SDS_ONLY_P2O=1 "
 	}
@@ -74,10 +75,11 @@ func createCommand(deployEnv string, dep deployment, cmd string) (err error) {
 		tmp += "/"
 	}
 	root += fmt.Sprintf("%ssds-cron-task.sh %s %s 1>> %s%s.log 2>>%s%s.err", prefix, name, deployEnv, tmp, name, tmp, name)
-	err = ioutil.WriteFile(cmd, []byte(root), 0755)
+	err = ioutil.WriteFile(cmd, []byte("#/bin/bash\n"+root+"\n"), 0755)
 	if err != nil {
 		return
 	}
+	fmt.Printf("Processed file: %s: %s\n", cmd, root)
 	return
 }
 
@@ -112,6 +114,7 @@ func crontabDeployments(ctx *lib.Ctx, deployEnv string, deps []deployment) (err 
 		command := strings.Replace(strings.TrimSpace(dep.Name), " ", "-", -1) + ".sh"
 		fullCommand := prefix + "sds-" + command
 		line := strings.TrimSpace(dep.Cron) + " " + strings.TrimSpace(dep.CronEnv) + " " + fullCommand
+		fmt.Printf("crontab entry: %s\n", line)
 		root += "\n" + line
 		err = createCommand(deployEnv, dep, fullCommand)
 		if err != nil {
@@ -192,5 +195,7 @@ func main() {
 	err := deployCrontab(&ctx, os.Args[1])
 	if err != nil {
 		fmt.Printf("deployCrontab: %+v\n", err)
+		return
 	}
+	fmt.Printf("sds-crontab: %+v: all OK\n", time.Now())
 }
