@@ -1,0 +1,54 @@
+---
+environments:
+- name: prod
+  deployments:
+  - name: main
+    master: true                        # main task, this one will also process all special SDS task, other tasks will receive "SDS_ONLY_P2O=1"
+    cron: '*/10 * * * *'
+    command_prefix: '/usr/bin/'
+    csv_prefix: '/root/'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    env:
+      SDS_SILENT: 1
+      SDS_TASK_TIMEOUT_SECONDS: 43200
+      SDS_NCPUS_SCALE: 1.5
+      SDS_SCROLL_SIZE: 500
+      SDS_ES_BULKSIZE: 500
+      SDS_TASKS_SKIP_RE: '^sds-cncf-'
+  - name: cncf
+    cron: '0 8 * * *'
+    command_prefix: '/usr/bin/'
+    csv_prefix: '/root/'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    deploy_env: prod
+    env:
+      SDS_SILENT: 1
+      SDS_TASK_TIMEOUT_SECONDS: 43200
+      SDS_NCPUS_SCALE: 0.3
+      SDS_SCROLL_SIZE: 1000
+      SDS_ES_BULKSIZE: 1000
+      SDS_TASKS_RE: '^sds-cncf-'
+- name: test
+  deployments:
+  - name: main
+    master: true
+    cron: '0 * * * *'
+    command_prefix: '/usr/bin/'
+    csv_prefix: '/root/'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    env:
+      SDS_SILENT: 1
+      SDS_NCPUS_SCALE: 2
+      SDS_SCROLL_SIZE: 500
+      SDS_ES_BULKSIZE: 500
+      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
+  - name: slow
+    cron: '*/10 * * * *'
+    command_prefix: '/usr/bin/'
+    csv_prefix: '/root/'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    env:
+      SDS_SKIP_REENRICH: 'jira,gerrit,confluence,bugzilla'
+      SDS_SILENT: 1
+      SDS_ES_BULKSIZE: 100
+      SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
