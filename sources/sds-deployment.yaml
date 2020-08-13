@@ -15,7 +15,7 @@ environments:
       SDS_NCPUS_SCALE: 1.5              # attempt to create 1.5 * number of CPU cores tasks for this deployment
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '^sds-cncf-'   # specifying which tasks should be skipped, can be something like '^sds-(foundation1|foundation2|...|foundationN)-'
+      SDS_TASKS_SKIP_RE: '^sds-(cncf|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|gql|finos|elisa|finops|frr|allseen|accord|acrn|acr|act|agl|bitcoin-protocol|chaoss|chips|cip|caf|ccc|cdf|tizen|ucf|cephfoundation)-'   # specifying which tasks should be skipped, can be something like '^sds-(foundation1|foundation2|...|foundationN)-'
   - name: prod-cncf
     cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -30,6 +30,20 @@ environments:
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
+  - name: prod-others
+    cron: '0 20 * * *'                   # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
+    command_prefix: '/usr/bin'
+    csv_prefix: '/root'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
+    deploy_env: prod
+    env:
+      SDS_SILENT: 1
+      SDS_TASK_TIMEOUT_SECONDS: 43200
+      SDS_NCPUS_SCALE: 0.3
+      SDS_SCROLL_SIZE: 1000
+      SDS_ES_BULKSIZE: 1000
+      SDS_TASKS_RE: '^sds-(cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|gql|finos|elisa|finops|frr|allseen|accord|acrn|acr|act|agl|bitcoin-protocol|chaoss|chips|cip|caf|ccc|cdf|tizen|ucf|cephfoundation)-'
 - name: test                            # this will run on the 'test' env
   deployments:
   - name: test-main
