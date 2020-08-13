@@ -452,8 +452,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 				rtoken := token[len(token)-len(token)/4:]
 				lib.AddRedacted(token, true)
-				ids, ok1 := cache["i"+token]
-				channels, ok2 := cache["c"+token]
+				ids, ok1 := cache[epType+"i"+token]
+				channels, ok2 := cache[epType+"c"+token]
 				if !ok1 || !ok2 {
 					var err error
 					ids, channels, err = lib.GetSlackBotUsersConversation(ctx, token)
@@ -461,8 +461,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						lib.Printf("Error getting slack conversations list for: %s: error: %+v\n", rtoken, err)
 						continue
 					}
-					cache["i"+token] = ids
-					cache["c"+token] = channels
+					cache[epType+"i"+token] = ids
+					cache[epType+"c"+token] = channels
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("Slack %s ids: %+v, channels: %+v\n", rtoken, ids, channels)
@@ -501,8 +501,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			case "gerrit_org":
 				gerrit := strings.TrimSpace(rawEndpoint.Name)
-				projects, ok1 := cache["p"+gerrit]
-				repos, ok2 := cache["r"+gerrit]
+				projects, ok1 := cache[epType+"p"+gerrit]
+				repos, ok2 := cache[epType+"r"+gerrit]
 				if !ok1 || !ok2 {
 					var err error
 					projects, repos, err = lib.GetGerritRepos(ctx, gerrit)
@@ -510,8 +510,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						lib.Printf("Error getting gerrit repos list for: %s: error: %+v\n", gerrit, err)
 						continue
 					}
-					cache["p"+gerrit] = projects
-					cache["r"+gerrit] = repos
+					cache[epType+"p"+gerrit] = projects
+					cache[epType+"r"+gerrit] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("Gerrit %s repos: %+v, projects: %+v\n", gerrit, repos, projects)
@@ -549,7 +549,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			case "dockerhub_org":
 				dockerhubOwner := strings.TrimSpace(rawEndpoint.Name)
-				repos, ok := cache[dockerhubOwner]
+				repos, ok := cache[epType+dockerhubOwner]
 				if !ok {
 					var err error
 					repos, err = lib.GetDockerHubRepos(ctx, dockerhubOwner)
@@ -557,7 +557,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						lib.Printf("Error getting dockerhub repos list for: %s: error: %+v\n", dockerhubOwner, err)
 						continue
 					}
-					cache[dockerhubOwner] = repos
+					cache[epType+dockerhubOwner] = repos
 				}
 
 				for _, repo := range repos {
@@ -591,7 +591,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			case "rocketchat_server":
 				srv := strings.TrimSpace(rawEndpoint.Name)
-				channels, ok := cache[srv]
+				channels, ok := cache[epType+srv]
 				if !ok {
 					token := ""
 					uid := ""
@@ -617,7 +617,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						lib.Printf("Error getting channels list for rocketchat server: %s: error: %+v\n", srv, err)
 						continue
 					}
-					cache[srv] = channels
+					cache[epType+srv] = channels
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("RocketChat srv %s channels: %+v\n", srv, channels)
@@ -662,7 +662,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				lAry := len(ary)
 				org := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
-				repos, ok := cache[org]
+				repos, ok := cache[epType+org]
 				if !ok {
 					if ctx.Debug > 0 {
 						lib.Printf("Repositories.ListByOrg(%s)\n", org)
@@ -687,7 +687,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						}
 						opt.Page = response.NextPage
 					}
-					cache[org] = repos
+					cache[epType+org] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("Org %s repos: %+v\n", org, repos)
@@ -732,7 +732,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				lAry := len(ary)
 				user := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
-				repos, ok := cache[user]
+				repos, ok := cache[epType+user]
 				if !ok {
 					if ctx.Debug > 0 {
 						lib.Printf("Repositories.List(%s)\n", user)
@@ -757,7 +757,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						}
 						opt.Page = response.NextPage
 					}
-					cache[user] = repos
+					cache[epType+user] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("User %s repos: %+v\n", user, repos)
