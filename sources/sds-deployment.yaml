@@ -9,7 +9,7 @@ environments:
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
     temp_dir: '/tmp'
-    env:
+    env:                                # List of all possible SDS env variables is here: https://github.com/LF-Engineering/sync-data-sources/blob/master/sources/context.go#L12
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
       SDS_NCPUS_SCALE: 1.5              # attempt to create 1.5 * number of CPU cores tasks for this deployment
@@ -26,7 +26,7 @@ environments:
     env:
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
-      SDS_NCPUS_SCALE: 0.3
+      SDS_NCPUS_SCALE: 0.3              # here we give max 30% of CPU cores available. So if OS reorts say 10 CPU cores, at most 3 threads will be used.
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
