@@ -33,7 +33,9 @@ var (
 	gAliasesFunc  func()
 	gAliasesMtx   *sync.Mutex
 	gCSVMtx       *sync.Mutex
+	gRateMtx      *sync.Mutex
 	gToken        string
+	gHint         int
 )
 
 const cOrigin = "sds"
@@ -108,6 +110,7 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 func validateFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
+	gHint = -1
 
 	fixtures := []lib.Fixture{}
 	for _, fixtureFile := range fixtureFiles {
@@ -340,7 +343,6 @@ func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixt
 }
 
 func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
-	hint := -1
 	cache := make(map[string][]string)
 	for i, dataSource := range fixture.DataSources {
 		for _, projectData := range dataSource.Projects {
@@ -446,7 +448,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						h, _, rem, wait = lib.GetRateLimits(gctx, ctx, gc, true)
 						continue
 					}
-					if rem[h] > 2000 {
+					if rem[h] >= 2500 {
 						canCache = true
 					}
 					break
@@ -682,14 +684,20 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			case "github_org":
 				var aHint int
-				if hint < 0 {
+				if gRateMtx != nil {
+					gRateMtx.Lock()
+				}
+				if gHint < 0 {
 					var canCache bool
 					aHint, canCache = handleRate()
 					if canCache {
-						hint = aHint
+						gHint = aHint
 					}
 				} else {
-					aHint = hint
+					aHint = gHint
+				}
+				if gRateMtx != nil {
+					gRateMtx.Unlock()
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
@@ -711,8 +719,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					opt := &github.RepositoryListByOrgOptions{Type: "public"} // can also use "all"
 					opt.PerPage = 100
 					repos = []string{}
+					retried := false
 					for {
 						repositories, response, err := gc[aHint].Repositories.ListByOrg(gctx, org, opt)
+						if err != nil && !retried {
+							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate\n", org, response, err)
+							aHint, _ = handleRate()
+							retried = true
+							continue
+						}
 						if err != nil {
 							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v\n", org, response, err)
 							break
@@ -761,14 +776,20 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				}
 			case "github_user":
 				var aHint int
-				if hint < 0 {
+				if gRateMtx != nil {
+					gRateMtx.Lock()
+				}
+				if gHint < 0 {
 					var canCache bool
 					aHint, canCache = handleRate()
 					if canCache {
-						hint = aHint
+						gHint = aHint
 					}
 				} else {
-					aHint = hint
+					aHint = gHint
+				}
+				if gRateMtx != nil {
+					gRateMtx.Unlock()
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
@@ -790,8 +811,15 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					opt := &github.RepositoryListOptions{Type: "public"}
 					opt.PerPage = 100
 					repos = []string{}
+					retried := false
 					for {
 						repositories, response, err := gc[aHint].Repositories.List(gctx, user, opt)
+						if err != nil && !retried {
+							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v, retrying rate\n", user, response, err)
+							aHint, _ = handleRate()
+							retried = true
+							continue
+						}
 						if err != nil {
 							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v\n", user, response, err)
 							break
@@ -930,6 +958,7 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
+	gHint = -1
 
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
@@ -940,6 +969,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 		}
 		ch := make(chan lib.Fixture)
 		nThreads := 0
+		gRateMtx = &sync.Mutex{}
 		for _, fixtureFile := range fixtureFiles {
 			if fixtureFile == "" {
 				continue
