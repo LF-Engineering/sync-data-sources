@@ -84,6 +84,7 @@ type Endpoint struct {
 	AffiliationSource string
 	Projects          []EndpointProject
 	PairProgramming   bool
+	Dummy             bool // used to mark that there is endpoint, but nothing should be done for it
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints

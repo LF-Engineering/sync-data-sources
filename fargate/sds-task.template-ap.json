@@ -276,6 +276,10 @@
           "value": "${SDS_SKIP_DROP_UNUSED}"
         },
         {
+          "name": "SDS_NO_INDEX_DROP",
+          "value": "${SDS_NO_INDEX_DROP}"
+        },
+        {
           "name": "SDS_ONLY_VALIDATE",
           "value": "${SDS_ONLY_VALIDATE}"
         },

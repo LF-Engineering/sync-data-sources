@@ -432,6 +432,29 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				rawEndpoint.OnlyREs = append(rawEndpoint.OnlyREs, onlyRE)
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
+			handleNoData := func() {
+				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: name, Dummy: true})
+			}
+			handleRate := func() (aHint int, canCache bool) {
+				h, _, rem, wait := lib.GetRateLimits(gctx, ctx, gc, true)
+				for {
+					lib.Printf("Checking token %d %+v %+v\n", h, rem, wait)
+					if rem[h] <= 100 {
+						lib.Printf("All GH API tokens are overloaded, maximum points %d, waiting %+v\n", rem[h], wait[h])
+						time.Sleep(time.Duration(1) * time.Second)
+						time.Sleep(wait[h])
+						h, _, rem, wait = lib.GetRateLimits(gctx, ctx, gc, true)
+						continue
+					}
+					if rem[h] > 2000 {
+						canCache = true
+					}
+					break
+				}
+				aHint = h
+				lib.Printf("Found usable token %d/%d/%v, cache enabled: %v\n", aHint, rem[h], wait[h], canCache)
+				return
+			}
 			switch epType {
 			case "slack_bot_channels":
 				token := ""
@@ -499,6 +522,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						},
 					)
 				}
+				if len(ids) == 0 {
+					handleNoData()
+				}
 			case "gerrit_org":
 				gerrit := strings.TrimSpace(rawEndpoint.Name)
 				projects, ok1 := cache[epType+"p"+gerrit]
@@ -547,6 +573,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						},
 					)
 				}
+				if len(repos) == 0 {
+					handleNoData()
+				}
 			case "dockerhub_org":
 				dockerhubOwner := strings.TrimSpace(rawEndpoint.Name)
 				repos, ok := cache[epType+dockerhubOwner]
@@ -588,6 +617,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
+				}
+				if len(repos) == 0 {
+					handleNoData()
 				}
 			case "rocketchat_server":
 				srv := strings.TrimSpace(rawEndpoint.Name)
@@ -645,10 +677,19 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						},
 					)
 				}
+				if len(channels) == 0 {
+					handleNoData()
+				}
 			case "github_org":
+				var aHint int
 				if hint < 0 {
-					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
-					hint = aHint
+					var canCache bool
+					aHint, canCache = handleRate()
+					if canCache {
+						hint = aHint
+					}
+				} else {
+					aHint = hint
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
@@ -671,7 +712,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					opt.PerPage = 100
 					repos = []string{}
 					for {
-						repositories, response, err := gc[hint].Repositories.ListByOrg(gctx, org, opt)
+						repositories, response, err := gc[aHint].Repositories.ListByOrg(gctx, org, opt)
 						if err != nil {
 							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v\n", org, response, err)
 							break
@@ -715,10 +756,19 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						},
 					)
 				}
+				if len(repos) == 0 {
+					handleNoData()
+				}
 			case "github_user":
+				var aHint int
 				if hint < 0 {
-					aHint, _, _, _ := lib.GetRateLimits(gctx, ctx, gc, true)
-					hint = aHint
+					var canCache bool
+					aHint, canCache = handleRate()
+					if canCache {
+						hint = aHint
+					}
+				} else {
+					aHint = hint
 				}
 				arr := strings.Split(rawEndpoint.Name, "/")
 				ary := []string{}
@@ -784,6 +834,9 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 							PairProgramming:   rawEndpoint.PairProgramming,
 						},
 					)
+				}
+				if len(repos) == 0 {
+					handleNoData()
 				}
 			default:
 				lib.Printf("Warning: unknown raw endpoint type: %s\n", epType)
@@ -1046,6 +1099,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						FxFn:              fixture.Fn,
 						MaxFreq:           dataSource.MaxFreq,
 						AffiliationSource: affiliationSource,
+						Dummy:             endpoint.Dummy,
 					},
 				)
 			}
@@ -2527,13 +2581,18 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	}
 	extras = append(extras, curr)
 	for _, indices := range extras {
-		lib.Printf("Deleting indices: %s\n", indices)
-		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, indices)
-		rurl = fmt.Sprintf("/%s", indices)
 		if ctx.DryRun {
 			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
 			return
 		}
+		if ctx.NoIndexDrop {
+			lib.Printf("WARNING: Need to delete indices: %s\n", indices)
+			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
+			return
+		}
+		lib.Printf("Deleting indices: %s\n", indices)
+		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, indices)
+		rurl = fmt.Sprintf("/%s", indices)
 		req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 		if err != nil {
 			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
@@ -5275,6 +5334,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	// Filter out by task / task skip RE
 	if taskFilteredOut(ctx, &task) {
 		result.Code[1] = -1
+		return
+	}
+	// Nothing needs to be done for dummy tasks
+	if task.Dummy {
 		return
 	}
 	// Handle copy from another index slug
