@@ -40,6 +40,7 @@ then
   export SDS_SKIP_AFFS=1
   export SDS_SKIP_ALIASES=1
   export SDS_SKIP_DROP_UNUSED=1
+  export SDS_NO_INDEX_DROP=1
   export SDS_SKIP_CHECK_FREQ=1
   export SDS_SKIP_ES_DATA=1
   export SDS_SKIP_ES_LOG=1

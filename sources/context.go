@@ -67,6 +67,7 @@ type Ctx struct {
 	SkipAffs                bool           // From SDS_SKIP_AFFS, if set - it will not run p2o.py historical affiliations enrichment (--only-enrich --refresh-identities --no_incremental)
 	SkipAliases             bool           // From SDS_SKIP_ALIASES, if set - sds will not attempt to create index aliases and will not attempt to drop unused aliases
 	SkipDropUnused          bool           // From SDS_SKIP_DROP_UNUSED, if set - it will not attempt to drop unused indexes and aliases
+	NoIndexDrop             bool           // From SDS_NO_INDEX_DROP, if set - it will warning about index drop needed instead of actual index drop
 	SkipCheckFreq           bool           // From SDS_SKIP_CHECK_FREQ, will skip maximum task sync frequency if set
 	SkipEsData              bool           // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog               bool           // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
@@ -452,6 +453,7 @@ func (ctx *Ctx) Init() {
 	ctx.NoMultiAliases = os.Getenv("SDS_NO_MULTI_ALIASES") != ""
 	ctx.CleanupAliases = os.Getenv("SDS_CLEANUP_ALIASES") != ""
 	ctx.SkipDropUnused = os.Getenv("SDS_SKIP_DROP_UNUSED") != ""
+	ctx.NoIndexDrop = os.Getenv("SDS_NO_INDEX_DROP") != ""
 
 	// Forbidden configurations
 	if !ctx.DryRun && ctx.SkipSH && !ctx.SkipAffs {

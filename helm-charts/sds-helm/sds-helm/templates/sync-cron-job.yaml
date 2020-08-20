@@ -154,6 +154,8 @@ spec:
               value: '{{ $root.Values.cleanupAliases }}'
             - name: SDS_SKIP_DROP_UNUSED
               value: '{{ $root.Values.skipDropUnused }}'
+            - name: SDS_NO_INDEX_DROP
+              value: '{{ $root.Values.noIndexDrop }}'
             - name: SDS_NODE_HASH
               value: '{{ $root.Values.nodeHash }}'
             - name: SDS_NODE_NUM

@@ -30,6 +30,7 @@ type Task struct {
 	CopyFrom            CopyConfig
 	PairProgramming     bool
 	AffiliationSource   string
+	Dummy               bool
 }
 
 // String - default string output for a task (generic)
