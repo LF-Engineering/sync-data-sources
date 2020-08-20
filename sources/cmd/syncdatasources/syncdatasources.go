@@ -791,7 +791,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					opt.PerPage = 100
 					repos = []string{}
 					for {
-						repositories, response, err := gc[hint].Repositories.List(gctx, user, opt)
+						repositories, response, err := gc[aHint].Repositories.List(gctx, user, opt)
 						if err != nil {
 							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v\n", user, response, err)
 							break
