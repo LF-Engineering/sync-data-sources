@@ -32,7 +32,7 @@ environments:
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
   - name: prod-korg
-    cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
+    cron: '0 14 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -41,7 +41,7 @@ environments:
     env:
       SDS_SILENT: 1
       SDS_TASK_TIMEOUT_SECONDS: 43200
-      SDS_NCPUS_SCALE: 0.3              # here we give max 30% of CPU cores available. So if OS reorts say 10 CPU cores, at most 3 threads will be used.
+      SDS_NCPUS_SCALE: 0.2              # here we give max 20% of CPU cores available. So if OS reorts say 10 CPU cores, at most 3 threads will be used.
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
