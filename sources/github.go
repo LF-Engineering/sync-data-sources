@@ -41,6 +41,21 @@ func GHClient(ctx *Ctx) (ghCtx context.Context, clients []*github.Client) {
 	return
 }
 
+// GHClientForKeys - get GitHub client for given keys
+func GHClientForKeys(oAuths map[string]struct{}) (ghCtx context.Context, clients []*github.Client) {
+	// GitHub authentication or use public access
+	ghCtx = context.Background()
+	for auth := range oAuths {
+		ts := oauth2.StaticTokenSource(
+			&oauth2.Token{AccessToken: auth},
+		)
+		tc := oauth2.NewClient(ghCtx, ts)
+		client := github.NewClient(tc)
+		clients = append(clients, client)
+	}
+	return
+}
+
 // GetRateLimits - returns all and remaining API points and duration to wait for reset
 // when core=true - returns Core limits, when core=false returns Search limits
 func GetRateLimits(gctx context.Context, ctx *Ctx, gcs []*github.Client, core bool) (int, []int, []int, []time.Duration) {

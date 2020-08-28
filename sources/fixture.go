@@ -8,8 +8,9 @@ import (
 
 // Config holds data source config options
 type Config struct {
-	Name  string `yaml:"name"`
-	Value string `yaml:"value"`
+	Name  string            `yaml:"name"`
+	Value string            `yaml:"value"`
+	Flags map[string]string `yaml:"flags"`
 }
 
 // String - default string output for a config
