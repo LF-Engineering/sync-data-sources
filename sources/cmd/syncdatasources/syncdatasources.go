@@ -305,7 +305,7 @@ func partialRun(ctx *lib.Ctx) bool {
 	return false
 }
 
-func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) (drop bool) {
+func filterFixture(ctx *lib.Ctx, fixture *lib.Fixture) (drop bool) {
 	n := 0
 	dataSources := []lib.DataSource{}
 	for _, dataSource := range fixture.DataSources {
@@ -342,9 +342,58 @@ func filterFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixt
 	return n == 0
 }
 
-func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
+func getGitHubClients(gctx context.Context, gc []*github.Client, ds *lib.DataSource) (context.Context, []*github.Client, string) {
+	dst := ds.Slug
+	ary := strings.Split(dst, "/")
+	if len(ary) > 1 {
+		dst = ary[0]
+	}
+	if dst != lib.GitHub && dst != lib.Git {
+		return gctx, gc, ""
+	}
+	for _, cfg := range ds.Config {
+		name := cfg.Name
+		if name != lib.APIToken {
+			continue
+		}
+		_, ok := cfg.Flags["no_default_tokens"]
+		if !ok {
+			continue
+		}
+		value := cfg.Value
+		keys := make(map[string]struct{})
+		if strings.Contains(value, ",") || strings.Contains(value, "[") || strings.Contains(value, "]") {
+			ary := strings.Split(value, ",")
+			for _, key := range ary {
+				key = strings.Replace(key, "[", "", -1)
+				key = strings.Replace(key, "]", "", -1)
+				keys[key] = struct{}{}
+			}
+		} else {
+			keys[value] = struct{}{}
+		}
+		if gRateMtx != nil {
+			gRateMtx.Lock()
+		}
+		gHint = -1
+		if gRateMtx != nil {
+			gRateMtx.Unlock()
+		}
+		suff := ""
+		for key := range keys {
+			suff += key
+		}
+		rgctx, rgc := lib.GHClientForKeys(keys)
+		// fmt.Printf("New GH clients for %v (suff=%s)\n", keys, suff)
+		return rgctx, rgc, suff
+	}
+	return gctx, gc, ""
+}
+
+func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
 	cache := make(map[string][]string)
 	for i, dataSource := range fixture.DataSources {
+		gctx, gc, cacheSuff := getGitHubClients(igctx, igc, &dataSource)
 		for _, projectData := range dataSource.Projects {
 			project := projectData.Name
 			projectP2O := projectData.P2O
@@ -438,6 +487,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: name, Dummy: true})
 			}
 			handleRate := func() (aHint int, canCache bool) {
+				// fmt.Printf("handle rate called: %s\n", fixture.Native)
 				h, _, rem, wait := lib.GetRateLimits(gctx, ctx, gc, true)
 				for {
 					lib.Printf("Checking token %d %+v %+v\n", h, rem, wait)
@@ -683,6 +733,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					handleNoData()
 				}
 			case "github_org":
+				// fmt.Printf("github_org called for %v\n", fixture.Native)
 				var aHint int
 				if gRateMtx != nil {
 					gRateMtx.Lock()
@@ -711,7 +762,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				lAry := len(ary)
 				org := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
-				repos, ok := cache[epType+org]
+				cacheKey := epType + org + cacheSuff
+				repos, ok := cache[cacheKey]
 				if !ok {
 					if ctx.Debug > 0 {
 						lib.Printf("Repositories.ListByOrg(%s)\n", org)
@@ -721,6 +773,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 					repos = []string{}
 					retried := false
 					for {
+						// fmt.Printf("non-cache call %s %v (%d tokens)\n", org, fixture.Native, len(gc))
 						repositories, response, err := gc[aHint].Repositories.ListByOrg(gctx, org, opt)
 						if err != nil && !retried {
 							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate\n", org, response, err)
@@ -743,7 +796,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						}
 						opt.Page = response.NextPage
 					}
-					cache[epType+org] = repos
+					cache[cacheKey] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("Org %s repos: %+v\n", org, repos)
@@ -803,7 +856,8 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 				lAry := len(ary)
 				user := ary[lAry-1]
 				root := strings.Join(ary[0:lAry-1], "/")
-				repos, ok := cache[epType+user]
+				cacheKey := epType + user + cacheSuff
+				repos, ok := cache[cacheKey]
 				if !ok {
 					if ctx.Debug > 0 {
 						lib.Printf("Repositories.List(%s)\n", user)
@@ -835,7 +889,7 @@ func postprocessFixture(gctx context.Context, gc []*github.Client, ctx *lib.Ctx,
 						}
 						opt.Page = response.NextPage
 					}
-					cache[epType+user] = repos
+					cache[cacheKey] = repos
 				}
 				if ctx.Debug > 0 {
 					lib.Printf("User %s repos: %+v\n", user, repos)
@@ -944,7 +998,7 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 		return
 	}
 	postprocessFixture(gctx, gc, ctx, &fixture)
-	if filterFixture(gctx, gc, ctx, &fixture) {
+	if filterFixture(ctx, &fixture) {
 		fixture.Disabled = true
 		return
 	}
@@ -3524,7 +3578,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			if name == lib.APIToken {
 				vals := []string{}
-				if strings.Contains(value, ",") {
+				if strings.Contains(value, ",") || strings.Contains(value, "[") || strings.Contains(value, "]") {
 					ary := strings.Split(value, ",")
 					for _, key := range ary {
 						key = strings.Replace(key, "[", "", -1)
@@ -3536,7 +3590,12 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 					vals = append(vals, value)
 				}
 				inf := idxSlug + "/" + ds
-				c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+				_, ok := cfg.Flags["no_default_tokens"]
+				if ok {
+					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
+				} else {
+					c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+				}
 				// OAuthKeys
 			} else {
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -3553,6 +3612,11 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 	} else if ds == lib.Git {
 		for _, cfg := range *config {
 			name := cfg.Name
+			if name == lib.APIToken {
+				// we can specify GitHub API token for git (to be able to get 'github_org' or 'github_user' repos
+				// but this token is not needed in p2o call
+				continue
+			}
 			value := cfg.Value
 			redactedValue := value
 			if lib.IsRedacted(name) {

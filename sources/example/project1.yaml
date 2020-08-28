@@ -31,6 +31,8 @@ data_sources:
       config: &github_config
       - name: api-token
         value: "[1111111111111111111111111111111111111111,2222222222222222222222222222222222222222]"
+        flags:
+          no_default_tokens: true
 - slug: jenkins
   projects:
   - name: edgex
