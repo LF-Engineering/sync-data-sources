@@ -1,8 +1,8 @@
 diff --git a/sortinghat/api.py b/sortinghat/api.py
-index 9f4d16b..e1225b9 100644
+index 9f4d16b..e25f115 100644
 --- a/sortinghat/api.py
 +++ b/sortinghat/api.py
-@@ -46,7 +46,7 @@ from .db.model import MIN_PERIOD_DATE, MAX_PERIOD_DATE, \
+@@ -46,10 +46,10 @@ from .db.model import MIN_PERIOD_DATE, MAX_PERIOD_DATE, \
      UniqueIdentity, Identity, Profile, Organization, Domain, Country, Enrollment, \
      MatchingBlacklist
  from .exceptions import AlreadyExistsError, NotFoundError, InvalidValueError
@@ -10,69 +10,115 @@ index 9f4d16b..e1225b9 100644
 +from os import getenv
  
  logger = logging.getLogger(__name__)
- 
-@@ -1215,41 +1215,46 @@ def enrollments(db, uuid=None, organization=None, from_date=None, to_date=None):
-         raise InvalidValueError("'from_date' %s cannot be greater than %s"
-                                 % (from_date, to_date))
- 
-+    globalEnrollments = []
-+    projectEnrollments = []
-     enrollments = []
- 
-     with db.connect() as session:
--        query = session.query(Enrollment).\
--            join(UniqueIdentity, Organization).\
--            filter(Enrollment.start >= from_date,
--                   Enrollment.end <= to_date)
 -
--        # Filter by uuid
-+        uidentity = None
-         if uuid:
-             uidentity = find_unique_identity(session, uuid)
--
-             if not uidentity:
-                 raise NotFoundError(entity=uuid)
++a_cache = {}
  
--            query = query.filter(Enrollment.uidentity == uidentity)
--
--        # Filter by organization
-+        org = None
-         if organization:
-             org = find_organization(session, organization)
--
-             if not org:
-                 raise NotFoundError(entity=organization)
+ def add_unique_identity(db, uuid):
+     """Add a unique identity to the registry.
+@@ -1168,6 +1168,106 @@ def countries(db, code=None, term=None):
  
-+        projectSlug = getenv('PROJECT_SLUG')
-+        if not (projectSlug == None or projectSlug == ''):
-+            query = session.query(Enrollment).join(UniqueIdentity, Organization).filter(Enrollment.start >= from_date, Enrollment.end <= to_date, Enrollment.project_slug == projectSlug)
-+            if uidentity:
-+                query = query.filter(Enrollment.uidentity == uidentity)
-+            if org:
-+                query = query.filter(Enrollment.organization == org)
-+            projectEnrollments = query.order_by(UniqueIdentity.uuid, Organization.name, Enrollment.start, Enrollment.end).all()
-+
-+        query = session.query(Enrollment).join(UniqueIdentity, Organization).filter(Enrollment.start >= from_date, Enrollment.end <= to_date, Enrollment.project_slug == None)
-+        if uidentity:
-+            query = query.filter(Enrollment.uidentity == uidentity)
-+        if org:
-             query = query.filter(Enrollment.organization == org)
-+        globalEnrollments = query.order_by(UniqueIdentity.uuid, Organization.name, Enrollment.start, Enrollment.end).all()
+     return cs
  
--        # Get the results
--        enrollments = query.order_by(UniqueIdentity.uuid,
--                                     Organization.name,
--                                     Enrollment.start,
--                                     Enrollment.end).all()
-+        for rol in projectEnrollments:
-+            enrollments.append(rol)
++def enrollments_complex(db, uuid, item_date, single):
++    # print ('cache size', len(a_cache))
++    # print ('in', uuid, item_date, single)
++    # single = False
++    # item_date = None
++    key = (uuid, item_date.date(), single)
++    if key in a_cache:
++        result = a_cache[key]
++        # print ('cache', key, result)
++        return result
++    rolls = set()
++    with db.connect() as session:
++        # Try project slug first
++        # in single mode, if multiple companies are found, return the most recent
++        # in multiple mode this can return many different companies and this is ok
++        project_slug = getenv('PROJECT_SLUG')
++        if project_slug is not None and project_slug != '':
++            if item_date is None:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug = :slug order by e.id desc', {'uuid': uuid, 'slug': project_slug})
++            else:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug = :slug and e.start <= :ts and e.end > :ts order by e.id desc', {'uuid': uuid, 'slug': project_slug, 'ts': item_date})
++            rows = res.fetchall()
++            if single:
++                nRows = len(rows)
++                if nRows > 0:
++                    result = [rows[0][0]]
++                    a_cache[key] = result
++                    # print ('out pspec', uuid, item_date, single, result)
++                    return result
++            else:
++                for row in rows:
++                    # print ('add pspec', uuid, item_date, single, row[0])
++                    rolls.add(row[0])
++        # try global second, only if no project specific were found
++        # in single mode, if multiple companies are found, return the most recent
++        # in multiple mode this can return many different companies and this is ok
++        if len(rolls) == 0:
++            if item_date is None:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug is null order by e.id desc', {'uuid': uuid})
++            else:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug is null and e.start <= :ts and e.end > :ts order by e.id desc', {'uuid': uuid, 'ts': item_date})
++            rows = res.fetchall()
++            if single:
++                nRows = len(rows)
++                if nRows > 0:
++                    result = [rows[0][0]]
++                    a_cache[key] = result
++                    # print ('out glob', uuid, item_date, single, result)
++                    return result
++            else:
++                for row in rows:
++                    # print ('add glob', uuid, item_date, single, row[0])
++                    rolls.add(row[0])
++        # try anything from the same foundation, only if nothing is found so far
++        # in multiple mode this can return many different companies and this is ok
++        # but in single mode we only return affilaition if it matches a single company
++        if len(rolls) == 0 and project_slug is not None and project_slug != '':
++            ary = project_slug.split('/')
++            if len(ary) > 1:
++                slug_like = ary[0] + '/%'
++                if item_date is None:
++                    res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug', {'uuid': uuid, 'slug': slug_like})
++                else:
++                    res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug and e.start <= :ts and e.end > :ts', {'uuid': uuid, 'slug': slug_like, 'ts': item_date})
++                rows = res.fetchall()
++                if single:
++                    nRows = len(rows)
++                    if nRows == 1:
++                        result = [rows[0][0]]
++                        a_cache[key] = result
++                        # print ('out foundation', uuid, item_date, single, result)
++                        return result
++                else:
++                    for row in rows:
++                        # print ('add foundation', uuid, item_date, single, row[0])
++                        rolls.add(row[0])
++        # try anything else, only if nothing is found so far
++        # in multiple mode this can return many different companies and this is ok
++        # but in single mode we only return affilaition if it matches a single company
++        if len(rolls) == 0:
++            if item_date is None:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid', {'uuid': uuid})
++            else:
++                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.start <= :ts and e.end > :ts', {'uuid': uuid, 'ts': item_date})
++            rows = res.fetchall()
++            if single:
++                nRows = len(rows)
++                if nRows == 1:
++                    result = [rows[0][0]]
++                    a_cache[key] = result
++                    # print ('out other', uuid, item_date, single, result)
++                    return result
++            else:
++                for row in rows:
++                    # print ('add other', uuid, item_date, single, row[0])
++                    rolls.add(row[0])
++    result = list(rolls)
++    a_cache[key] = result
++    # print ('out', uuid, item_date, single, result)
++    return result
  
--        # Detach objects from the session
--        session.expunge_all()
-+        for rol in globalEnrollments:
-+            enrollments.append(rol)
- 
-+        session.expunge_all()
-     return enrollments
- 
- 
+ def enrollments(db, uuid=None, organization=None, from_date=None, to_date=None):
+     """List the enrollment information available in the registry.
