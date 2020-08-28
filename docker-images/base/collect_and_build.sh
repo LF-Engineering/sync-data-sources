@@ -29,7 +29,7 @@ cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout r
 vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7
 #cd grimoirelab-perceval && git apply ../../patch/gerrit.py.diff && cd .. || exit 8
 cd grimoirelab-sortinghat && git apply ../../patch/api.py.diff && cd .. || exit 9
-cd grimoirelab-elk && git apply ../../patch/elk.py.diff && git apply ../../patch/elastic.py.diff && git apply ../../patch/p2o.py.diff && cd .. || exit 10
+cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../patch/elk.py.diff && git apply ../../patch/elastic.py.diff && git apply ../../patch/p2o.py.diff && cd .. || exit 10
 #cd grimoirelab-elk && git apply ../../patch/jira.py.diff && git apply ../../patch/confluence.py.diff && git apply ../../patch/github.py.diff && git apply ../../patch/github2.py.diff && cp ../../patch/identity.py grimoire_elk/enriched/ && cd .. || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
