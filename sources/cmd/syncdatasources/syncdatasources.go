@@ -5436,6 +5436,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	// Handle copy from another index slug
 	if task.CopyFrom.Pattern != "" {
+		if affs {
+			return
+		}
 		err := handleCopyFrom(ctx, idxSlug, &task)
 		if err != nil {
 			result.Code[1] = 7
