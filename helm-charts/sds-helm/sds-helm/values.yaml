@@ -217,7 +217,7 @@ apiSecret: api-secret
 pvName: sds
 pvAccessMode: ReadWriteOnce
 pvStorageClass: openebs-hostpath
-pvSize: 100Gi
+pvSize: 2TiB
 pvMountPath: '/root/.perceval'
 useResourcesLimits: ''
 nodeHash: ''
