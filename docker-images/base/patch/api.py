@@ -47,6 +47,8 @@ from .db.model import MIN_PERIOD_DATE, MAX_PERIOD_DATE, \
     MatchingBlacklist
 from .exceptions import AlreadyExistsError, NotFoundError, InvalidValueError
 from os import getenv
+from sqlalchemy import exc
+from sys import exc_info
 
 logger = logging.getLogger(__name__)
 
@@ -1270,7 +1272,7 @@ def enrollments_complex(db, uuid, item_date, single):
         return result
     rolls = set()
     with db.connect() as session:
-        # Try project slug first
+        # Step 1: Try project slug first
         # in single mode, if multiple companies are found, return the most recent
         # in multiple mode this can return many different companies and this is ok
         project_slug = getenv('PROJECT_SLUG')
@@ -1291,7 +1293,7 @@ def enrollments_complex(db, uuid, item_date, single):
                 for row in rows:
                     # print ('add pspec', uuid, item_date, single, row[0])
                     rolls.add(row[0])
-        # try global second, only if no project specific were found
+        # Step 2: try global second, only if no project specific were found
         # in single mode, if multiple companies are found, return the most recent
         # in multiple mode this can return many different companies and this is ok
         if len(rolls) == 0:
@@ -1311,44 +1313,60 @@ def enrollments_complex(db, uuid, item_date, single):
                 for row in rows:
                     # print ('add glob', uuid, item_date, single, row[0])
                     rolls.add(row[0])
-        # try anything from the same foundation, only if nothing is found so far
+        # Step 3: try anything from the same foundation, only if nothing is found so far
+        # in single mode, if multiple companies are found, return the most recent
         # in multiple mode this can return many different companies and this is ok
-        # but in single mode we only return affilaition if it matches a single company
         if len(rolls) == 0 and project_slug is not None and project_slug != '':
             ary = project_slug.split('/')
             if len(ary) > 1:
                 slug_like = ary[0] + '/%'
                 if item_date is None:
-                    res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug', {'uuid': uuid, 'slug': slug_like})
+                    res = session.execute('select o.name, max(e.id) from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug group by o.name order by e.id desc', {'uuid': uuid, 'slug': slug_like})
                 else:
-                    res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug and e.start <= :ts and e.end > :ts', {'uuid': uuid, 'slug': slug_like, 'ts': item_date})
+                    res = session.execute('select o.name, max(e.id) from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.project_slug like :slug and e.start <= :ts and e.end > :ts group by o.name order by e.id desc', {'uuid': uuid, 'slug': slug_like, 'ts': item_date})
                 rows = res.fetchall()
                 if single:
                     nRows = len(rows)
-                    if nRows == 1:
+                    if nRows > 0:
                         result = [rows[0][0]]
                         a_cache[key] = result
                         # print ('out foundation', uuid, item_date, single, result)
+                        if project_slug is not None and project_slug != '':
+                            try:
+                                session.execute('insert into enrollments(start, end, uuid, organization_id, project_slug, role) select start, end, uuid, organization_id, :slug, \'Contributor\' from enrollments where id = :id', {'slug': project_slug, 'id': rows[0][1]})
+                                print ('inserted foundation', uuid, item_date, rows[0])
+                            except exc.IntegrityError as err:
+                                pass
+                            except:
+                                print ('insert foundation error', uuid, item_date, rows[0], exc_info())
                         return result
                 else:
                     for row in rows:
                         # print ('add foundation', uuid, item_date, single, row[0])
                         rolls.add(row[0])
-        # try anything else, only if nothing is found so far
+        # Step 4: try anything else, only if nothing is found so far
+        # in single mode, if multiple companies are found, return the most recent
         # in multiple mode this can return many different companies and this is ok
-        # but in single mode we only return affilaition if it matches a single company
         if len(rolls) == 0:
             if item_date is None:
-                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid', {'uuid': uuid})
+                res = session.execute('select o.name, max(e.id) from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid group by o.name order by e.id desc', {'uuid': uuid})
             else:
-                res = session.execute('select distinct o.name from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.start <= :ts and e.end > :ts', {'uuid': uuid, 'ts': item_date})
+                res = session.execute('select o.name, max(e.id) from enrollments e, organizations o where e.organization_id = o.id and e.uuid = :uuid and e.start <= :ts and e.end > :ts group by o.name order by e.id desc', {'uuid': uuid, 'ts': item_date})
             rows = res.fetchall()
             if single:
                 nRows = len(rows)
-                if nRows == 1:
+                if nRows > 0:
                     result = [rows[0][0]]
                     a_cache[key] = result
                     # print ('out other', uuid, item_date, single, result)
+                    if project_slug is not None and project_slug != '':
+                        try:
+                            session.execute('insert into enrollments(start, end, uuid, organization_id, project_slug, role) select start, end, uuid, organization_id, :slug, \'Contributor\' from enrollments where id = :id', {'slug': project_slug, 'id': rows[0][1]})
+                            print ('inserted other', uuid, item_date, rows[0])
+                        except exc.IntegrityError as err:
+                            pass
+                        except:
+                            print ('insert foundation error', uuid, item_date, rows[0], exc_info())
                     return result
             else:
                 for row in rows:
