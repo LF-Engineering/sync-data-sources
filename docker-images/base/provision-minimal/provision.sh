@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-
 set -eo pipefail
-
+export SETUPTOOLS_USE_DISTUTILS=stdlib
+# export PIP_USE_FEATURE=2020-resolver
 pip3 install --upgrade setuptools
 pip3 install --upgrade pip
 pip3 install emoji
+pip3 install --upgrade requests
 
 repos=(grimoirelab-perceval grimoirelab-elk grimoirelab-sortinghat grimoirelab-kingarthur)
 
