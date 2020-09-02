@@ -157,6 +157,7 @@ type DataSource struct {
 	Endpoints    []Endpoint    `yaml:"-"`
 	MaxFreq      time.Duration `yaml:"-"`
 	FullSlug     string        `yaml:"-"`
+	Settings     *interface{}  `yaml:"settings"`
 }
 
 // Configs - return redacted configs as a string

@@ -24,6 +24,7 @@ import (
 	"github.com/LF-Engineering/ssaw/ssawsync"
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
 	"github.com/google/go-github/github"
+	jsoniter "github.com/json-iterator/go"
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -390,10 +391,48 @@ func getGitHubClients(gctx context.Context, gc []*github.Client, ds *lib.DataSou
 	return gctx, gc, ""
 }
 
+func handleDatasourceSettings(ctx *lib.Ctx, fixtureSlug string, ds *lib.DataSource) {
+	if ds.Settings == nil {
+		return
+	}
+	index := "sds-" + fixtureSlug + "-" + ds.Slug + ds.IndexSuffix
+	index = strings.Replace(index, "/", "-", -1)
+	lib.Printf("Applying %+v settings to '%s'\n", *ds.Settings, index)
+	payloadBytes, err := jsoniter.Marshal(*ds.Settings)
+	if err != nil {
+		lib.Fatalf("json marshall error: %+v, data: %+v", err, *ds.Settings)
+	}
+	data := `{"settings":` + string(payloadBytes) + `}`
+	payloadBytes = []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Put
+	url := fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
+	rurl := fmt.Sprintf("/%s", index)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Fatalf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Fatalf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+	}
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Fatalf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		}
+		_ = resp.Body.Close()
+		lib.Fatalf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+	}
+	lib.Printf("Index '%s' created with %+v settings\n", index, data)
+}
+
 func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
 	cache := make(map[string][]string)
 	for i, dataSource := range fixture.DataSources {
 		gctx, gc, cacheSuff := getGitHubClients(igctx, igc, &dataSource)
+		handleDatasourceSettings(ctx, fixture.Slug, &dataSource)
 		for _, projectData := range dataSource.Projects {
 			project := projectData.Name
 			projectP2O := projectData.P2O
