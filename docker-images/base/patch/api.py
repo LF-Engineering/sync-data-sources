@@ -1218,46 +1218,41 @@ def enrollments(db, uuid=None, organization=None, from_date=None, to_date=None):
         raise InvalidValueError("'from_date' %s cannot be greater than %s"
                                 % (from_date, to_date))
 
-    globalEnrollments = []
-    projectEnrollments = []
     enrollments = []
 
     with db.connect() as session:
-        uidentity = None
+        query = session.query(Enrollment).\
+            join(UniqueIdentity, Organization).\
+            filter(Enrollment.start >= from_date,
+                   Enrollment.end <= to_date)
+
+        # Filter by uuid
         if uuid:
             uidentity = find_unique_identity(session, uuid)
+
             if not uidentity:
                 raise NotFoundError(entity=uuid)
 
-        org = None
+            query = query.filter(Enrollment.uidentity == uidentity)
+
+        # Filter by organization
         if organization:
             org = find_organization(session, organization)
+
             if not org:
                 raise NotFoundError(entity=organization)
 
-        projectSlug = getenv('PROJECT_SLUG')
-        if not (projectSlug == None or projectSlug == ''):
-            query = session.query(Enrollment).join(UniqueIdentity, Organization).filter(Enrollment.start >= from_date, Enrollment.end <= to_date, Enrollment.project_slug == projectSlug)
-            if uidentity:
-                query = query.filter(Enrollment.uidentity == uidentity)
-            if org:
-                query = query.filter(Enrollment.organization == org)
-            projectEnrollments = query.order_by(UniqueIdentity.uuid, Organization.name, Enrollment.start, Enrollment.end).all()
-
-        query = session.query(Enrollment).join(UniqueIdentity, Organization).filter(Enrollment.start >= from_date, Enrollment.end <= to_date, Enrollment.project_slug == None)
-        if uidentity:
-            query = query.filter(Enrollment.uidentity == uidentity)
-        if org:
             query = query.filter(Enrollment.organization == org)
-        globalEnrollments = query.order_by(UniqueIdentity.uuid, Organization.name, Enrollment.start, Enrollment.end).all()
 
-        for rol in projectEnrollments:
-            enrollments.append(rol)
+        # Get the results
+        enrollments = query.order_by(UniqueIdentity.uuid,
+                                     Organization.name,
+                                     Enrollment.start,
+                                     Enrollment.end).all()
 
-        for rol in globalEnrollments:
-            enrollments.append(rol)
-
+        # Detach objects from the session
         session.expunge_all()
+
     return enrollments
 
 def enrollments_complex(db, uuid, item_date, single):

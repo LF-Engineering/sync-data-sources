@@ -10,6 +10,7 @@ repos=(grimoirelab-perceval grimoirelab-elk grimoirelab-sortinghat grimoirelab-k
 
 for r in "${repos[@]}"; do 
   echo "INSTALLING ${r}"
+  # python3 -m pip install -e "${REPOS_DIR}/$r";
   pip3 install -e "${REPOS_DIR}/$r";
 done
 
