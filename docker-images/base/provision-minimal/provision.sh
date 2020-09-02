@@ -16,3 +16,4 @@ for r in "${repos[@]}"; do
 done
 
 pip3 install geopy==2.0.0
+pip3 install six==1.12.0
