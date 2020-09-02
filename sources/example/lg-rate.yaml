@@ -1,0 +1,11 @@
+native:
+  slug: cncf/lg-rate
+data_sources:
+- slug: git
+  projects:
+  - name: rate_conv
+    endpoints:
+    - name: https://github.com/lukaszgryglicki/email-usd-pln-rate
+  settings:
+    number_of_shards: 5
+  index_suffix: '-for-merge'
