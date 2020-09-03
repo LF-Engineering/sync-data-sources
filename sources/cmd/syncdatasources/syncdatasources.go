@@ -395,37 +395,44 @@ func handleDatasourceSettings(ctx *lib.Ctx, fixtureSlug string, ds *lib.DataSour
 	if ds.Settings == nil {
 		return
 	}
-	index := "sds-" + fixtureSlug + "-" + ds.Slug + ds.IndexSuffix
-	index = strings.Replace(index, "/", "-", -1)
-	lib.Printf("Applying %+v settings to '%s'\n", *ds.Settings, index)
-	payloadBytes, err := jsoniter.Marshal(*ds.Settings)
-	if err != nil {
-		lib.Fatalf("json marshall error: %+v, data: %+v", err, *ds.Settings)
-	}
-	data := `{"settings":` + string(payloadBytes) + `}`
-	payloadBytes = []byte(data)
-	payloadBody := bytes.NewReader(payloadBytes)
-	method := lib.Put
-	url := fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
-	rurl := fmt.Sprintf("/%s", index)
-	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
-	if err != nil {
-		lib.Fatalf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		lib.Fatalf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
-	}
-	if resp.StatusCode != 200 {
-		body, err := ioutil.ReadAll(resp.Body)
+	idx := "sds-" + fixtureSlug + "-" + ds.Slug + ds.IndexSuffix
+	idx = strings.Replace(idx, "/", "-", -1)
+	indices := [2]string{idx, idx + "-raw"}
+	for _, index := range indices {
+		lib.Printf("Applying %+v settings to '%s'\n", *ds.Settings, index)
+		payloadBytes, err := jsoniter.Marshal(*ds.Settings)
 		if err != nil {
-			lib.Fatalf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			lib.Fatalf("json marshall error: %+v, data: %+v", err, *ds.Settings)
 		}
-		_ = resp.Body.Close()
-		lib.Fatalf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		data := `{"settings":` + string(payloadBytes) + `}`
+		payloadBytes = []byte(data)
+		payloadBody := bytes.NewReader(payloadBytes)
+		method := lib.Put
+		url := fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
+		rurl := fmt.Sprintf("/%s", index)
+		req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+		if err != nil {
+			lib.Fatalf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Fatalf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		}
+		if resp.StatusCode != 200 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Fatalf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			}
+			_ = resp.Body.Close()
+			if resp.StatusCode == 400 && strings.Contains(string(body), "resource_already_exists_exception") {
+				lib.Printf("Index '%s' already exists, failed to apply %+v settings, continuying\n", index, data)
+				continue
+			}
+			lib.Fatalf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		}
+		lib.Printf("Index '%s' created with %+v settings\n", index, data)
 	}
-	lib.Printf("Index '%s' created with %+v settings\n", index, data)
 }
 
 func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ctx, fixture *lib.Fixture) {
