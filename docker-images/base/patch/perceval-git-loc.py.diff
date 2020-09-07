@@ -1,0 +1,296 @@
+diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
+index 9d7ca5b..f798625 100644
+--- a/perceval/backends/core/git.py
++++ b/perceval/backends/core/git.py
+@@ -43,7 +43,7 @@ from ...backend import (Backend,
+                         BackendCommand,
+                         BackendCommandArgumentParser)
+ from ...errors import RepositoryError, ParseError
+-from ...utils import DEFAULT_DATETIME, DEFAULT_LAST_DATETIME
++from ...utils import DEFAULT_DATETIME, DEFAULT_LAST_DATETIME, GitLOC
+ 
+ CATEGORY_COMMIT = 'commit'
+ 
+@@ -80,6 +80,7 @@ class Git(Backend):
+         super().__init__(origin, tag=tag, archive=archive)
+         self.uri = uri
+         self.gitpath = gitpath
++        self.git_loc = GitLOC(self.uri)
+ 
+     def fetch(self, category=CATEGORY_COMMIT, from_date=DEFAULT_DATETIME, to_date=DEFAULT_LAST_DATETIME,
+               branches=None, latest_items=False, no_update=False):
+@@ -321,10 +322,14 @@ class Git(Backend):
+         return self.parse_git_log_from_iter(gitshow)
+ 
+     def __create_git_repository(self):
++        if self.git_loc:
++            self.git_loc.load()
++
+         if not os.path.exists(self.gitpath):
+             repo = GitRepository.clone(self.uri, self.gitpath)
++            repo.git_loc = self.git_loc
+         elif os.path.isdir(self.gitpath):
+-            repo = GitRepository(self.uri, self.gitpath)
++            repo = GitRepository(self.uri, self.gitpath, self.git_loc)
+         return repo
+ 
+ 
+@@ -519,6 +524,7 @@ class GitParser:
+         # Aux vars to store the commit that is being parsed
+         self.commit = None
+         self.commit_files = {}
++        self.total_lines_of_code = self.__get_total_loc()
+ 
+         self.handlers = {
+             self.INIT: self._handle_init,
+@@ -559,6 +565,8 @@ class GitParser:
+         commit['files'] = [remove_none_values(item)
+                            for _, item in sorted(self.commit_files.items())]
+ 
++        commit['total_lines_of_code'] = self.total_lines_of_code
++
+         self.commit = None
+         self.commit_files = {}
+ 
+@@ -732,6 +740,10 @@ class GitParser:
+         else:
+             return f
+ 
++    def __get_total_loc(self):
++        repo = self.stream.gi_frame.f_locals['self']
++        return repo.git_loc.fetch_loc()
++
+ 
+ class EmptyRepositoryError(RepositoryError):
+     """Exception raised when a repository is empty"""
+@@ -785,7 +797,7 @@ class GitRepository:
+         '-c',  # show merge info
+     ]
+ 
+-    def __init__(self, uri, dirpath):
++    def __init__(self, uri, dirpath, git_loc=None):
+         gitdir = os.path.join(dirpath, 'HEAD')
+ 
+         if not os.path.exists(dirpath):
+@@ -808,6 +820,7 @@ class GitRepository:
+             'NO_PROXY': os.getenv('NO_PROXY', ''),
+             'HOME': os.getenv('HOME', '')
+         }
++        self.git_loc = git_loc
+ 
+     @classmethod
+     def clone(cls, uri, dirpath):
+diff --git a/perceval/utils.py b/perceval/utils.py
+index a7f5f3b..2331b43 100644
+--- a/perceval/utils.py
++++ b/perceval/utils.py
+@@ -30,6 +30,8 @@ import logging
+ import mailbox
+ import re
+ import sys
++import os
++import subprocess
+ 
+ import xml.etree.ElementTree
+ 
+@@ -38,7 +40,7 @@ import dateutil.tz
+ 
+ import requests
+ 
+-from .errors import ParseError
++from .errors import ParseError, RepositoryError
+ 
+ 
+ logger = logging.getLogger(__name__)
+@@ -271,3 +273,191 @@ def xml_to_dict(raw_xml):
+     d = node_to_dict(tree)
+ 
+     return d
++
++
++class LinesCount:
++
++    def __init__(self, git_url=None):
++        self.base_path = '~/.perceval/repositories'
++        self.git_url = git_url
++
++    def __del__(self):
++        pass
++
++    @property
++    def repo_path(self):
++        if self.git_url:
++            return self.__get_git_repo_path()
++
++    @staticmethod
++    def __get_processed_uri(uri):
++        return uri.lstrip('/')
++
++    def __get_base_path(self):
++        return os.path.expanduser(self.base_path)
++
++    def __get_git_repo_path(self):
++        base_path = self.__get_base_path()
++        processed_uri = self.__get_processed_uri(self.git_url)
++        repo_dir = processed_uri.split('/')[-1].replace('.git', '')
++        return os.path.join(base_path, repo_dir)
++
++    @staticmethod
++    def _exec(cmd, cwd=None, env=None, ignored_error_codes=None,
++              encoding='utf-8'):
++        """Run a command.
++
++        Execute `cmd` command in the directory set by `cwd`. Environment
++        variables can be set using the `env` dictionary. The output
++        data is returned as encoded bytes.
++
++        Commands which their returning status codes are non-zero will
++        be treated as failed. Error codes considered as valid can be
++        ignored giving them in the `ignored_error_codes` list.
++
++        :returns: the output of the command as encoded bytes
++
++        :raises RepositoryError: when an error occurs running the command
++        """
++        if ignored_error_codes is None:
++            ignored_error_codes = []
++
++        logger.debug("Running command %s (cwd: %s, env: %s)",
++                     ' '.join(cmd), cwd, str(env))
++
++        try:
++            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
++                                    stderr=subprocess.PIPE,
++                                    cwd=cwd, env=env)
++            (outs, errs) = proc.communicate()
++        except OSError as e:
++            raise RepositoryError(cause=str(e))
++
++        if proc.returncode != 0 and proc.returncode not in ignored_error_codes:
++            err = errs.decode(encoding, errors='surrogateescape')
++            cause = "git command - %s" % err
++            raise RepositoryError(cause=cause)
++        else:
++            logger.debug(errs.decode(encoding, errors='surrogateescape'))
++
++        return outs
++
++    def _loc(self, path):
++        """
++        Get the total lines of code from the default branch
++        """
++        total_loc = 0
++
++        def extract_lines_of_code(value):
++            status = value.decode('utf8')
++            if len(status) > 0:
++                return int((status.split('\n')[-3]).split(' ')[-1])
++            return 0
++
++        if path and os.path.exists(path):
++            cmd = ['cloc', path]
++            env = {
++                'LANG': 'C',
++                'HOME': os.getenv('HOME', '')
++            }
++            result = self._exec(cmd, env=env)
++            total_loc = extract_lines_of_code(result)
++
++        return total_loc
++
++    def _clone(self):
++        pass
++
++    def _pull(self):
++        pass
++
++    def _clean(self):
++        pass
++
++    def _fetch(self):
++        pass
++
++    def load(self):
++        pass
++
++
++class GitLOC(LinesCount):
++
++    def __init__(self, url):
++        super().__init__()
++        self.git_url = url
++
++    def _clone(self):
++        """Clone a Git repository.
++
++        Make a bare copy of the repository stored in `uri` into `dirpath`.
++        The repository would be either local or remote.
++
++        :param uri: URI of the repository
++        :param dirtpath: directory where the repository will be cloned
++
++        :returns: a `GitRepository` class having cloned the repository
++
++        :raises RepositoryError: when an error occurs cloning the given
++            repository
++        """
++        cmd = ['git', 'clone', self.git_url, self.repo_path]
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        self._exec(cmd, env=env)
++
++        logger.debug("Git %s repository cloned into %s",
++                     self.git_url, self.repo_path)
++
++    def _clean(self):
++        cmd = ['rm', '-rf', self.repo_path]
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        self._exec(cmd, env=env)
++
++        logger.debug("Git %s repository clean", self.repo_path)
++
++    def _pull(self):
++        os.chdir(os.path.abspath(self.repo_path))
++        cmd = ['git', 'pull']
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        self._exec(cmd, env=env)
++
++        logger.debug("Git %s repository pull updated code", self.repo_path)
++
++    def _fetch(self):
++        os.chdir(os.path.abspath(self.repo_path))
++
++        cmd_fetch = ['git', 'fetch']
++        cmd_fetch_p = ['git', 'fetch']
++
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        self._exec(cmd_fetch, env=env)
++        logger.debug("Git %s fetch updated code", self.repo_path)
++
++        self._exec(cmd_fetch_p, env=env)
++        logger.debug("Git %s fetch purge code", self.repo_path)
++
++    def load(self):
++        if self.repo_path and not os.path.exists(self.repo_path):
++            self._clone()
++        else:
++            self._fetch()
++            self._pull()
++
++    def fetch_loc(self):
++        return self._loc(self.repo_path)
