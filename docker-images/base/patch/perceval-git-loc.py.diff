@@ -81,7 +81,7 @@ index 9d7ca5b..f798625 100644
      @classmethod
      def clone(cls, uri, dirpath):
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..2331b43 100644
+index a7f5f3b..2bc8251 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -30,6 +30,8 @@ import logging
@@ -258,7 +258,7 @@ index a7f5f3b..2331b43 100644
 +
 +    def _pull(self):
 +        os.chdir(os.path.abspath(self.repo_path))
-+        cmd = ['git', 'pull']
++        cmd = ['git', 'pull', 'origin', 'master']
 +        env = {
 +            'LANG': 'C',
 +            'HOME': os.getenv('HOME', '')
