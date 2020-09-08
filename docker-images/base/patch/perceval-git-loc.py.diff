@@ -81,7 +81,7 @@ index 9d7ca5b..f798625 100644
      @classmethod
      def clone(cls, uri, dirpath):
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..2bc8251 100644
+index a7f5f3b..ae45318 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -30,6 +30,8 @@ import logging
@@ -102,7 +102,7 @@ index a7f5f3b..2bc8251 100644
  
  
  logger = logging.getLogger(__name__)
-@@ -271,3 +273,191 @@ def xml_to_dict(raw_xml):
+@@ -271,3 +273,207 @@ def xml_to_dict(raw_xml):
      d = node_to_dict(tree)
  
      return d
@@ -257,13 +257,29 @@ index a7f5f3b..2bc8251 100644
 +        logger.debug("Git %s repository clean", self.repo_path)
 +
 +    def _pull(self):
++
++        def get_active_branch(value):
++            default = 'master'
++            status = value.decode('utf8')
++            branch_lst = status.split('\n')
++            if len(branch_lst) > 0:
++                b = next((branch for branch in branch_lst
++                          if branch.startswith('*')), default)
++                b = b.replace('* ', '')
++                return b
++            return default
++
 +        os.chdir(os.path.abspath(self.repo_path))
-+        cmd = ['git', 'pull', 'origin', 'master']
 +        env = {
 +            'LANG': 'C',
 +            'HOME': os.getenv('HOME', '')
 +        }
 +
++        cmd = ['git', 'branch', '-a']
++        result = self._exec(cmd, env=env)
++        branch = get_active_branch(result)
++
++        cmd = ['git', 'pull', 'origin', branch]
 +        self._exec(cmd, env=env)
 +
 +        logger.debug("Git %s repository pull updated code", self.repo_path)
