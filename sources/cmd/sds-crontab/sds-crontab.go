@@ -25,6 +25,7 @@ type deployment struct {
 	CSVPrefix     string            `yaml:"csv_prefix"`
 	TempDir       string            `yaml:"temp_dir"`
 	Env           map[string]string `yaml:"env"`
+	Disabled      bool              `yaml:"disabled"`
 }
 
 type environment struct {
@@ -161,6 +162,9 @@ func deployCrontab(ctx *lib.Ctx, deployEnv string) (err error) {
 		m := make(map[string]struct{})
 		hasMaster := false
 		for _, d := range env.Deployments {
+			if d.Disabled {
+				continue
+			}
 			_, ok := m[d.Name]
 			if ok {
 				return fmt.Errorf("non-unique name %s in %s deploy env", d.Name, deployEnv)
