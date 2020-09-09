@@ -9,6 +9,8 @@ data_sources:
   - name: from-date
     value: '2019-10-01'
 aliases:
+  # note that SDS only maintains indices/aliases with 'sds-' prefix
+  # so if you say 'from: abc' that actually means 'from: sds-abc', same with to, views name etc.
 - from: shared/dockerhub
   to:
   - lukaszgryglicki/dockerhub
