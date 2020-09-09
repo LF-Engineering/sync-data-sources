@@ -1,0 +1,14 @@
+---
+native:
+  slug: aliases-views
+aliases:
+- from: lfn/onap/git-for-merge
+  views:
+  - name: test-lg/cli
+    filter:
+      term:
+        project: 'CLI'
+  - name: test-lg/common
+    filter:
+      term:
+        project: 'ONAP-Common'
