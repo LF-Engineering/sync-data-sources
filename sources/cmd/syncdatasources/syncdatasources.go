@@ -1003,6 +1003,11 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			fixture.Aliases[ai].To[ti] = idxSlug
 		}
+		for vi, v := range alias.Views {
+			idxSlug := "sds-" + v.Name
+			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			fixture.Aliases[ai].Views[vi].Name = idxSlug
+		}
 	}
 }
 
@@ -2930,11 +2935,62 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 	}
 }
 
+func processAliasView(ch chan struct{}, ctx *lib.Ctx, index string, view lib.AliasView) {
+	defer func() {
+		if ch != nil {
+			ch <- struct{}{}
+		}
+	}()
+	// API: POST /_aliases '{"actions":[{"add":{"index":"sds-lfn-onap-git-for-merge","alias":"test-lg","filter":{"term":{"project":"CLI"}}}}]}'
+	method := lib.Post
+	url := fmt.Sprintf("%s/_aliases", ctx.ElasticURL)
+	rurl := "/_aliases"
+	if ctx.DryRun {
+		lib.Printf("DryRun: Method:%s url:%s\n", method, rurl)
+		return
+	}
+	lib.Printf("View '%s' -> '%s' filter %+v\n", index, view.Name, view.Filter)
+	payloadBytes, err := jsoniter.Marshal(view.Filter)
+	if err != nil {
+		lib.Fatalf("json marshall error: %+v, data: %+v", err, view.Filter)
+	}
+	data := fmt.Sprintf(`{"actions":[{"add":{"index":"%s","alias":"%s","filter":%s}}]}`, index, view.Name, string(payloadBytes))
+	payloadBytes = []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	req, err := http.NewRequest(method, os.ExpandEnv(url), payloadBody)
+	if err != nil {
+		lib.Printf("New request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("Do request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s data:%s status:%d\n%s\n", method, rurl, data, resp.StatusCode, body)
+	}
+}
+
 func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 	st := time.Now()
 	fixtures := *pFixtures
 	pairs := [][2]string{}
 	tom := make(map[string]struct{})
+	type view struct {
+		from string
+		view lib.AliasView
+	}
+	views := []view{}
 	for _, fixture := range fixtures {
 		for _, alias := range fixture.Aliases {
 			for _, to := range alias.To {
@@ -2944,6 +3000,18 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 				}
 				pairs = append(pairs, [2]string{alias.From, to})
 				tom[to] = struct{}{}
+			}
+			for _, v := range alias.Views {
+				if method == lib.Delete {
+					_, ok := tom[v.Name]
+					if ok {
+						continue
+					}
+					pairs = append(pairs, [2]string{alias.From, v.Name})
+					tom[v.Name] = struct{}{}
+					continue
+				}
+				views = append(views, view{from: alias.From, view: v})
 			}
 		}
 	}
@@ -2964,6 +3032,15 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 				nThreads--
 			}
 		}
+		lib.Printf("Now processing %d aliases views using MT%d version\n", len(views), thrN)
+		for _, v := range views {
+			go processAliasView(ch, ctx, v.from, v.view)
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
+			}
+		}
 		for nThreads > 0 {
 			<-ch
 			nThreads--
@@ -2972,6 +3049,10 @@ func processAliases(ctx *lib.Ctx, pFixtures *[]lib.Fixture, method string) {
 		lib.Printf("Now processing %d aliases using method %s ST version\n", len(pairs), method)
 		for _, pair := range pairs {
 			processAlias(nil, ctx, pair, method)
+		}
+		lib.Printf("Now processing %d aliases views using ST version\n", len(views))
+		for _, v := range views {
+			processAliasView(nil, ctx, v.from, v.view)
 		}
 	}
 	en := time.Now()
