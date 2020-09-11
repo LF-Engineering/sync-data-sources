@@ -8,6 +8,7 @@ git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
+git clone "https://github.com/AlDanial/cloc.git" --branch "1.86" --single-branch || exit 17
 #vim --not-a-term -c "%s/pandas==0.18/pandas>=0.18/g" -c 'wq!' grimoirelab-elk/setup.py
 #vim --not-a-term -c "%s/redis>=2.10.0, <=2.10.6/redis>=3.0.0/g" -c 'wq!' grimoirelab-elk/setup.py
 #vim --not-a-term -c "%s/redis>=2.10.0, <=2.10.6/redis>=3.0.0/g" -c 'wq!' grimoirelab-elk/requirements.txt
@@ -31,8 +32,8 @@ vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable
 cd grimoirelab-sortinghat && git apply ../../patch/api.py.diff && cd .. || exit 9
 cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../patch/elk.py.diff && git apply ../../patch/elastic.py.diff && git apply ../../patch/p2o.py.diff && cd .. || exit 10
 #cd grimoirelab-elk && git apply ../../patch/jira.py.diff && git apply ../../patch/confluence.py.diff && git apply ../../patch/github.py.diff && git apply ../../patch/github2.py.diff && cp ../../patch/identity.py grimoire_elk/enriched/ && cd .. || exit 11
-cd grimoirelab-perceval && git apply ../../patch/perceval-git-loc.py.diff && cd .. || exit 15
-cd grimoirelab-elk && git apply ../../patch/elk-git-loc.py.diff && cd .. || exit 16
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc.py.diff && cd .. || exit 15
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
 echo 'All patching OK'
