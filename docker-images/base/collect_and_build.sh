@@ -8,6 +8,7 @@ git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
+git clone https://github.com/AlDanial/cloc.git --branch 1.86 --single-branch || exit 17
 #vim --not-a-term -c "%s/pandas==0.18/pandas>=0.18/g" -c 'wq!' grimoirelab-elk/setup.py
 #vim --not-a-term -c "%s/redis>=2.10.0, <=2.10.6/redis>=3.0.0/g" -c 'wq!' grimoirelab-elk/setup.py
 #vim --not-a-term -c "%s/redis>=2.10.0, <=2.10.6/redis>=3.0.0/g" -c 'wq!' grimoirelab-elk/requirements.txt
