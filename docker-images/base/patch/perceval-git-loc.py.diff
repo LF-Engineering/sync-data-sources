@@ -1,5 +1,5 @@
 diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
-index 9d7ca5b..b6a34bc 100644
+index 9d7ca5b..5b93eed 100644
 --- a/perceval/backends/core/git.py
 +++ b/perceval/backends/core/git.py
 @@ -43,7 +43,7 @@ from ...backend import (Backend,
@@ -19,23 +19,26 @@ index 9d7ca5b..b6a34bc 100644
  
      def fetch(self, category=CATEGORY_COMMIT, from_date=DEFAULT_DATETIME, to_date=DEFAULT_LAST_DATETIME,
                branches=None, latest_items=False, no_update=False):
-@@ -321,10 +322,14 @@ class Git(Backend):
+@@ -321,10 +322,18 @@ class Git(Backend):
          return self.parse_git_log_from_iter(gitshow)
  
      def __create_git_repository(self):
-+        if self.git_loc:
-+            self.git_loc.load()
++        git_loc = getattr(self, 'git_loc', None)
++        if git_loc:
++            git_loc._load_cache()
++            git_loc.load()
 +
          if not os.path.exists(self.gitpath):
              repo = GitRepository.clone(self.uri, self.gitpath)
-+            repo.git_loc = self.git_loc
          elif os.path.isdir(self.gitpath):
--            repo = GitRepository(self.uri, self.gitpath)
-+            repo = GitRepository(self.uri, self.gitpath, self.git_loc)
+             repo = GitRepository(self.uri, self.gitpath)
++
++        setattr(repo, 'git_loc', git_loc)
++
          return repo
  
  
-@@ -519,6 +524,9 @@ class GitParser:
+@@ -519,6 +528,9 @@ class GitParser:
          # Aux vars to store the commit that is being parsed
          self.commit = None
          self.commit_files = {}
@@ -45,7 +48,7 @@ index 9d7ca5b..b6a34bc 100644
  
          self.handlers = {
              self.INIT: self._handle_init,
-@@ -559,6 +567,9 @@ class GitParser:
+@@ -559,6 +571,9 @@ class GitParser:
          commit['files'] = [remove_none_values(item)
                             for _, item in sorted(self.commit_files.items())]
  
@@ -55,39 +58,29 @@ index 9d7ca5b..b6a34bc 100644
          self.commit = None
          self.commit_files = {}
  
-@@ -732,6 +743,10 @@ class GitParser:
+@@ -732,6 +747,12 @@ class GitParser:
          else:
              return f
  
 +    def __get_stats(self):
-+        repo = self.stream.gi_frame.f_locals['self']
-+        return repo.git_loc.get_stats()
++        repo = self.stream.gi_frame.f_locals.get('self')
++        if repo:
++            return repo.git_loc.get_stats()
++        return 0, []
 +
  
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
-@@ -785,7 +800,7 @@ class GitRepository:
-         '-c',  # show merge info
-     ]
- 
--    def __init__(self, uri, dirpath):
-+    def __init__(self, uri, dirpath, git_loc=None):
-         gitdir = os.path.join(dirpath, 'HEAD')
- 
-         if not os.path.exists(dirpath):
-@@ -808,6 +823,7 @@ class GitRepository:
-             'NO_PROXY': os.getenv('NO_PROXY', ''),
-             'HOME': os.getenv('HOME', '')
-         }
-+        self.git_loc = git_loc
- 
-     @classmethod
-     def clone(cls, uri, dirpath):
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..6a1772a 100644
+index a7f5f3b..5ffbf00 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
-@@ -30,6 +30,8 @@ import logging
+@@ -26,10 +26,13 @@
+ 
+ import datetime
+ import email
++import json
+ import logging
  import mailbox
  import re
  import sys
@@ -96,7 +89,7 @@ index a7f5f3b..6a1772a 100644
  
  import xml.etree.ElementTree
  
-@@ -38,7 +40,7 @@ import dateutil.tz
+@@ -38,7 +41,7 @@ import dateutil.tz
  
  import requests
  
@@ -105,7 +98,7 @@ index a7f5f3b..6a1772a 100644
  
  
  logger = logging.getLogger(__name__)
-@@ -271,3 +273,240 @@ def xml_to_dict(raw_xml):
+@@ -271,3 +274,357 @@ def xml_to_dict(raw_xml):
      d = node_to_dict(tree)
  
      return d
@@ -115,27 +108,65 @@ index a7f5f3b..6a1772a 100644
 +
 +    def __init__(self, url):
 +        self.base_path = '~/.perceval/repositories'
-+        self.git_url = url
++        self.git_url = self.__get_processed_uri(url)
++        self.uptodate = False
++        self._cache = {}
 +
 +    def __del__(self):
-+        pass
++        self._write_json_file(data=self._cache,
++                              path=self.__get_cache_path(),
++                              filename=self.cache_file_name)
++
++    @property
++    def cache_path(self):
++        path = os.path.expanduser('~/.perceval/cache')
++        if not os.path.exists(path):
++            os.makedirs(path)
++        return '~/.perceval/cache'
++
++    @property
++    def cache_file_name(self):
++        return 'stats.json'
 +
 +    @property
 +    def repo_path(self):
 +        return self.__get_git_repo_path()
 +
++    @property
++    def org_name(self):
++        return self.git_url.split('/')[-2]
++
++    @property
++    def repo_name(self):
++        return self.git_url.split('/')[-1]
++
 +    @staticmethod
 +    def __get_processed_uri(uri):
-+        return uri.lstrip('/')
++        return uri.lstrip('/').replace('.git', '')
 +
 +    def __get_base_path(self):
 +        return os.path.expanduser(self.base_path)
 +
++    def __get_cache_path(self):
++        base_path = os.path.expanduser(self.cache_path)
++        path = os.path.join(base_path, self.org_name)
++        if not os.path.exists(path):
++            os.makedirs(path)
++        return path
++
 +    def __get_git_repo_path(self):
 +        base_path = self.__get_base_path()
-+        processed_uri = self.__get_processed_uri(self.git_url)
-+        repo_dir = processed_uri.split('/')[-1].replace('.git', '')
-+        return os.path.join(base_path, repo_dir)
++        repo_dir_name = os.path.join(self.org_name, self.repo_name)
++        return os.path.join(base_path, repo_dir_name)
++
++    @staticmethod
++    def sanitize_os_output(result):
++        """
++        Sanitize the os command output and return the readable output
++        """
++        sanitized_output = result.decode('UTF-8')
++
++        return sanitized_output
 +
 +    @staticmethod
 +    def _exec(cmd, cwd=None, env=None, ignored_error_codes=None,
@@ -194,8 +225,7 @@ index a7f5f3b..6a1772a 100644
 +        """
 +        def extract_program_language_summary(value):
 +            stats = list()
-+            status = value.decode('utf8')
-+            lan_smry_lst = status.split('\n')
++            lan_smry_lst = value.split('\n')
 +            if len(lan_smry_lst) > 0:
 +                for smry in lan_smry_lst[::-1]:
 +                    if smry.startswith('---') or len(smry) == 0:
@@ -214,19 +244,18 @@ index a7f5f3b..6a1772a 100644
 +
 +            return stats
 +
-+        return extract_program_language_summary(result)
++        return extract_program_language_summary(self.sanitize_os_output(result))
 +
 +    def _loc(self, result):
 +        """
 +        Get the total lines of code from the default branch
 +        """
 +        def extract_lines_of_code(value):
-+            status = value.decode('utf8')
-+            if len(status) > 0 and 'SUM:' in status:
-+                return int((status.split('\n')[-3]).split(' ')[-1])
++            if len(value) > 0 and 'SUM:' in value:
++                return int((value.split('\n')[-3]).split(' ')[-1])
 +            return 0
 +
-+        return extract_lines_of_code(result)
++        return extract_lines_of_code(self.sanitize_os_output(result))
 +
 +    def _clone(self):
 +        """Clone a Git repository.
@@ -275,13 +304,14 @@ index a7f5f3b..6a1772a 100644
 +            'HOME': os.getenv('HOME', '')
 +        }
 +        branch = None
++        status = False
 +
 +        try:
 +            cmd_auto = ['git', 'remote', 'set-head', 'origin', '--auto']
 +            cmd_short = ['git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD']
 +            self._exec(cmd_auto, env=env)
 +            result = self._exec(cmd_short, env=env)
-+            result = result.decode('utf8')
++            result = self.sanitize_os_output(result)
 +            branch = result.replace('origin/', '').strip()
 +            logger.debug("Git %s repository active branch is: %s",
 +                         self.repo_path, branch)
@@ -301,7 +331,10 @@ index a7f5f3b..6a1772a 100644
 +        try:
 +            if branch:
 +                cmd = ['git', 'pull', 'origin', branch]
-+                self._exec(cmd, env=env)
++                result = self._exec(cmd, env=env)
++                result = self.sanitize_os_output(result)
++                if len(result) >= 18:
++                    status = True
 +                logger.debug("Git %s repository pull updated code",
 +                             self.repo_path)
 +            else:
@@ -310,6 +343,8 @@ index a7f5f3b..6a1772a 100644
 +                             self.repo_path)
 +        except (RuntimeError, Exception) as pe:
 +            logger.error("Git pull error %s", str(pe))
++
++        return status
 +
 +    def _fetch(self):
 +        os.chdir(os.path.abspath(self.repo_path))
@@ -334,15 +369,90 @@ index a7f5f3b..6a1772a 100644
 +        except (RuntimeError, Exception) as fpe:
 +            logger.error("Git fetch purge error %s", str(fpe))
 +
++    def _build_empty_stats_data(self):
++        stats_data = {
++            self.repo_name: {
++                'loc': 0,
++                'pls': [],
++                'timestamp': None
++            }
++        }
++        return stats_data
++
++    def _write_json_file(self, data, path, filename):
++        path = os.path.join(path, filename)
++        with open(path, 'w') as f:
++            f.write(json.dumps(data, indent=4))
++        f.close()
++
++    def _read_json_file(self, path, filename):
++        path = os.path.join(path, filename)
++        with open(path, 'r') as f:
++            data = f.read()
++        f.close()
++        return json.loads(data)
++
++    def _load_cache(self):
++        path = os.path.join(self.__get_cache_path(), self.cache_file_name)
++
++        if not os.path.exists(path):
++            stats_data = self._build_empty_stats_data()
++            self._cache = stats_data
++            self._write_json_file(data=stats_data,
++                                  path=self.__get_cache_path(),
++                                  filename=self.cache_file_name)
++        else:
++            self._cache = self._read_json_file(path=self.__get_cache_path(),
++                                               filename=self.cache_file_name)
++
++            if self.repo_name not in self._cache:
++                self._cache.update(self._build_empty_stats_data())
++                self._write_json_file(data=self._cache,
++                                      path=self.__get_cache_path(),
++                                      filename=self.cache_file_name)
++
++    def _get_cache_item(self, project_name, key):
++        return self._cache[project_name][key]
++
++    def _update_cache_item(self, project_name, key, value):
++        data = self._cache.get(project_name)
++        data[key] = value
++        self._cache.update({project_name: data})
++
++    def _delete_cache_item(self, project_name, key=None):
++        if key:
++            del self._cache[project_name][key]
++        del self._cache[project_name]
++
 +    def load(self):
 +        if self.repo_path and not os.path.exists(self.repo_path):
 +            self._clone()
 +        else:
 +            self._fetch()
-+            self._pull()
++            self.uptodate = self._pull()
 +
 +    def get_stats(self):
-+        result = self._stats(self.repo_path)
-+        loc = self._loc(result)
-+        pls = self._pls(result)
++        loc = self._get_cache_item(self.repo_name, 'loc')
++        pls = self._get_cache_item(self.repo_name, 'pls')
++
++        if not self.uptodate or (loc == 0 and len(pls) == 0):
++            result = self._stats(self.repo_path)
++            loc = self._loc(result)
++            pls = self._pls(result)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='loc',
++                                    value=loc)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='pls',
++                                    value=pls)
++            utc_date = datetime.datetime.utcnow()
++            if utc_date.tzinfo is None:
++                utc_date = utc_date.replace(tzinfo=datetime.timezone.utc)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='timestamp',
++                                    value=utc_date.isoformat())
++            self._write_json_file(data=self._cache,
++                                  path=self.__get_cache_path(),
++                                  filename=self.cache_file_name)
++
 +        return loc, pls
