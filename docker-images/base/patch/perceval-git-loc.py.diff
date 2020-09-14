@@ -72,7 +72,7 @@ index 9d7ca5b..5b93eed 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..af37602 100644
+index a7f5f3b..7f8d209 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -26,10 +26,13 @@
@@ -98,7 +98,7 @@ index a7f5f3b..af37602 100644
  
  
  logger = logging.getLogger(__name__)
-@@ -271,3 +274,357 @@ def xml_to_dict(raw_xml):
+@@ -271,3 +274,355 @@ def xml_to_dict(raw_xml):
      d = node_to_dict(tree)
  
      return d
@@ -113,9 +113,7 @@ index a7f5f3b..af37602 100644
 +        self._cache = {}
 +
 +    def __del__(self):
-+        self._write_json_file(data=self._cache,
-+                              path=self.__get_cache_path(),
-+                              filename=self.cache_file_name)
++        pass
 +
 +    @property
 +    def cache_path(self):
