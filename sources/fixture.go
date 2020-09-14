@@ -202,10 +202,18 @@ type Fixture struct {
 	Slug        string
 }
 
+// AliasView - allows creating "filtered aliases"/"views"
+// API: POST /_aliases '{"actions":[{"add":{"index":"sds-lfn-onap-git-for-merge","alias":"test-lg","filter":{"term":{"project":"CLI"}}}}]}'
+type AliasView struct {
+	Name   string      `yaml:"name"`
+	Filter interface{} `yaml:"filter"`
+}
+
 // Alias conatin indexing aliases data, single index from (source) and list of aliases that should point to that index
 type Alias struct {
-	From string   `yaml:"from"`
-	To   []string `yaml:"to"`
+	From  string      `yaml:"from"`
+	To    []string    `yaml:"to"`
+	Views []AliasView `yaml:"views"`
 }
 
 // MultiConfig holds massaged config options, it can have >1 value for single option, for example
