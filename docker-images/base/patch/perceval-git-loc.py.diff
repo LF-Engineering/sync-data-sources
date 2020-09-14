@@ -72,7 +72,7 @@ index 9d7ca5b..5b93eed 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..5ffbf00 100644
+index a7f5f3b..af37602 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -26,10 +26,13 @@
@@ -226,7 +226,7 @@ index a7f5f3b..5ffbf00 100644
 +        def extract_program_language_summary(value):
 +            stats = list()
 +            lan_smry_lst = value.split('\n')
-+            if len(lan_smry_lst) > 0:
++            if 'SUM:' in value and len(lan_smry_lst) > 0:
 +                for smry in lan_smry_lst[::-1]:
 +                    if smry.startswith('---') or len(smry) == 0:
 +                        continue
