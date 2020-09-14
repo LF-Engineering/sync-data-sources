@@ -17,5 +17,6 @@ done
 
 pip3 install geopy==2.0.0
 pip3 install six==1.12.0
+pip3 install "feedparser>=5.1.3,<6.0.0"
 
 cp repos/cloc/cloc /usr/bin/
