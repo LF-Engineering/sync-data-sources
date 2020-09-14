@@ -2,7 +2,7 @@
 
 One command:
 
-- Run `DOCKER_USER=dajohn ./build_minimal.sh`.
+- Run `docker logout && docker login && DOCKER_USER=dajohn ./build_minimal.sh`.
 
 Manually: 
 
