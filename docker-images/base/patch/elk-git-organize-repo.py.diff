@@ -1,0 +1,460 @@
+diff --git a/grimoire_elk/utils.py b/grimoire_elk/utils.py
+index d9c0069..a10f5aa 100755
+--- a/grimoire_elk/utils.py
++++ b/grimoire_elk/utils.py
+@@ -20,11 +20,17 @@
+ #
+ 
+ import argparse
++import datetime
++import json
+ import logging
++import os
++import subprocess
+ import sys
+ 
+ import requests
+ 
++from urllib.parse import urlparse
++
+ from grimoire_elk.errors import ElasticError
+ from grimoire_elk.elastic import ElasticSearch
+ # Connectors for Graal
+@@ -419,3 +425,406 @@ def get_params():
+             sys.exit(1)
+ 
+     return args
++
++
++class GitOps:
++
++    def __init__(self, url):
++        self.base_path = '~/.perceval/repositories'
++        self.git_url = self.__get_processed_uri(url)
++        self.uptodate = False
++        self.follow_hierarchy = False
++        self._cache = {}
++
++    def __del__(self):
++        pass
++
++    @property
++    def cache_path(self):
++        path = os.path.expanduser('~/.perceval/cache')
++        if not os.path.exists(path):
++            os.makedirs(path)
++        return '~/.perceval/cache'
++
++    @property
++    def cache_file_name(self):
++        return 'stats.json'
++
++    @property
++    def repo_path(self):
++        return self.__get_git_repo_path()
++
++    @property
++    def org_name(self):
++        parser = urlparse(self.git_url)
++        org_name = self._build_org_name(parser.netloc)
++        if self.is_gitsource(parser.netloc):
++            org_name = self._build_org_name(parser.path)
++        return org_name
++
++    @property
++    def repo_name(self):
++        parser = urlparse(self.git_url)
++        return self._build_repo_name(parser.path, self.org_name)
++
++    def _build_repo_name(self, path, org_name):
++        sanitize_path = self.sanitize_url(path)
++        if org_name in sanitize_path:
++            sanitize_path = sanitize_path.replace('{0}/'.format(self.org_name), '')
++        if not self.follow_hierarchy:
++            return sanitize_path.replace('/', '-').replace('_', '-')
++        return sanitize_path
++
++    def _build_org_name(self, path):
++        sanitize_path = self.sanitize_url(path)
++        if '.' in sanitize_path:
++            return sanitize_path.split('.')[1]
++        return sanitize_path.split('/')[0]
++
++    @staticmethod
++    def __get_processed_uri(uri):
++        return uri.lstrip('/').replace('.git', '')
++
++    def __get_base_path(self):
++        return os.path.expanduser(self.base_path)
++
++    def __get_cache_path(self):
++        base_path = os.path.expanduser(self.cache_path)
++        path = os.path.join(base_path, self.org_name)
++        if not os.path.exists(path):
++            os.makedirs(path)
++        return path
++
++    def __get_git_repo_path(self):
++        base_path = self.__get_base_path()
++        if self.follow_hierarchy:
++            return os.path.join(base_path, '{0}/{1}'.format(self.org_name, self.repo_name))
++        return os.path.join(base_path, '{0}-{1}'.format(self.org_name, self.repo_name))
++
++    @staticmethod
++    def is_gitsource(host):
++        if 'github.com' in host \
++                or 'gitlab.com' in host \
++                or 'bitbucket.org' in host:
++            return True
++        return False
++
++    @staticmethod
++    def sanitize_url(path):
++        if path.startswith('/r/'):
++            path = path.replace('/r/', '')
++        elif path.startswith('/gerrit/'):
++            path = path.replace('/gerrit/', '')
++        path = path.lstrip('/')
++        return path
++
++    @staticmethod
++    def sanitize_os_output(result):
++        """
++        Sanitize the os command output and return the readable output
++        """
++        sanitized_output = result.decode('UTF-8')
++
++        return sanitized_output
++
++    @staticmethod
++    def _exec(cmd, cwd=None, env=None, ignored_error_codes=None,
++              encoding='utf-8'):
++        """Run a command.
++
++        Execute `cmd` command in the directory set by `cwd`. Environment
++        variables can be set using the `env` dictionary. The output
++        data is returned as encoded bytes.
++
++        Commands which their returning status codes are non-zero will
++        be treated as failed. Error codes considered as valid can be
++        ignored giving them in the `ignored_error_codes` list.
++
++        :returns: the output of the command as encoded bytes
++
++        :raises RepositoryError: when an error occurs running the command
++        """
++        if ignored_error_codes is None:
++            ignored_error_codes = []
++
++        logger.debug("Running command %s (cwd: %s, env: %s)",
++                     ' '.join(cmd), cwd, str(env))
++
++        try:
++            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE,
++                                    stderr=subprocess.PIPE,
++                                    cwd=cwd, env=env)
++            (outs, errs) = proc.communicate()
++        except OSError as e:
++            raise RepositoryError(cause=str(e))
++
++        if proc.returncode != 0 and proc.returncode not in ignored_error_codes:
++            err = errs.decode(encoding, errors='surrogateescape')
++            cause = "git command - %s" % err
++            raise RepositoryError(cause=cause)
++        else:
++            logger.debug(errs.decode(encoding, errors='surrogateescape'))
++
++        return outs
++
++    def _stats(self, path):
++        if path and os.path.exists(path):
++            cmd = ['cloc', path]
++            env = {
++                'LANG': 'C',
++                'HOME': os.getenv('HOME', '')
++            }
++            return self._exec(cmd, env=env)
++
++        return ''.encode('utf-8')
++
++    def _pls(self, result):
++        """
++            Get the programing language summary
++        """
++        def extract_program_language_summary(value):
++            stats = list()
++            lan_smry_lst = value.split('\n')
++            if 'SUM:' in value and len(lan_smry_lst) > 0:
++                for smry in lan_smry_lst[::-1]:
++                    if smry.startswith('---') or len(smry) == 0:
++                        continue
++                    elif smry.startswith('Language'):
++                        break
++                    else:
++                        smry_result = smry.split()
++                        stats.append({
++                            'language': smry_result[0].replace('SUM:', 'Total'),
++                            'files': smry_result[1],
++                            'blank': smry_result[2],
++                            'comment': smry_result[3],
++                            'code': smry_result[4]
++                        })
++
++            return stats
++
++        return extract_program_language_summary(self.sanitize_os_output(result))
++
++    def _loc(self, result):
++        """
++        Get the total lines of code from the default branch
++        """
++        def extract_lines_of_code(value):
++            if len(value) > 0 and 'SUM:' in value:
++                return int((value.split('\n')[-3]).split(' ')[-1])
++            return 0
++
++        return extract_lines_of_code(self.sanitize_os_output(result))
++
++    def _clone(self):
++        """Clone a Git repository.
++
++        Make a bare copy of the repository stored in `uri` into `dirpath`.
++        The repository would be either local or remote.
++
++        :param uri: URI of the repository
++        :param dirtpath: directory where the repository will be cloned
++
++        :returns: a `GitRepository` class having cloned the repository
++
++        :raises RepositoryError: when an error occurs cloning the given
++            repository
++        """
++        cmd = ['git', 'clone', self.git_url, self.repo_path]
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        try:
++            self._exec(cmd, env=env)
++            logger.debug("Git %s repository cloned into %s",
++                         self.git_url, self.repo_path)
++        except (RuntimeError, Exception) as cloe:
++            logger.error("Git clone error %s ", str(cloe))
++
++    def _clean(self):
++        cmd = ['rm', '-rf', self.repo_path]
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        try:
++            self._exec(cmd, env=env)
++            logger.debug("Git %s repository clean", self.repo_path)
++        except (RuntimeError, Exception) as cle:
++            logger.error("Git clone error %s", str(cle))
++
++    def _pull(self):
++        os.chdir(os.path.abspath(self.repo_path))
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++        branch = None
++        status = False
++
++        try:
++            cmd_auto = ['git', 'remote', 'set-head', 'origin', '--auto']
++            cmd_short = ['git', 'symbolic-ref', '--short', 'refs/remotes/origin/HEAD']
++            self._exec(cmd_auto, env=env)
++            result = self._exec(cmd_short, env=env)
++            result = self.sanitize_os_output(result)
++            branch = result.replace('origin/', '').strip()
++            logger.debug("Git %s repository active branch is: %s",
++                         self.repo_path, branch)
++        except (RuntimeError, Exception) as be:
++            logger.error("Git find active branch error %s", str(be))
++
++        try:
++            if branch:
++                cmd = ['git', 'checkout', branch]
++                self._exec(cmd, env=env)
++                logger.debug("Git %s repository "
++                             "checkout with following branch %s",
++                             self.repo_path, branch)
++        except (RuntimeError, Exception) as gce:
++            logger.error("Git checkout error %s", str(gce))
++
++        try:
++            if branch:
++                cmd = ['git', 'pull', 'origin', branch]
++                result = self._exec(cmd, env=env)
++                result = self.sanitize_os_output(result)
++                if len(result) >= 18:
++                    status = True
++                logger.debug("Git %s repository pull updated code",
++                             self.repo_path)
++            else:
++                logger.debug("Git repository active branch missing")
++                logger.debug("Git %s repository pull request skip ",
++                             self.repo_path)
++        except (RuntimeError, Exception) as pe:
++            logger.error("Git pull error %s", str(pe))
++
++        return status
++
++    def _fetch(self):
++        os.chdir(os.path.abspath(self.repo_path))
++
++        cmd_fetch = ['git', 'fetch']
++        cmd_fetch_p = ['git', 'fetch']
++
++        env = {
++            'LANG': 'C',
++            'HOME': os.getenv('HOME', '')
++        }
++
++        try:
++            self._exec(cmd_fetch, env=env)
++            logger.debug("Git %s fetch updated code", self.repo_path)
++        except (RuntimeError, Exception) as fe:
++            logger.error("Git fetch purge error %s", str(fe))
++
++        try:
++            self._exec(cmd_fetch_p, env=env)
++            logger.debug("Git %s fetch purge code", self.repo_path)
++        except (RuntimeError, Exception) as fpe:
++            logger.error("Git fetch purge error %s", str(fpe))
++
++    def _build_empty_stats_data(self):
++        stats_data = {
++            self.repo_name: {
++                'loc': 0,
++                'pls': [],
++                'timestamp': None
++            }
++        }
++        return stats_data
++
++    def _write_json_file(self, data, path, filename):
++        try:
++            path = os.path.join(path, filename)
++            with open(path, 'w') as f:
++                f.write(json.dumps(data, indent=4))
++            f.close()
++        except Exception as je:
++            logger.error("cache file write error %s", str(je))
++        finally:
++            pass
++
++    def _read_json_file(self, path, filename):
++        error = None
++        try:
++            path = os.path.join(path, filename)
++            with open(path, 'r') as f:
++                data = f.read()
++            f.close()
++            return json.loads(data)
++        except Exception as je:
++            logger.error("cache file write error %s", str(je))
++            error = True
++        finally:
++            if error:
++                return self._build_empty_stats_data()
++
++    def _load_cache(self):
++        path = os.path.join(self.__get_cache_path(), self.cache_file_name)
++
++        if not os.path.exists(path):
++            stats_data = self._build_empty_stats_data()
++            self._cache = stats_data
++            self._write_json_file(data=stats_data,
++                                  path=self.__get_cache_path(),
++                                  filename=self.cache_file_name)
++        else:
++            self._cache = self._read_json_file(path=self.__get_cache_path(),
++                                               filename=self.cache_file_name)
++
++            if self.repo_name not in self._cache.keys():
++                self._cache.update(self._build_empty_stats_data())
++                self._write_json_file(data=self._cache,
++                                      path=self.__get_cache_path(),
++                                      filename=self.cache_file_name)
++
++    def _get_cache_item(self, project_name, key):
++        return self._cache[project_name][key]
++
++    def _update_cache_item(self, project_name, key, value):
++        data = self._cache.get(project_name)
++        data[key] = value
++        self._cache.update({project_name: data})
++
++    def _delete_cache_item(self, project_name, key=None):
++        if key:
++            del self._cache[project_name][key]
++        del self._cache[project_name]
++
++    def load(self):
++        if self.repo_path and not os.path.exists(self.repo_path):
++            self._clone()
++        else:
++            self._fetch()
++            self.uptodate = self._pull()
++
++    def get_stats(self):
++        loc = self._get_cache_item(self.repo_name, 'loc')
++        pls = self._get_cache_item(self.repo_name, 'pls')
++
++        if not self.uptodate or (loc == 0 and len(pls) == 0):
++            result = self._stats(self.repo_path)
++            loc = self._loc(result)
++            pls = self._pls(result)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='loc',
++                                    value=loc)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='pls',
++                                    value=pls)
++            utc_date = datetime.datetime.utcnow()
++            if utc_date.tzinfo is None:
++                utc_date = utc_date.replace(tzinfo=datetime.timezone.utc)
++            self._update_cache_item(project_name=self.repo_name,
++                                    key='timestamp',
++                                    value=utc_date.isoformat())
++            self._write_json_file(data=self._cache,
++                                  path=self.__get_cache_path(),
++                                  filename=self.cache_file_name)
++
++        return loc, pls
+diff --git a/utils/p2o.py b/utils/p2o.py
+index 49315fc..7ef5d02 100755
+--- a/utils/p2o.py
++++ b/utils/p2o.py
+@@ -44,8 +44,25 @@ if __name__ == '__main__':
+     clean = args.no_incremental
+     if args.fetch_cache:
+         clean = True
+-
+     try:
++        def read_backend_url_idx(backend_args_lst):
++            cnt = -1
++            for i, item in enumerate(backend_args_lst):
++                if 'http' in item:
++                    cnt = i
++                    break
++            return cnt
++
++        arg_backend = getattr(args, 'backend', None)
++        if arg_backend.lower() == 'git' and len(args.backend_args) > 0:
++            from grimoire_elk.utils import GitOps   # noqa
++            idx = read_backend_url_idx(args.backend_args)
++            if idx > -1:
++                git_ops = GitOps(args.backend_args[idx])
++                git_ops._load_cache()
++                git_ops.load()
++                git_ops.get_stats()
++
+         if args.backend:
+             # Configure elastic bulk size and scrolling
+             if args.bulk_size:
