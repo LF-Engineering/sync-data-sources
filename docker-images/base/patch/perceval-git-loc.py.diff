@@ -72,7 +72,7 @@ index 9d7ca5b..5b93eed 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..2b7e3ba 100644
+index a7f5f3b..41a61c6 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -26,10 +26,13 @@
@@ -111,7 +111,7 @@ index a7f5f3b..2b7e3ba 100644
 +        self.base_path = '~/.perceval/repositories'
 +        self.git_url = self.__get_processed_uri(url)
 +        self.uptodate = False
-+        self.follow_hierarchy = True
++        self.follow_hierarchy = False
 +        self._cache = {}
 +
 +    def __del__(self):
