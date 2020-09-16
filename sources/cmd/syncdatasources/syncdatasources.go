@@ -2582,7 +2582,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			idxSlug := alias.From
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			should[idxSlug] = struct{}{}
-			should[idxSlug+"-raw"] = struct{}{}
+			// should[idxSlug+"-raw"] = struct{}{}
 		}
 	}
 	method := lib.Get
