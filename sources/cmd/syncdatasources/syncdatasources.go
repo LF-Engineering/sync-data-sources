@@ -2578,6 +2578,12 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 				toFull[idx+"-raw"] = idxSlug + "-raw"
 			}
 		}
+		for _, alias := range fixture.Aliases {
+			idxSlug := "sds-" + alias.From
+			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			should[idxSlug] = struct{}{}
+			should[idxSlug+"-raw"] = struct{}{}
+		}
 	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
@@ -2765,6 +2771,9 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		for _, alias := range fixture.Aliases {
 			for _, to := range alias.To {
 				should[strings.Replace(to, "/", "-", -1)] = struct{}{}
+			}
+			for _, view := range alias.Views {
+				should[strings.Replace(view.Name, "/", "-", -1)] = struct{}{}
 			}
 		}
 	}
