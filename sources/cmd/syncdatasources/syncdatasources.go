@@ -2579,7 +2579,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			}
 		}
 		for _, alias := range fixture.Aliases {
-			idxSlug := "sds-" + alias.From
+			idxSlug := alias.From
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			should[idxSlug] = struct{}{}
 			should[idxSlug+"-raw"] = struct{}{}
