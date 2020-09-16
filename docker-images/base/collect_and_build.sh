@@ -22,12 +22,12 @@ git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch
 #vim --not-a-term -c "%s/if entry is not None:/if entry is not None and 'sortKey' in entry:/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/gerrit.py
 #git diff > api.py.diff
 # revert slack api commit from perceval
-# cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master && cd ..
+cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master && cd ..
 # rocketchat support
-# cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase master && cd ..
+cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase master && cd ..
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
 # p2o.py per-project affiliations support (specify project via env: PROJECT_SLUG=lfn/onap p2o.py ...)
-# vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7
+vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7
 #cd grimoirelab-perceval && git apply ../../patch/gerrit.py.diff && cd .. || exit 8
 cd grimoirelab-sortinghat && git apply ../../patch/api.py.diff && cd .. || exit 9
 cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../patch/elk.py.diff && git apply ../../patch/elastic.py.diff && git apply ../../patch/p2o.py.diff && cd .. || exit 10
