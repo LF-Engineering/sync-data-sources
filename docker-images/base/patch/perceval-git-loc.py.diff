@@ -72,7 +72,7 @@ index 9d7ca5b..5b93eed 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index a7f5f3b..03bc7a6 100644
+index a7f5f3b..acaa63f 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -26,10 +26,13 @@
@@ -370,7 +370,7 @@ index a7f5f3b..03bc7a6 100644
 +                cmd = ['git', 'pull', 'origin', branch]
 +                result = self._exec(cmd, env=env)
 +                result = self.sanitize_os_output(result)
-+                if len(result) >= 18:
++                if len(result) >= 18 and 'Already up to date.' in result:
 +                    status = True
 +                logger.debug("Git %s repository pull updated code",
 +                             self.repo_path)
