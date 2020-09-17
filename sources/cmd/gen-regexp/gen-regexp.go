@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -238,11 +239,21 @@ func processFixtures(ctx *lib.Ctx, fixtureFiles []string) {
 			}
 		}
 	}
-	re := `^(`
+	orgsAry := []string{}
+	reposAry := []string{}
 	for org := range orgs {
-		re += org + `\/.*|`
+		orgsAry = append(orgsAry, org)
 	}
 	for repo := range repos {
+		reposAry = append(reposAry, repo)
+	}
+	sort.Strings(orgsAry)
+	sort.Strings(reposAry)
+	re := `^(`
+	for _, org := range orgsAry {
+		re += org + `\/.*|`
+	}
+	for _, repo := range reposAry {
 		re += strings.Replace(repo, `/`, `\/`, -1) + `|`
 	}
 	re = re[0:len(re)-1] + `)$`
