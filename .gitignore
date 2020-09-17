@@ -18,6 +18,7 @@
 /sources/data
 /sources/syncdatasources
 /sources/sds-crontab
+/sources/gen-regexp
 /sources/data.zip
 /sources/sds.yaml
 out

@@ -160,36 +160,6 @@ func validateFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	checkForSharedEndpoints(&fixtures)
 }
 
-func getFixtures(ctx *lib.Ctx) (fixtures []string) {
-	dtStart := time.Now()
-	ctx.ExecOutput = true
-	defer func() {
-		ctx.ExecOutput = false
-	}()
-	res, err := lib.ExecCommand(
-		ctx,
-		[]string{
-			"find",
-			"data/",
-			"-type",
-			"f",
-			"-iname",
-			"*.y*ml",
-		},
-		nil,
-		nil,
-	)
-	dtEnd := time.Now()
-	if err != nil {
-		lib.Fatalf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-	}
-	fixtures = strings.Split(res, "\n")
-	if ctx.Debug > 0 {
-		lib.Printf("Fixtures to process: %+v\n", fixtures)
-	}
-	return
-}
-
 func validateConfig(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSource, cfg *lib.Config) {
 	if cfg.Name == "" {
 		lib.Fatalf("Config %s name in data source %+v in fixture %+v is empty or undefined\n", cfg.RedactedString(), dataSource, fixture)
@@ -778,7 +748,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				if len(channels) == 0 {
 					handleNoData()
 				}
-			case "github_org":
+			case lib.GitHubOrg:
 				// fmt.Printf("github_org called for %v\n", fixture.Native)
 				var aHint int
 				if gRateMtx != nil {
@@ -873,7 +843,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				if len(repos) == 0 {
 					handleNoData()
 				}
-			case "github_user":
+			case lib.GitHubUser:
 				var aHint int
 				if gRateMtx != nil {
 					gRateMtx.Lock()
@@ -6081,14 +6051,14 @@ func main() {
 		lib.Printf("Running in dry-run mode\n")
 	}
 	if ctx.OnlyValidate {
-		validateFixtureFiles(&ctx, getFixtures(&ctx))
+		validateFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
 	} else {
 		err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
 		}
 		go finishAfterTimeout(ctx)
-		processFixtureFiles(&ctx, getFixtures(&ctx))
+		processFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
 		err = hideEmails(&ctx)
 		if err != nil {
 			lib.Printf("Hide emails result: %+v\n", err)
