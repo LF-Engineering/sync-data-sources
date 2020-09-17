@@ -115,3 +115,8 @@ Infra util scripts:
 - Eventually delete task via: `AWS_PROFILE=darst fargate/delete_task.sh test sds-projname 1`
 - Eventually delete service via: `AWS_PROFILE=darst ./fargate/delete_service.sh test sds-cluster sds-projname-service`.
 - Eventually delete cluster via: `AWS_PROFILE=darst ./fargate/delete_cluster.sh test sds-cluster`.
+
+
+# Generating RegExp for GitHub Archives processing
+
+- Run: `SDS_GITHUB_OAUTH="`cat /etc/github/oauths`" ./gen-regexp ~/dev/LF-Engineering/dev-analytics-api/app/services/lf/bootstrap/fixtures`.

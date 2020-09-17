@@ -3,6 +3,7 @@ package syncdatasources
 import (
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -230,4 +231,38 @@ func (mc MultiConfig) String() string {
 		mc.Name,
 		mc.RedactedValue,
 	)
+}
+
+// GetFixtures - read all fixture files
+func GetFixtures(ctx *Ctx, path string) (fixtures []string) {
+	dtStart := time.Now()
+	ctx.ExecOutput = true
+	defer func() {
+		ctx.ExecOutput = false
+	}()
+	if path == "" {
+		path = "data/"
+	}
+	res, err := ExecCommand(
+		ctx,
+		[]string{
+			"find",
+			path,
+			"-type",
+			"f",
+			"-iname",
+			"*.y*ml",
+		},
+		nil,
+		nil,
+	)
+	dtEnd := time.Now()
+	if err != nil {
+		Fatalf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+	}
+	fixtures = strings.Split(res, "\n")
+	if ctx.Debug > 0 {
+		Printf("Fixtures to process: %+v\n", fixtures)
+	}
+	return
 }

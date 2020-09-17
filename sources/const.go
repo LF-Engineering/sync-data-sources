@@ -114,6 +114,12 @@ const Post string = "POST"
 // SearchScroll - /_search/scroll
 const SearchScroll string = "/_search/scroll"
 
+// GitHubOrg - github_org
+const GitHubOrg string = "github_org"
+
+// GitHubUser - github_user
+const GitHubUser string = "github_user"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	-2: "task is configured as a copy from another index pattern",
