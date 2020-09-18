@@ -142,23 +142,25 @@ func EndpointIncluded(ctx *Ctx, ep *RawEndpoint, origin string) (bool, int) {
 
 // Project holds project data and list of endpoints
 type Project struct {
-	Name         string        `yaml:"name"`
-	P2O          *bool         `yaml:"p2o"`
-	RawEndpoints []RawEndpoint `yaml:"endpoints"`
+	Name          string        `yaml:"name"`
+	P2O           *bool         `yaml:"p2o"`
+	RawEndpoints  []RawEndpoint `yaml:"endpoints"`
+	HistEndpoints []RawEndpoint `yaml:"historical_endpoints"`
 }
 
 // DataSource contains data source spec from dev-analytics-api
 type DataSource struct {
-	Slug         string        `yaml:"slug"`
-	Config       []Config      `yaml:"config"`
-	MaxFrequency string        `yaml:"max_frequency"`
-	Projects     []Project     `yaml:"projects"`
-	RawEndpoints []RawEndpoint `yaml:"endpoints"`
-	IndexSuffix  string        `yaml:"index_suffix"`
-	Endpoints    []Endpoint    `yaml:"-"`
-	MaxFreq      time.Duration `yaml:"-"`
-	FullSlug     string        `yaml:"-"`
-	Settings     *interface{}  `yaml:"settings"`
+	Slug          string        `yaml:"slug"`
+	Config        []Config      `yaml:"config"`
+	MaxFrequency  string        `yaml:"max_frequency"`
+	Projects      []Project     `yaml:"projects"`
+	RawEndpoints  []RawEndpoint `yaml:"endpoints"`
+	HistEndpoints []RawEndpoint `yaml:"historical_endpoints"`
+	IndexSuffix   string        `yaml:"index_suffix"`
+	Endpoints     []Endpoint    `yaml:"-"`
+	MaxFreq       time.Duration `yaml:"-"`
+	FullSlug      string        `yaml:"-"`
+	Settings      *interface{}  `yaml:"settings"`
 }
 
 // Configs - return redacted configs as a string

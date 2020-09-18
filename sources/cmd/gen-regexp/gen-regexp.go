@@ -40,7 +40,27 @@ func processFixtureFile(ch chan lib.Fixture, ctx *lib.Ctx, fixtureFile string) (
 	return
 }
 
-func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, reposMap map[string]struct{}, cache map[string][]string) {
+func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, key [2]string, orgsMap, reposMap, resMap map[[2]string]map[string]struct{}, cache map[string][]string) {
+	keyAll := [2]string{"", ""}
+	if strings.HasPrefix(ep.Name, `regexp:`) {
+		re := ep.Name[7:]
+		if strings.HasPrefix(re, "(?i)") {
+			re = re[4:]
+		}
+		if strings.HasPrefix(re, "^") {
+			re = re[1:]
+		}
+		if strings.HasSuffix(re, "$") {
+			re = re[:len(re)-1]
+		}
+		resMap[keyAll][re] = struct{}{}
+		_, ok := resMap[key]
+		if !ok {
+			resMap[key] = make(map[string]struct{})
+		}
+		resMap[key][re] = struct{}{}
+		return
+	}
 	if git && !strings.Contains(ep.Name, `://github.com/`) {
 		return
 	}
@@ -56,7 +76,13 @@ func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, repos
 			return
 		}
 		l := len(tokens)
-		reposMap[tokens[l-2]+"/"+tokens[l-1]] = struct{}{}
+		r := tokens[l-2] + "/" + tokens[l-1]
+		reposMap[keyAll][r] = struct{}{}
+		_, ok := reposMap[key]
+		if !ok {
+			reposMap[key] = make(map[string]struct{})
+		}
+		reposMap[key][r] = struct{}{}
 		return
 	}
 	tp, ok := ep.Flags["type"]
@@ -78,7 +104,13 @@ func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, repos
 			return
 		}
 		l := len(tokens)
-		orgsMap[tokens[l-1]] = struct{}{}
+		o := tokens[l-1]
+		orgsMap[keyAll][o] = struct{}{}
+		_, ok := orgsMap[key]
+		if !ok {
+			orgsMap[key] = make(map[string]struct{})
+		}
+		orgsMap[key][o] = struct{}{}
 		return
 	}
 	arr := strings.Split(ep.Name, "/")
@@ -93,12 +125,27 @@ func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, repos
 	lAry := len(ary)
 	path := ary[lAry-1]
 	root := strings.Join(ary[0:lAry-1], "/")
-	repos, ok := cache[path]
+	cacheKey := path + ":" + strings.Join(ep.Skip, ",") + ":" + strings.Join(ep.Only, ",")
+	repos, ok := cache[cacheKey]
 	if !ok {
+		if len(ep.SkipREs) == 0 {
+			for _, skip := range ep.Skip {
+				skipRE, err := regexp.Compile(skip)
+				lib.FatalOnError(err)
+				ep.SkipREs = append(ep.SkipREs, skipRE)
+			}
+		}
+		if len(ep.OnlyREs) == 0 {
+			for _, only := range ep.Only {
+				onlyRE, err := regexp.Compile(only)
+				lib.FatalOnError(err)
+				ep.OnlyREs = append(ep.OnlyREs, onlyRE)
+			}
+		}
 		gctx, gc := lib.GHClient(ctx)
 		hint, _, rem, wait := lib.GetRateLimits(gctx, ctx, gc, true)
 		for {
-			if rem[hint] <= 100 {
+			if rem[hint] <= 5 {
 				lib.Printf("All GH API tokens are overloaded, maximum points %d, waiting %+v\n", rem[hint], wait[hint])
 				time.Sleep(time.Duration(1) * time.Second)
 				time.Sleep(wait[hint])
@@ -145,7 +192,7 @@ func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, repos
 				optUser.Page = response.NextPage
 			}
 		}
-		cache[path] = repos
+		cache[cacheKey] = repos
 		// lib.Printf("org/user: %s skip=%+v only=%+v -> %+v\n", ep.Name, ep.Skip, ep.Only, repos)
 	}
 	for _, repo := range repos {
@@ -164,7 +211,13 @@ func processEndpoint(ctx *lib.Ctx, ep *lib.RawEndpoint, git bool, orgsMap, repos
 			return
 		}
 		l := len(tokens)
-		reposMap[tokens[l-2]+"/"+tokens[l-1]] = struct{}{}
+		r := tokens[l-2] + "/" + tokens[l-1]
+		reposMap[keyAll][r] = struct{}{}
+		_, ok := reposMap[key]
+		if !ok {
+			reposMap[key] = make(map[string]struct{})
+		}
+		reposMap[key][r] = struct{}{}
 	}
 }
 
@@ -209,10 +262,17 @@ func processFixtures(ctx *lib.Ctx, fixtureFiles []string) {
 	if len(fixtures) == 0 {
 		lib.Fatalf("No fixtures read, this is error, please define at least one")
 	}
-	orgs := make(map[string]struct{})
-	repos := make(map[string]struct{})
+	keyAll := [2]string{"", ""}
+	keys := make(map[[2]string]struct{})
+	orgs := make(map[[2]string]map[string]struct{})
+	repos := make(map[[2]string]map[string]struct{})
+	res := make(map[[2]string]map[string]struct{})
+	orgs[keyAll] = make(map[string]struct{})
+	repos[keyAll] = make(map[string]struct{})
+	res[keyAll] = make(map[string]struct{})
 	cache := make(map[string][]string)
 	for _, fixture := range fixtures {
+		fSlug := fixture.Native.Slug
 		for _, ds := range fixture.DataSources {
 			include := false
 			git := false
@@ -230,36 +290,102 @@ func processFixtures(ctx *lib.Ctx, fixtureFiles []string) {
 				continue
 			}
 			for _, ep := range ds.RawEndpoints {
-				processEndpoint(ctx, &ep, git, orgs, repos, cache)
+				key := [2]string{fSlug, ep.Project}
+				processEndpoint(ctx, &ep, git, key, orgs, repos, res, cache)
+				keys[key] = struct{}{}
+			}
+			for _, ep := range ds.HistEndpoints {
+				key := [2]string{fSlug, ep.Project}
+				processEndpoint(ctx, &ep, git, key, orgs, repos, res, cache)
+				keys[key] = struct{}{}
 			}
 			for _, project := range ds.Projects {
+				proj := project.Name
+				if proj == "" {
+					lib.Fatalf("Empty project name entry in %+v, data source %s, fixture %s\n", project, ds.Slug, fSlug)
+				}
 				for _, ep := range project.RawEndpoints {
-					processEndpoint(ctx, &ep, git, orgs, repos, cache)
+					eProj := proj
+					if ep.Project != "" {
+						eProj = ep.Project
+					}
+					key := [2]string{fSlug, eProj}
+					processEndpoint(ctx, &ep, git, key, orgs, repos, res, cache)
+					keys[key] = struct{}{}
+				}
+				for _, ep := range project.HistEndpoints {
+					eProj := proj
+					if ep.Project != "" {
+						eProj = ep.Project
+					}
+					key := [2]string{fSlug, eProj}
+					processEndpoint(ctx, &ep, git, key, orgs, repos, res, cache)
+					keys[key] = struct{}{}
 				}
 			}
 		}
 	}
-	orgsAry := []string{}
-	reposAry := []string{}
-	for org := range orgs {
-		orgsAry = append(orgsAry, org)
+	keysAry := [][2]string{}
+	keysAry = append(keysAry, keyAll)
+	for key := range keys {
+		keysAry = append(keysAry, key)
 	}
-	for repo := range repos {
-		reposAry = append(reposAry, repo)
+	sort.Slice(
+		keysAry,
+		func(i, j int) bool {
+			a := keysAry[i][0] + "," + keysAry[i][1]
+			b := keysAry[j][0] + "," + keysAry[j][1]
+			return a < b
+		},
+	)
+	for _, key := range keysAry {
+		orgsAry := []string{}
+		reposAry := []string{}
+		resAry := []string{}
+		for org := range orgs[key] {
+			orgsAry = append(orgsAry, org)
+		}
+		for repo := range repos[key] {
+			reposAry = append(reposAry, repo)
+		}
+		for re := range res[key] {
+			resAry = append(resAry, re)
+		}
+		sort.Strings(orgsAry)
+		sort.Strings(reposAry)
+		sort.Strings(resAry)
+		slug := key[0]
+		proj := key[1]
+		re := ``
+		n := 0
+		for _, org := range orgsAry {
+			re += org + `\/.*|`
+			n++
+		}
+		for _, repo := range reposAry {
+			re += strings.Replace(repo, `/`, `\/`, -1) + `|`
+			n++
+		}
+		for _, r := range resAry {
+			re += `(` + r + `)|`
+			n++
+		}
+		if n == 0 {
+			// lib.Printf("Slug: '%s', Project: '%s': no data\n", slug, proj)
+			continue
+		}
+		if n == 1 {
+			re = `^` + re[0:len(re)-1] + `$`
+		} else {
+			re = `^(` + re[0:len(re)-1] + `)$`
+		}
+		cre, err := regexp.Compile(re)
+		if err != nil {
+			lib.Printf("Failed: Slug: '%s', Project: '%s', RE: %s\n", slug, proj, re)
+		}
+		lib.FatalOnError(err)
+		lib.Printf("Slug: '%s', Project: '%s', RE: %v\n", slug, proj, cre)
 	}
-	sort.Strings(orgsAry)
-	sort.Strings(reposAry)
-	re := `^(`
-	for _, org := range orgsAry {
-		re += org + `\/.*|`
-	}
-	for _, repo := range reposAry {
-		re += strings.Replace(repo, `/`, `\/`, -1) + `|`
-	}
-	re = re[0:len(re)-1] + `)$`
-	cre, err := regexp.Compile(re)
-	lib.FatalOnError(err)
-	lib.Printf("Final regexp:\n================\n%v\n================\n", cre)
 }
 
 func main() {
