@@ -2258,7 +2258,7 @@ func giantLock(ctx *lib.Ctx, mtx string) {
 		}
 	}
 	data := lib.EsMtxPayload{Mtx: mtx, Dt: time.Now()}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Fatalf("json marshall error: %+v for mtx: %s, data: %+v", err, mtx, data)
 	}
@@ -2375,7 +2375,7 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 	// Disable write to source index
 	indexBlocksWrite := true
 	data := lib.EsIndexSettingsPayload{Settings: lib.EsIndexSettings{IndexBlocksWrite: &indexBlocksWrite}}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for snapshot rename %s to %s: %+v\n", err, from, to, data)
 		return
@@ -2416,7 +2416,7 @@ func renameIndex(ctx *lib.Ctx, from, to string) {
 	}
 	// Clone source to dest
 	data = lib.EsIndexSettingsPayload{Settings: lib.EsIndexSettings{IndexBlocksWrite: nil}}
-	payloadBytes, err = json.Marshal(data)
+	payloadBytes, err = jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for snapshot rename %s to %s: %+v\n", err, from, to, data)
 		return
@@ -4058,7 +4058,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 
 func searchByQueryFirstID(ctx *lib.Ctx, index, esQuery string) (id string) {
 	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for search: %s query: %s\n", err, index, esQuery)
 		return
@@ -4107,7 +4107,7 @@ func searchByQueryFirstID(ctx *lib.Ctx, index, esQuery string) (id string) {
 
 func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found bool) {
 	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for search: %s query: %s\n", err, index, esQuery)
 		return
@@ -4164,7 +4164,7 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 
 func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 	data := lib.EsSearchPayload{Query: lib.EsSearchQuery{QueryString: lib.EsSearchQueryString{Query: esQuery}}}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for search: %s query: %s\n", err, index, esQuery)
 		return
@@ -4208,7 +4208,7 @@ func deleteByQuery(ctx *lib.Ctx, index, esQuery string) (ok bool) {
 
 func addLastRun(ctx *lib.Ctx, dataIndex, index, ep string) (ok bool) {
 	data := lib.EsLastRunPayload{Index: index, Endpoint: ep, Type: "last_sync", Dt: time.Now()}
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		lib.Printf("JSON marshall error: %+v for index: %s, endpoint: %s, data: %+v\n", err, index, ep, data)
 		return
@@ -4343,7 +4343,7 @@ func checkSyncFreq(ctx *lib.Ctx, tMtx *lib.TaskMtx, index, ep string, freq time.
 }
 
 func jsonEscape(str string) string {
-	b, _ := json.Marshal(str)
+	b, _ := jsoniter.Marshal(str)
 	return string(b[1 : len(b)-1])
 }
 
@@ -4522,7 +4522,7 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 				}
 			}
 		}
-		payloadBytes, err = json.Marshal(data)
+		payloadBytes, err = jsoniter.Marshal(data)
 		if err != nil {
 			lib.Printf("JSON marshall error: %+v for index: %s, endpoint: %s, data: %+v\n", err, result.Index, result.Endpoint, data)
 			return
@@ -4806,7 +4806,7 @@ func bulkJSONData(ctx *lib.Ctx, index string, payloadBytes []byte) (err error) {
 		return
 	}
 	esResult := lib.EsBulkResult{}
-	err = json.Unmarshal(body, &esResult)
+	err = jsoniter.Unmarshal(body, &esResult)
 	if err != nil {
 		lib.Printf("Bulk result unmarshal error: %+v", err)
 		return
@@ -5018,7 +5018,7 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 	}
 	// Final mapping write
 	var jsonBytes []byte
-	jsonBytes, err = json.Marshal(mapping)
+	jsonBytes, err = jsoniter.Marshal(mapping)
 	if err != nil {
 		return
 	}
@@ -5071,7 +5071,7 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 			mp["properties"] = make(map[string]interface{})
 			mp["properties"][col] = def
 			var jsonBytes []byte
-			jsonBytes, err = json.Marshal(mp)
+			jsonBytes, err = jsoniter.Marshal(mp)
 			if err != nil {
 				return
 			}
@@ -5276,7 +5276,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	_ = resp.Body.Close()
-	err = json.Unmarshal(plBody, &payload)
+	err = jsoniter.Unmarshal(plBody, &payload)
 	if err != nil {
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
 		lib.Printf("Body:%s\n", plBody)
@@ -5294,7 +5294,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 			field  interface{}
 		)
 		if header {
-			err = json.Unmarshal(plBody, &result)
+			err = jsoniter.Unmarshal(plBody, &result)
 			header = false
 		} else {
 			data = fmt.Sprintf(`{"scroll":"%s", "scroll_id":"%s"}`, scrollTime, scrollID)
@@ -5396,7 +5396,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 				return
 			}
 			var jsonBytes []byte
-			jsonBytes, err = json.Marshal(doc)
+			jsonBytes, err = jsoniter.Marshal(doc)
 			if err != nil {
 				return
 			}

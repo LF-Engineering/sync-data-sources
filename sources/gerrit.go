@@ -1,12 +1,13 @@
 package syncdatasources
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 // GetGerritRepos - return list of repos for given gerrit server (uses HTML crawler)
@@ -59,7 +60,7 @@ func GetGerritRepos(ctx *Ctx, gerritURL string) (projects, repos []string, err e
 		}
 		body = body[i:]
 		var result map[string]interface{}
-		err = json.Unmarshal(body, &result)
+		err = jsoniter.Unmarshal(body, &result)
 		if err != nil {
 			Printf("Bulk result unmarshal error: %+v", err)
 			return
