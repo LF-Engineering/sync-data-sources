@@ -961,12 +961,14 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 	}
 	for ai, alias := range fixture.Aliases {
 		var idxSlug string
-		if strings.HasPrefix(alias.From, "bitergia-") {
+		if strings.HasPrefix(alias.From, "bitergia-") || strings.HasPrefix(alias.From, "pattern:") {
 			idxSlug = alias.From
 		} else {
 			idxSlug = "sds-" + alias.From
 		}
-		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+		if !strings.HasPrefix(alias.From, "pattern:") {
+			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+		}
 		fixture.Aliases[ai].From = idxSlug
 		for ti, to := range alias.To {
 			idxSlug := "sds-" + to
@@ -2550,7 +2552,9 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		}
 		for _, alias := range fixture.Aliases {
 			idxSlug := alias.From
-			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			if strings.HasPrefix(alias.From, "pattern:") {
+				continue
+			}
 			should[idxSlug] = struct{}{}
 			// should[idxSlug+"-raw"] = struct{}{}
 		}
@@ -2881,8 +2885,12 @@ func processAlias(ch chan struct{}, ctx *lib.Ctx, pair [2]string, method string)
 		url = fmt.Sprintf("%s/_all/_alias/%s", ctx.ElasticURL, pair[1])
 		rurl = fmt.Sprintf("/_all/_alias/%s", pair[1])
 	} else {
-		url = fmt.Sprintf("%s/%s/_alias/%s", ctx.ElasticURL, pair[0], pair[1])
-		rurl = fmt.Sprintf("/%s/_alias/%s", pair[0], pair[1])
+		from := pair[0]
+		if strings.HasPrefix(from, "pattern:") {
+			from = from[8:]
+		}
+		url = fmt.Sprintf("%s/%s/_alias/%s", ctx.ElasticURL, from, pair[1])
+		rurl = fmt.Sprintf("/%s/_alias/%s", from, pair[1])
 	}
 	if ctx.DryRun {
 		lib.Printf("DryRun: Method:%s url:%s\n", method, rurl)
@@ -2920,6 +2928,9 @@ func processAliasView(ch chan struct{}, ctx *lib.Ctx, index string, view lib.Ali
 			ch <- struct{}{}
 		}
 	}()
+	if strings.HasPrefix(index, "pattern:") {
+		index = index[8:]
+	}
 	// API: POST /_aliases '{"actions":[{"add":{"index":"sds-lfn-onap-git-for-merge","alias":"test-lg","filter":{"term":{"project":"CLI"}}}}]}'
 	method := lib.Post
 	url := fmt.Sprintf("%s/_aliases", ctx.ElasticURL)
