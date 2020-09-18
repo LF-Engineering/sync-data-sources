@@ -14,7 +14,7 @@ aliases:
     filter:
       term:
         project: 'ONAP-Common'
-- from: 'pattern:sds-cncf-*-git'  # when you specify 'pattern:' prefix no everything after that refix will not be changed
+- from: 'pattern:sds-cncf-*-git'  # when you specify 'pattern:' prefix everything after that prefix will not be changed
   views:                          # 'sds-' prefix won't be added, '/' won't be changed to '-' and so on.
   - name: 'cncf-git-googlers'
     filter:
