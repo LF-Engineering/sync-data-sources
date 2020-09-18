@@ -1,10 +1,11 @@
 package syncdatasources
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	"os"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 // DockerHubData - docker hub response format
@@ -52,7 +53,7 @@ func GetDockerHubRepos(ctx *Ctx, dockerhubOwner string) (repos []string, err err
 		}
 
 		var data DockerHubData
-		err = json.Unmarshal(body, &data)
+		err = jsoniter.Unmarshal(body, &data)
 		if err != nil {
 			Printf("Bulk result unmarshal error: %+v", err)
 			return

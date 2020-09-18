@@ -2,12 +2,13 @@ package syncdatasources
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"time"
+
+	jsoniter "github.com/json-iterator/go"
 )
 
 // EsIndex - keeps index data as returned by ElasticSearch
@@ -213,7 +214,7 @@ func EnsureIndex(ctx *Ctx, index string, init bool) {
 func EsLog(ctx *Ctx, msg string, dt time.Time) error {
 	data := EsLogPayload{Msg: msg, Dt: dt}
 	index := "sdslog"
-	payloadBytes, err := json.Marshal(data)
+	payloadBytes, err := jsoniter.Marshal(data)
 	if err != nil {
 		PrintfRedacted("JSON marshall error: %+v for index: %s, data: %+v\n", err, index, data)
 		return err
