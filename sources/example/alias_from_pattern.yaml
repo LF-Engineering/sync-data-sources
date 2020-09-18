@@ -2,6 +2,6 @@
 native:
   slug: alias-from-pattern
 aliases:
-- from: 'pattern:sds-hyperledger-*-jira'  # when you specify 'pattern:' prefix no everything after that refix will not be changed
+- from: 'pattern:sds-hyperledger-*-jira'  # when you specify 'pattern:' prefix everything after that prefix will not be changed
   to:                                     # 'sds-' prefix won't be added, '/' won't be changed to '-' and so on.
   - hyperledger/jira/all
