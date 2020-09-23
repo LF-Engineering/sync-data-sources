@@ -254,8 +254,8 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 		validateDataSource(ctx, fixture, index, &dataSource)
 		nEndpoints += len(dataSource.Endpoints)
 	}
-	if nEndpoints == 0 && nAliases == 0 {
-		lib.Fatalf("Fixture file %s must have at least one endpoint defined in 'endpoints'/'projects' key or at least one alias defined in 'aliases' key\n", fixtureFile)
+	if !fixture.AllowEmpty && nEndpoints == 0 && nAliases == 0 {
+		lib.Fatalf("Fixture file %s must have at least one endpoint defined in 'endpoints'/'projects' key or at least one alias/view defined in 'aliases' key (or you can set 'allow_empty: true' fixture flag)\n", fixtureFile)
 	}
 	st := make(map[string]lib.DataSource)
 	for _, dataSource := range fixture.DataSources {

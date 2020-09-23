@@ -1,0 +1,9 @@
+---
+native:
+  slug: lg/all-cncf-git
+allow_empty: true
+data_sources:
+- slug: git
+- slug: confluence
+- slug: gerrit
+- slug: slack
