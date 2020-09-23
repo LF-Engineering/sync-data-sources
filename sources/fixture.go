@@ -201,6 +201,7 @@ type Native struct {
 // Fixture contains full YAML structure of dev-analytics-api fixture files
 type Fixture struct {
 	Disabled    bool         `yaml:"disabled"`
+	AllowEmpty  bool         `yaml:"allow_empty"`
 	Native      Native       `yaml:"native"`
 	DataSources []DataSource `yaml:"data_sources"`
 	Aliases     []Alias      `yaml:"aliases"`
