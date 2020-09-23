@@ -24,6 +24,7 @@ type Task struct {
 	ExternalIndex       string
 	Project             string
 	ProjectP2O          bool
+	ProjectNoOrigin     bool
 	Projects            []EndpointProject
 	Millis              int64
 	Timeout             time.Duration

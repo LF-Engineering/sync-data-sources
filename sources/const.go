@@ -120,6 +120,9 @@ const GitHubOrg string = "github_org"
 // GitHubUser - github_user
 const GitHubUser string = "github_user"
 
+// ProjectNoOrigin - special marker to set project on all index data
+const ProjectNoOrigin string = "--no-origin--"
+
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{
 	-2: "task is configured as a copy from another index pattern",

@@ -84,6 +84,7 @@ type Endpoint struct {
 	ProjectP2O bool   // if true SDS will pass `--project "Project value"` to p2o.py
 	// if false, SDS will post-process index and will add `"project": "Project value"`
 	// column where `"origin": "Endpoint name"`
+	ProjectNoOrigin   bool
 	Timeout           time.Duration // specifies maximum running time for a given endpoint (if specified)
 	CopyFrom          CopyConfig    // specifies optional 'copy_from' configuration
 	AffiliationSource string
@@ -101,6 +102,7 @@ type RawEndpoint struct {
 	Only              []string          `yaml:"only"`
 	Project           string            `yaml:"project"`
 	ProjectP2O        *bool             `yaml:"p2o"`
+	ProjectNoOrigin   *bool             `yaml:"no_origin"`
 	Timeout           *string           `yaml:"timeout"`
 	Projects          []EndpointProject `yaml:"endpoint_projects"`
 	CopyFrom          CopyConfig        `yaml:"copy_from"`
@@ -145,8 +147,11 @@ func EndpointIncluded(ctx *Ctx, ep *RawEndpoint, origin string) (bool, int) {
 
 // Project holds project data and list of endpoints
 type Project struct {
-	Name          string        `yaml:"name"`
-	P2O           *bool         `yaml:"p2o"`
+	Name     string `yaml:"name"`
+	P2O      *bool  `yaml:"p2o"`
+	NoOrigin *bool  `yaml:"no_origin"` // if set, it will set project on a given index without conditional origin
+	// so it should be used only to set a single project withing an entire datasource
+	// possibly after copy_from usage
 	RawEndpoints  []RawEndpoint `yaml:"endpoints"`
 	HistEndpoints []RawEndpoint `yaml:"historical_endpoints"`
 }
