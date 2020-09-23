@@ -3,13 +3,16 @@ native:
   slug: lg/test
 data_sources:
 - slug: confluence
-  endpoints:
-  - name: https://wiki.hyperledger.org/
-    copy_from:
-      pattern: 'sds-hyperledger-*,-*-raw,-*-for-merge'
-      incremental: true
-      #pattern: 'sds-hyperledger-shared-*,-*-raw,-*-for-merge'
-      #pattern: sds-hyperledger-shared-confluence
-      must:
-      - column: space
-        value: '.*(ARIES|burrow).*'
+  projects:
+  - name: 'All'
+    no_origin: true
+    endpoints:
+    - name: https://wiki.hyperledger.org/
+      copy_from:
+        pattern: 'sds-hyperledger-*,-*-raw,-*-for-merge'
+        incremental: true
+        # pattern: 'sds-hyperledger-shared-*,-*-raw,-*-for-merge'
+        # pattern: sds-hyperledger-shared-confluence
+        must:
+        - column: space
+          value: '.*(ARIES|burrow).*'

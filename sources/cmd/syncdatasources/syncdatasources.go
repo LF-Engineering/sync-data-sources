@@ -413,6 +413,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 		for _, projectData := range dataSource.Projects {
 			project := projectData.Name
 			projectP2O := projectData.P2O
+			projectNoOrigin := projectData.NoOrigin
 			if project == "" {
 				lib.Fatalf("Empty project name entry in %+v, data source %+v, fixture %+v\n", projectData, dataSource, fixture)
 			}
@@ -425,8 +426,12 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					proj = rawEndpoint.Project
 				}
 				projP2O := projectP2O
+				projNoOrigin := projectNoOrigin
 				if rawEndpoint.ProjectP2O != nil {
 					projP2O = rawEndpoint.ProjectP2O
+				}
+				if rawEndpoint.ProjectNoOrigin != nil {
+					projNoOrigin = rawEndpoint.ProjectNoOrigin
 				}
 				name := rawEndpoint.Name
 				if projP2O != nil && *projP2O {
@@ -438,6 +443,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						Name:              name,
 						Project:           proj,
 						ProjectP2O:        projP2O,
+						ProjectNoOrigin:   projNoOrigin,
 						Flags:             rawEndpoint.Flags,
 						Skip:              rawEndpoint.Skip,
 						Only:              rawEndpoint.Only,
@@ -461,6 +467,10 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 			if rawEndpoint.ProjectP2O != nil {
 				p2o = *(rawEndpoint.ProjectP2O)
 			}
+			pno := false
+			if rawEndpoint.ProjectNoOrigin != nil {
+				pno = *(rawEndpoint.ProjectNoOrigin)
+			}
 			name := rawEndpoint.Name
 			if p2o && rawEndpoint.Project != "" {
 				name += ":::" + rawEndpoint.Project
@@ -478,6 +488,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						Name:              name,
 						Project:           rawEndpoint.Project,
 						ProjectP2O:        p2o,
+						ProjectNoOrigin:   pno,
 						Projects:          rawEndpoint.Projects,
 						Timeout:           tmout,
 						CopyFrom:          rawEndpoint.CopyFrom,
@@ -582,6 +593,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              id,
 							Project:           rawEndpoint.Project,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -633,6 +645,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              repo,
 							Project:           prj,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -678,6 +691,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              repo,
 							Project:           prj,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -737,6 +751,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              name,
 							Project:           rawEndpoint.Project,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -832,6 +847,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              name,
 							Project:           rawEndpoint.Project,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -925,6 +941,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							Name:              name,
 							Project:           rawEndpoint.Project,
 							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
 							Projects:          rawEndpoint.Projects,
 							Timeout:           tmout,
 							CopyFrom:          rawEndpoint.CopyFrom,
@@ -948,6 +965,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						Name:              name,
 						Project:           rawEndpoint.Project,
 						ProjectP2O:        p2o,
+						ProjectNoOrigin:   pno,
 						Projects:          rawEndpoint.Projects,
 						Timeout:           tmout,
 						CopyFrom:          rawEndpoint.CopyFrom,
@@ -1194,6 +1212,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					lib.Task{
 						Project:           endpoint.Project,
 						ProjectP2O:        endpoint.ProjectP2O,
+						ProjectNoOrigin:   endpoint.ProjectNoOrigin,
 						Projects:          endpoint.Projects,
 						Timeout:           endpoint.Timeout,
 						CopyFrom:          endpoint.CopyFrom,
@@ -1630,6 +1649,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 							lib.Task{
 								Project:           "",
 								ProjectP2O:        false,
+								ProjectNoOrigin:   false,
 								Endpoint:          endpoint,
 								Config:            randomSdsTask.Config,
 								DsSlug:            ds,
@@ -1682,6 +1702,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					lib.Task{
 						Project:           "",
 						ProjectP2O:        false,
+						ProjectNoOrigin:   false,
 						Endpoint:          endpoint,
 						Config:            sdsTask.Config,
 						DsSlug:            sdsTask.DsSlug,
@@ -4617,25 +4638,8 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 		if ctx.Debug > 0 {
 			lib.Printf("Setting project %+v origin (index '%s')\n", conf, index)
 		}
-		lastEpoch := int64(0)
-		must := getConditionJSON(conf.Must, origin, false)
-		mustPartial := ""
-		if must != "" {
-			mustPartial = "," + must
-		}
-		mustNot := getConditionJSON(conf.MustNot, origin, false)
-		optionalMustNot := ""
-		mustNotPartial := ""
-		if mustNot != "" {
-			optionalMustNot = `,"must_not":[` + mustNot + "]"
-			mustNotPartial = "," + mustNot
-		}
-		if !ctx.SkipProjectTS {
-			lastEpoch = lastProjectDate(ctx, index, origin, must, mustNot, true)
-		}
 		projectEpoch := time.Now().Unix()
 		var err error
-		payloadBytes := []byte{}
 		data := ""
 		var projectVal string
 		if project == "(null)" {
@@ -4643,27 +4647,53 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 		} else {
 			projectVal = `\"` + jsonEscape(project) + `\"`
 		}
-		if lastEpoch == 0 {
+		lastEpoch := int64(0)
+		payloadBytes := []byte{}
+		if origin == lib.ProjectNoOrigin {
 			data = fmt.Sprintf(
-				`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must":[{"term":{"origin":"%s"}}%s]%s}}}`,
+				`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"match_all":{}}}`,
 				projectVal,
 				projectEpoch,
-				jsonEscape(origin),
-				mustPartial,
-				optionalMustNot,
 			)
 			payloadBytes = []byte(data)
 		} else {
-			data = fmt.Sprintf(
-				`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":[{"range":{"project_ts":{"lte":%d}}}%s],"must":[{"term":{"origin":"%s"}}%s]}}}`,
-				projectVal,
-				projectEpoch,
-				lastEpoch,
-				mustNotPartial,
-				jsonEscape(origin),
-				mustPartial,
-			)
-			payloadBytes = []byte(data)
+			must := getConditionJSON(conf.Must, origin, false)
+			mustPartial := ""
+			if must != "" {
+				mustPartial = "," + must
+			}
+			mustNot := getConditionJSON(conf.MustNot, origin, false)
+			optionalMustNot := ""
+			mustNotPartial := ""
+			if mustNot != "" {
+				optionalMustNot = `,"must_not":[` + mustNot + "]"
+				mustNotPartial = "," + mustNot
+			}
+			if !ctx.SkipProjectTS {
+				lastEpoch = lastProjectDate(ctx, index, origin, must, mustNot, true)
+			}
+			if lastEpoch == 0 {
+				data = fmt.Sprintf(
+					`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must":[{"term":{"origin":"%s"}}%s]%s}}}`,
+					projectVal,
+					projectEpoch,
+					jsonEscape(origin),
+					mustPartial,
+					optionalMustNot,
+				)
+				payloadBytes = []byte(data)
+			} else {
+				data = fmt.Sprintf(
+					`{"script":{"inline":"ctx._source.project=%s;ctx._source.project_ts=%d;"},"query":{"bool":{"must_not":[{"range":{"project_ts":{"lte":%d}}}%s],"must":[{"term":{"origin":"%s"}}%s]}}}`,
+					projectVal,
+					projectEpoch,
+					lastEpoch,
+					mustNotPartial,
+					jsonEscape(origin),
+					mustPartial,
+				)
+				payloadBytes = []byte(data)
+			}
 		}
 		payloadBody := bytes.NewReader(payloadBytes)
 		method := lib.Post
@@ -5516,13 +5546,23 @@ func setTaskResultProjects(result *lib.TaskResult, task *lib.Task) {
 			result.Projects = append(result.Projects, ep)
 		}
 	} else {
-		result.Projects = append(
-			result.Projects,
-			lib.EndpointProject{
-				Name:   task.Project,
-				Origin: mapOrigin(task.Endpoint, task.DsSlug),
-			},
-		)
+		if task.ProjectNoOrigin {
+			result.Projects = append(
+				result.Projects,
+				lib.EndpointProject{
+					Name:   task.Project,
+					Origin: lib.ProjectNoOrigin,
+				},
+			)
+		} else {
+			result.Projects = append(
+				result.Projects,
+				lib.EndpointProject{
+					Name:   task.Project,
+					Origin: mapOrigin(task.Endpoint, task.DsSlug),
+				},
+			)
+		}
 	}
 }
 
