@@ -12,6 +12,7 @@ data_sources:
         value: '.*burrow.*'
     copy_from:
       pattern: sds-hyperledger-shared-confluence
+      incremental: true
       must_not:
       - column: space
         value: '.*(ARIES|avalon|BESU|cactus|caliper|cello|explorer|fabric|GRID|indy|iroha|quilt|sawtooth|transact|ursa).*'
