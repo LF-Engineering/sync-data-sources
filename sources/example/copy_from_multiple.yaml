@@ -1,0 +1,10 @@
+---
+native:
+  slug: lg/all-cncf-git
+data_sources:
+- slug: git
+  endpoints:
+  - name: https://github.com/cncf
+    copy_from:
+      pattern: 'sds-cncf-*-git,-*-raw,-*-for-merge'
+      incremental: false  # will always copy all data, you can skip this flag because this is the default setting

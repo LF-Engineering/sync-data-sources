@@ -5164,9 +5164,9 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	if ctx.SkipCopyFrom || (ctx.DryRun && !ctx.DryRunAllowCopyFrom) {
 		return
 	}
-	scrollSize := 500
-	scrollTime := "10m"
-	bulkSize := 500
+	scrollSize := 1000
+	scrollTime := "15m"
+	bulkSize := 1000
 	conf := task.CopyFrom
 	origin := mapOrigin(task.Endpoint, task.DsSlug)
 	if ctx.Debug > 0 {
@@ -5196,13 +5196,35 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	resp, err := http.DefaultClient.Do(req)
-	_ = resp.Body.Close()
 	if err != nil {
 		lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
 		return
 	}
+	_ = resp.Body.Close()
 	if resp.StatusCode == 200 {
 		lib.Printf("Dropped conflicting alias: %s\n", index)
+	}
+	// Delete destination index if not incremental mode
+	if !conf.Incremental {
+		method = lib.Delete
+		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, index)
+		rurl = fmt.Sprintf("/%s", index)
+		req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		_ = resp.Body.Close()
+		if resp.StatusCode == 200 {
+			lib.Printf("Dropped index: %s (no incremental mode set)\n", index)
+		} else {
+			lib.Printf("WARNING: Failed to drop index: %s (will use incremental mode)\n", index)
+		}
 	}
 	pattern := conf.Pattern
 	err = copyMapping(ctx, pattern, index)

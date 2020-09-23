@@ -7,6 +7,7 @@ data_sources:
   - name: https://wiki.hyperledger.org/
     copy_from:
       pattern: 'sds-hyperledger-*,-*-raw,-*-for-merge'
+      incremental: true
       #pattern: 'sds-hyperledger-shared-*,-*-raw,-*-for-merge'
       #pattern: sds-hyperledger-shared-confluence
       must:

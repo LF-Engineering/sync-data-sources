@@ -9,6 +9,7 @@ data_sources:
     - name: https://wiki.hyperledger.org/
       copy_from:
         pattern: sds-hyperledger-shared-confluence
+        incremental: true
         must:
         - column: space
           value: '.*ARIES.*'
