@@ -6103,6 +6103,14 @@ func detAffRange(ctx *lib.Ctx) (err error) {
 	return
 }
 
+func cacheTopContributors(ctx *lib.Ctx) (err error) {
+	if ctx.SkipCacheTopContributors || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowCacheTopContributors) {
+		return
+	}
+	err = executeAffiliationsAPICall(ctx, "/v1/affiliation/cache_top_contributors")
+	return
+}
+
 func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	// We want this API to be called even in ONLY p2o mode - because it is tied to a single endpoint enrichment
 	// if ctx.SkipEnrichDS || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowEnrichDS) {
@@ -6147,6 +6155,10 @@ func main() {
 		err = detAffRange(&ctx)
 		if err != nil {
 			lib.Printf("Detect affiliations ranges result: %+v\n", err)
+		}
+		err = cacheTopContributors(&ctx)
+		if err != nil {
+			lib.Printf("Cache top contributors result: %+v\n", err)
 		}
 		dtEnd := time.Now()
 		lib.Printf("Sync time: %v\n", dtEnd.Sub(dtStart))
