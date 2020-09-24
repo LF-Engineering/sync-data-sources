@@ -5232,7 +5232,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 	}
 	_ = resp.Body.Close()
 	if resp.StatusCode == 200 {
-		lib.Printf("Dropped conflicting alias: %s\n", index)
+		lib.Printf("copy_from: dropped conflicting alias: %s\n", index)
 	}
 	// Delete destination index if not incremental mode
 	if !conf.Incremental {
@@ -5251,15 +5251,15 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		}
 		_ = resp.Body.Close()
 		if resp.StatusCode == 200 {
-			lib.Printf("Dropped index: %s (no incremental mode set)\n", index)
+			lib.Printf("copy_from: dropped index: %s (no incremental mode set)\n", index)
 		} else {
-			lib.Printf("WARNING: Failed to drop index: %s (will use incremental mode)\n", index)
+			lib.Printf("WARNING: copy_from: failed to drop index: %s (will use incremental mode)\n", index)
 		}
 	}
 	pattern := conf.Pattern
 	err = copyMapping(ctx, pattern, index)
 	if err != nil {
-		lib.Printf("copyMapping(%s,%s): %v\n", pattern, index, err)
+		lib.Printf("copy_from: copyMapping(%s,%s): %v\n", pattern, index, err)
 	}
 	// Can be used to cleanup origin based copies (reset them)
 	// deleted := deleteByQuery(ctx, index, "origin:\""+origin+"\"")
