@@ -32,7 +32,6 @@ environments:
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
   - name: prod-korg
-    disabled: true                      # disable korg for now
     cron: '0 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
