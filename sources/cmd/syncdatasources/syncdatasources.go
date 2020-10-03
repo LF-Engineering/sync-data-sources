@@ -5766,8 +5766,14 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if task.PairProgramming {
 			mainEnv[envPrefix+"PAIR_PROGRAMMING"] = "1"
 		}
-		if ctx.CmdDebug > 0 {
-			mainEnv[envPrefix+"DEBUG"] = strconv.Itoa(ctx.CmdDebug)
+		switch ctx.CmdDebug {
+		case 0:
+		case 1, 2:
+			mainEnv[envPrefix+"DEBUG"] = "1"
+		default:
+			if ctx.CmdDebug > 0 {
+				mainEnv[envPrefix+"DEBUG"] = strconv.Itoa(ctx.CmdDebug - 1)
+			}
 		}
 		if ctx.EsBulkSize > 0 {
 			mainEnv[envPrefix+"ES_BULK_SIZE"] = strconv.Itoa(ctx.EsBulkSize)

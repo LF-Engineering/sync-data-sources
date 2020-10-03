@@ -1,0 +1,23 @@
+---
+native:
+  slug: lg/dads
+data_sources:
+- slug: jira
+  projects:
+  - name: yangtools
+    #p2o: true
+    endpoints:
+    - name: https://jira.opendaylight.org
+  config:
+  - name: dads
+    value: true
+  - name: multi-origin
+    value: true
+  - name: es-bulk-size
+    value: 1000
+  - name: es-scroll-size
+    value: 1000
+  - name: es-scroll-wait
+    value: 15m
+  - name: db-bulk-size
+    value: 1000
