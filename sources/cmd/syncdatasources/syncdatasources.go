@@ -37,9 +37,16 @@ var (
 	gRateMtx      *sync.Mutex
 	gToken        string
 	gHint         int
+	// if a given source is not in dadsTasks - it only supports legacy p2o then
+	// if entry is true - all endpoints using this DS will use the new dads command
+	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
+	// Currently we just have jira, which must be enabled per-projetc in fixture files
+	dadsTasks = map[string]bool{lib.Jira: false}
 )
 
-const cOrigin = "sds"
+const (
+	cOrigin = "sds"
+)
 
 func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	if ctx.Debug > 0 {
@@ -1902,7 +1909,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 
 		// Handle DS endpoint
-		eps := massageEndpoint(tsk.Endpoint, ds)
+		eps, _ := massageEndpoint(tsk.Endpoint, ds, false)
 		if len(eps) == 0 {
 			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
@@ -1913,7 +1920,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 
 		// Handle DS config options
-		multiConfig, fail := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
+		multiConfig, _, fail := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
 		if fail == true {
 			result[3] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
 			return
@@ -3611,7 +3618,10 @@ func addSSHPrivKey(ctx *lib.Ctx, key, idxSlug string) bool {
 }
 
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
-func massageEndpoint(endpoint string, ds string) (e []string) {
+func massageEndpoint(endpoint string, ds string, dads bool) (e []string, env map[string]string) {
+	defer func() {
+		env = p2oEndpoint2dadsEndpoint(e, ds, dads)
+	}()
 	defaults := map[string]struct{}{
 		lib.Git:          {},
 		lib.Confluence:   {},
@@ -3702,7 +3712,10 @@ func mergeTokens(ctx *lib.Ctx, inf string, tokens1, tokens2 []string) (tokens []
 
 // massageConfig - this function makes sure that given config options are valid for a given data source
 // it also ensures some essential options are enabled and eventually reformats config
-func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []lib.MultiConfig, fail bool) {
+func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []lib.MultiConfig, env map[string]string, fail bool) {
+	defer func() {
+		c, env = p2oConfig2dadsConfig(c, ds)
+	}()
 	m := make(map[string]struct{})
 	if ds == lib.GitHub {
 		for _, cfg := range *config {
@@ -3826,11 +3839,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				redactedValue = lib.Redacted
 			}
 			m[name] = struct{}{}
-			if name == lib.BackendUser {
-				c = append(c, lib.MultiConfig{Name: "-u", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
-			} else if name == lib.BackendPassword {
-				c = append(c, lib.MultiConfig{Name: "-p", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
-			} else if name == lib.APIToken {
+			if name == lib.APIToken {
 				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
 			} else {
 				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
@@ -4083,6 +4092,76 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 	} else {
 		fail = true
 	}
+	return
+}
+
+// p2oEndpoint2dadsEndpoint - map p2o.py endpoint to dads endpoint
+func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]string) {
+	all, ok := dadsTasks[ds]
+	if !ok {
+		return
+	}
+	// fmt.Printf("p2oEndpoint2dadsEndpoint: dads is %v\n", dads)
+	if !all && !dads {
+		return
+	}
+	env = make(map[string]string)
+	env["DA_DS"] = ds
+	prefix := "DA_" + strings.ToUpper(ds) + "_"
+	switch ds {
+	case lib.Jira:
+		env[prefix+"URL"] = e[0]
+	default:
+		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
+	}
+	// fmt.Printf("%+v --> %+v\n", e, env)
+	return
+}
+
+// p2oConfig2dadsConfig - map p2o.py configuration to dads configuration
+func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig, env map[string]string) {
+	all, ok := dadsTasks[ds]
+	if !ok {
+		oc = c
+		return
+	}
+	dads := all
+	if !all {
+		for _, i := range c {
+			if i.Name == lib.DADS && len(i.Value) > 0 && i.Value[0] != "" && i.Value[0] != lib.Nil {
+				dads = true
+			}
+		}
+		// fmt.Printf("p2oConfig2dadsConfig: check for DADS %+v --> %v\n", c, dads)
+	}
+	if !all && !dads {
+		return
+	}
+	env = make(map[string]string)
+	env["DA_DS"] = ds
+	prefix := "DA_" + strings.ToUpper(ds) + "_"
+	for _, i := range c {
+		opt := i.Name
+		switch opt {
+		case "-t", "api-token":
+			opt = "token"
+		case "from-date":
+			opt = "date-from"
+		case "to-date":
+			opt = "date-to"
+		}
+		envOpt := prefix + strings.ToUpper(strings.Replace(opt, "-", "_", -1))
+		envVal := strings.Join(i.Value, " ")
+		if envVal == "" {
+			envVal = "1"
+		}
+		if envVal == lib.Nil {
+			envVal = ""
+		}
+		env[envOpt] = envVal
+	}
+	oc = []lib.MultiConfig{}
+	// fmt.Printf("%+v --> %+v,%+v\n", c, oc, env)
 	return
 }
 
@@ -5581,6 +5660,25 @@ func taskFilteredOut(ctx *lib.Ctx, tsk *lib.Task) bool {
 	return false
 }
 
+func isDADS(task *lib.Task) bool {
+	all, ok := dadsTasks[strings.Split(task.DsSlug, "/")[0]]
+	if !ok {
+		return false
+	}
+	if all {
+		return true
+	}
+	dads := false
+	for _, cfg := range task.Config {
+		if cfg.Name == lib.DADS && cfg.Value != "" && cfg.Value != lib.Nil {
+			dads = true
+			break
+		}
+	}
+	// fmt.Printf("isDADS: check for DADS %+v --> %v\n", task.Config, dads)
+	return dads
+}
+
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
@@ -5598,6 +5696,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		setTaskResultProjects(&result, &task)
 	}
 	// Handle DS slug
+	dads := isDADS(&task)
 	ds := task.DsSlug
 	fds := task.DsFullSlug
 	idxSlug := "sds-" + task.FxSlug + "-" + fds
@@ -5632,112 +5731,174 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		result.Code[1] = -2
 		return
 	}
-	commandLine := []string{
-		"p2o.py",
-		"--enrich",
-		"--index",
-		idxSlug + "-raw",
-		"--index-enrich",
-		idxSlug,
-		"-e",
-		ctx.ElasticURL,
+	mainEnv := make(map[string]string)
+	var (
+		commandLine []string
+		envPrefix   string
+	)
+	if dads {
+		commandLine = []string{"dads"}
+		envPrefix = "DA_" + strings.ToUpper(strings.Split(task.DsSlug, "/")[0]) + "_"
+		mainEnv[envPrefix+"ENRICH"] = "1"
+		mainEnv[envPrefix+"RAW_INDEX"] = idxSlug + "-raw"
+		mainEnv[envPrefix+"RICH_INDEX"] = idxSlug
+		mainEnv[envPrefix+"ES_URL"] = ctx.ElasticURL
+	} else {
+		commandLine = []string{
+			"p2o.py",
+			"--enrich",
+			"--index",
+			idxSlug + "-raw",
+			"--index-enrich",
+			idxSlug,
+			"-e",
+			ctx.ElasticURL,
+		}
 	}
 	redactedCommandLine := make([]string, len(commandLine))
 	copy(redactedCommandLine, commandLine)
-	redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
-	if affs {
-		refresh := []string{"--only-enrich", "--refresh-identities", "--no_incremental"}
-		commandLine = append(commandLine, refresh...)
-		redactedCommandLine = append(redactedCommandLine, refresh...)
-	}
-	if task.PairProgramming {
-		commandLine = append(commandLine, "--pair-programming")
-		redactedCommandLine = append(redactedCommandLine, "--pair-programming")
-	}
-	// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
-	if !ctx.Silent {
-		commandLine = append(commandLine, "-g")
-		redactedCommandLine = append(redactedCommandLine, "-g")
-	}
-	// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
-	if ctx.CmdDebug > 0 {
-		commandLine = append(commandLine, "--debug")
-		redactedCommandLine = append(redactedCommandLine, "--debug")
-	}
-	if ctx.EsBulkSize > 0 {
-		commandLine = append(commandLine, "--bulk-size")
-		commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
-		redactedCommandLine = append(redactedCommandLine, "--bulk-size")
-		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
-	}
-	if ctx.ScrollSize > 0 {
-		commandLine = append(commandLine, "--scroll-size")
-		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
-		redactedCommandLine = append(redactedCommandLine, "--scroll-size")
-		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
-	}
-	if ctx.ScrollWait > 0 {
-		commandLine = append(commandLine, "--scroll-wait")
-		commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
-		redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
-		redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
-	}
-	if !ctx.SkipSH {
-		commandLine = append(
-			commandLine,
-			[]string{
-				"--db-host",
-				ctx.ShHost,
-				"--db-sortinghat",
-				ctx.ShDB,
-				"--db-user",
-				ctx.ShUser,
-				"--db-password",
-				ctx.ShPass,
-			}...,
-		)
-		redactedCommandLine = append(
-			redactedCommandLine,
-			[]string{
-				"--db-host",
-				lib.Redacted,
-				"--db-sortinghat",
-				lib.Redacted,
-				"--db-user",
-				lib.Redacted,
-				"--db-password",
-				lib.Redacted,
-			}...,
-		)
-	}
-	if strings.Contains(ds, "/") {
-		ary := strings.Split(ds, "/")
-		if len(ary) != 2 {
-			lib.Printf("%s: %+v: %s\n", ds, task, lib.ErrorStrings[1])
-			result.Code[1] = 1
-			return
+	if dads {
+		if affs {
+			mainEnv[envPrefix+"NO_RAW"] = "1"
+			mainEnv[envPrefix+"REFRESH_AFFS"] = "1"
+			mainEnv[envPrefix+"FORCE_FULL"] = "1"
 		}
-		commandLine = append(commandLine, ary[0])
-		commandLine = append(commandLine, "--category")
-		commandLine = append(commandLine, ary[1])
-		redactedCommandLine = append(redactedCommandLine, ary[0])
-		redactedCommandLine = append(redactedCommandLine, "--category")
-		redactedCommandLine = append(redactedCommandLine, ary[1])
-		ds = ary[0]
+		if task.PairProgramming {
+			mainEnv[envPrefix+"PAIR_PROGRAMMING"] = "1"
+		}
+		if ctx.CmdDebug > 0 {
+			mainEnv[envPrefix+"DEBUG"] = strconv.Itoa(ctx.CmdDebug)
+		}
+		if ctx.EsBulkSize > 0 {
+			mainEnv[envPrefix+"ES_BULK_SIZE"] = strconv.Itoa(ctx.EsBulkSize)
+		}
+		if ctx.ScrollSize > 0 {
+			mainEnv[envPrefix+"ES_SCROLL_SIZE"] = strconv.Itoa(ctx.ScrollSize)
+		}
+		if ctx.ScrollWait > 0 {
+			mainEnv[envPrefix+"ES_SCROLL_WAIT"] = strconv.Itoa(ctx.ScrollWait) + "s"
+		}
+		if !ctx.SkipSH {
+			mainEnv[envPrefix+"DB_HOST"] = ctx.ShHost
+			mainEnv[envPrefix+"DB_NAME"] = ctx.ShDB
+			mainEnv[envPrefix+"DB_USER"] = ctx.ShUser
+			mainEnv[envPrefix+"DB_PASS"] = ctx.ShPass
+			if ctx.ShPort != "" {
+				mainEnv[envPrefix+"DB_PORT"] = ctx.ShPort
+			}
+		}
+		if strings.Contains(ds, "/") {
+			ary := strings.Split(ds, "/")
+			if len(ary) != 2 {
+				lib.Printf("%s: %+v: %s\n", ds, task, lib.ErrorStrings[1])
+				result.Code[1] = 1
+				return
+			}
+			mainEnv[envPrefix+"CATEGORY"] = ary[1]
+			ds = ary[0]
+		}
 	} else {
-		commandLine = append(commandLine, ds)
-		redactedCommandLine = append(redactedCommandLine, ds)
+		redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
+		if affs {
+			refresh := []string{"--only-enrich", "--refresh-identities", "--no_incremental"}
+			commandLine = append(commandLine, refresh...)
+			redactedCommandLine = append(redactedCommandLine, refresh...)
+		}
+		if task.PairProgramming {
+			commandLine = append(commandLine, "--pair-programming")
+			redactedCommandLine = append(redactedCommandLine, "--pair-programming")
+		}
+		// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
+		if !ctx.Silent {
+			commandLine = append(commandLine, "-g")
+			redactedCommandLine = append(redactedCommandLine, "-g")
+		}
+		// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
+		if ctx.CmdDebug > 0 {
+			commandLine = append(commandLine, "--debug")
+			redactedCommandLine = append(redactedCommandLine, "--debug")
+		}
+		if ctx.EsBulkSize > 0 {
+			commandLine = append(commandLine, "--bulk-size")
+			commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
+			redactedCommandLine = append(redactedCommandLine, "--bulk-size")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
+		}
+		if ctx.ScrollSize > 0 {
+			commandLine = append(commandLine, "--scroll-size")
+			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
+			redactedCommandLine = append(redactedCommandLine, "--scroll-size")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
+		}
+		if ctx.ScrollWait > 0 {
+			commandLine = append(commandLine, "--scroll-wait")
+			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
+			redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
+			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
+		}
+		if !ctx.SkipSH {
+			commandLine = append(
+				commandLine,
+				[]string{
+					"--db-host",
+					ctx.ShHost,
+					"--db-sortinghat",
+					ctx.ShDB,
+					"--db-user",
+					ctx.ShUser,
+					"--db-password",
+					ctx.ShPass,
+				}...,
+			)
+			redactedCommandLine = append(
+				redactedCommandLine,
+				[]string{
+					"--db-host",
+					lib.Redacted,
+					"--db-sortinghat",
+					lib.Redacted,
+					"--db-user",
+					lib.Redacted,
+					"--db-password",
+					lib.Redacted,
+				}...,
+			)
+		}
+		if strings.Contains(ds, "/") {
+			ary := strings.Split(ds, "/")
+			if len(ary) != 2 {
+				lib.Printf("%s: %+v: %s\n", ds, task, lib.ErrorStrings[1])
+				result.Code[1] = 1
+				return
+			}
+			commandLine = append(commandLine, ary[0])
+			commandLine = append(commandLine, "--category")
+			commandLine = append(commandLine, ary[1])
+			redactedCommandLine = append(redactedCommandLine, ary[0])
+			redactedCommandLine = append(redactedCommandLine, "--category")
+			redactedCommandLine = append(redactedCommandLine, ary[1])
+			ds = ary[0]
+		} else {
+			commandLine = append(commandLine, ds)
+			redactedCommandLine = append(redactedCommandLine, ds)
+		}
 	}
 	// Handle DS endpoint
-	eps := massageEndpoint(task.Endpoint, ds)
+	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads)
 	if len(eps) == 0 {
 		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
 		result.Code[1] = 2
 		return
 	}
-	for _, ep := range eps {
-		commandLine = append(commandLine, ep)
-		redactedCommandLine = append(redactedCommandLine, ep)
+	if dads {
+		for k, v := range epEnv {
+			mainEnv[k] = v
+		}
+	} else {
+		for _, ep := range eps {
+			commandLine = append(commandLine, ep)
+			redactedCommandLine = append(redactedCommandLine, ep)
+		}
 	}
 	sEp := strings.Join(eps, " ")
 	if !ctx.SkipEsData && !ctx.SkipCheckFreq {
@@ -5750,36 +5911,50 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 	}
 	// Handle DS config options
-	multiConfig, fail := massageConfig(ctx, &(task.Config), ds, idxSlug)
+	multiConfig, cfgEnv, fail := massageConfig(ctx, &(task.Config), ds, idxSlug)
 	if fail == true {
 		lib.Printf("%+v: %s\n", task, lib.ErrorStrings[3])
 		result.Code[1] = 3
 		return
 	}
-	for _, mcfg := range multiConfig {
-		if strings.HasPrefix(mcfg.Name, "-") {
-			commandLine = append(commandLine, mcfg.Name)
-		} else {
-			commandLine = append(commandLine, "--"+mcfg.Name)
+	if dads {
+		for k, v := range cfgEnv {
+			mainEnv[k] = v
 		}
-		for _, val := range mcfg.Value {
-			if val != "" {
-				commandLine = append(commandLine, val)
+		// Handle DS project
+		if task.ProjectP2O && task.Project != "" {
+			mainEnv[envPrefix+"PROJECT"] = task.Project
+		}
+	} else {
+		for _, mcfg := range multiConfig {
+			if strings.HasPrefix(mcfg.Name, "-") {
+				commandLine = append(commandLine, mcfg.Name)
+			} else {
+				commandLine = append(commandLine, "--"+mcfg.Name)
+			}
+			for _, val := range mcfg.Value {
+				if val != "" {
+					commandLine = append(commandLine, val)
+				}
+			}
+			for _, val := range mcfg.RedactedValue {
+				if val != "" {
+					redactedCommandLine = append(redactedCommandLine, val)
+				}
 			}
 		}
-		for _, val := range mcfg.RedactedValue {
-			if val != "" {
-				redactedCommandLine = append(redactedCommandLine, val)
-			}
+		// Handle DS project
+		if task.ProjectP2O && task.Project != "" {
+			commandLine = append(commandLine, "--project", task.Project)
+			redactedCommandLine = append(redactedCommandLine, "--project", task.Project)
 		}
 	}
-	// Handle DS project
-	if task.ProjectP2O && task.Project != "" {
-		commandLine = append(commandLine, "--project", task.Project)
-		redactedCommandLine = append(redactedCommandLine, "--project", task.Project)
-	}
+	mainEnv["PROJECT_SLUG"] = task.AffiliationSource
+	mainEnv[envPrefix+"PROJECT_SLUG"] = task.AffiliationSource
 	result.CommandLine = strings.Join(commandLine, " ")
 	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
+	result.Env = mainEnv
+	redactedEnv := lib.FilterRedacted(fmt.Sprintf("%+v", mainEnv))
 	if affs && tMtx.OrderMtx != nil {
 		tMtx.TaskOrderMtx.Lock()
 		tmtx, ok := tMtx.OrderMtx[idx]
@@ -5845,7 +6020,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			str string
 		)
 		if !ctx.SkipP2O {
-			str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": task.AffiliationSource}, &task.Timeout)
+			str, err = lib.ExecCommand(ctx, commandLine, mainEnv, &task.Timeout)
 		}
 		// str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 		// p2o.py do not return error even if its backend execution fails
@@ -5860,6 +6035,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			pyE = true
 			err = fmt.Errorf("%s", strippedStr)
 		}
+		if strings.Contains(str, lib.DadsException) {
+			pyE = true
+			err = fmt.Errorf("%s %s", redactedEnv, strippedStr)
+		}
 		if err == nil {
 			if ctx.Debug > 0 {
 				dtEnd := time.Now()
@@ -5869,7 +6048,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 		if isTimeoutError(err) {
 			dtEnd := time.Now()
-			lib.Printf("Timeout error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
+			lib.Printf("Timeout error for %+v %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
 			str += fmt.Sprintf(": %+v", err)
 			result.Code[1] = 6
 			result.Err = fmt.Errorf("timeout: last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
@@ -5883,9 +6062,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 		dtEnd := time.Now()
 		if pyE {
-			lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
+			lib.Printf("Command error for %+v %+v (took %v, tried %d times): %+v\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
 		} else {
-			lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
+			lib.Printf("Error for %+v %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
 			str += fmt.Sprintf(": %+v", err)
 		}
 		result.Code[1] = 4

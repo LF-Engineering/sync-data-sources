@@ -140,6 +140,7 @@ type TaskResult struct {
 	Code                [2]int
 	CommandLine         string
 	RedactedCommandLine string
+	Env                 map[string]string
 	Retries             int
 	Affs                bool
 	Err                 error
