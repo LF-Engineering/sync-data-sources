@@ -57,6 +57,9 @@ const RocketChat string = "rocketchat"
 // PyException - string that identified python exception
 const PyException string = "Traceback (most recent call last)"
 
+// DadsException - string that identified dads exception
+const DadsException string = "DA_DS_ERROR(time="
+
 // BackendUser - backend-user
 const BackendUser string = "backend-user"
 
@@ -122,6 +125,12 @@ const GitHubUser string = "github_user"
 
 // ProjectNoOrigin - special marker to set project on all index data
 const ProjectNoOrigin string = "--no-origin--"
+
+// Nil - used to specify an empty environment variable in the fixture (fo dads)
+const Nil string = "<nil>"
+
+// DADS - config flag in the fixture that allows selecting when to run dads instead of p2o
+const DADS string = "dads"
 
 // ErrorStrings - array of possible errors returned from enrich tasks
 var ErrorStrings = map[int]string{

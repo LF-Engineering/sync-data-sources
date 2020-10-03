@@ -1,0 +1,39 @@
+---
+native:
+  slug: lg/dads
+data_sources:
+- slug: jira
+  projects:
+  - name: yangtools
+    p2o: true
+    endpoints:
+    - name: https://jira.opendaylight.org
+  config:
+  - name: dads
+    value: true
+  - name: from-date
+    value: '2020-09-01'
+  - name: multi-origin
+    value: true
+  - name: debug
+    value: 1
+  - name: debug-sql
+    value: 2
+  - name: retry
+    value: 3
+  - name: ncpus
+    value: 8
+  - name: es-bulk-size
+    value: 1000
+  - name: es-scroll-size
+    value: 1000
+  - name: es-scroll-wait
+    value: 15m
+  - name: db-bulk-size
+    value: 1000
+  - name: st    # single threaded mode
+    value: '<nil>'  # setting <nil> means creating an empty env variable
+  #- name: ncpus-scale
+  #  value: 0.2
+  #- name: tag
+  #  value: tag the data
