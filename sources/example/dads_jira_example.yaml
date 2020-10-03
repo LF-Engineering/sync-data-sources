@@ -21,3 +21,5 @@ data_sources:
     value: 15m
   - name: db-bulk-size
     value: 1000
+  - name: page-size
+    value: 1000
