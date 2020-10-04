@@ -45,7 +45,14 @@ cd .. || exit 11
 if [ -z "$SKIP_BUILD" ]
 then
   echo "Building"
-  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" . || exit 12
+  cp ../da-ds/uuid.py ./sources/ || exit 14
+  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" .
+  bs=$?
+  rm -f ./sources/uuid.py
+  if [ ! "$bs" = "0" ]
+  then
+    exit 12
+  fi
 fi
 
 if [ -z "$SKIP_PUSH" ]
