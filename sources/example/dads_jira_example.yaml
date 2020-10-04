@@ -11,6 +11,8 @@ data_sources:
   config:
   - name: dads
     value: true
+  - name: legacy-uuid
+    value: true
   - name: multi-origin
     value: true
   - name: es-bulk-size
