@@ -17,6 +17,7 @@ type Task struct {
 	MaxFreq             time.Duration
 	CommandLine         string
 	RedactedCommandLine string
+	Env                 map[string]string
 	Retries             int
 	Err                 error
 	Duration            time.Duration
@@ -41,9 +42,13 @@ func (t Task) String() string {
 		configStr += cfg.Name + " "
 	}
 	configStr += "]"
+	envStr := ""
+	for k, v := range t.Env {
+		envStr += k + "=" + FilterRedacted(v) + " "
+	}
 	return fmt.Sprintf(
-		"{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d Error:%v Duration: %v MaxFreq: %v ExternalIndex: %s AffSrc:%s}",
-		t.Endpoint, t.Project, t.ProjectP2O, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr,
+		"%s{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d Error:%v Duration: %v MaxFreq: %v ExternalIndex: %s AffSrc:%s}",
+		envStr, t.Endpoint, t.Project, t.ProjectP2O, t.DsSlug, t.DsFullSlug, t.FxSlug, t.FxFn, configStr,
 		t.RedactedCommandLine, t.Retries, t.Err != nil, t.Duration, t.MaxFreq, t.ExternalIndex, t.AffiliationSource,
 	)
 }
@@ -55,7 +60,11 @@ func (t Task) ShortString() string {
 
 // ShortStringCmd - output quick endpoint info (with command line)
 func (t Task) ShortStringCmd(ctx *Ctx) string {
-	s := fmt.Sprintf("%s:%s / %s:%s [%s]: ", t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint, t.RedactedCommandLine)
+	envStr := ""
+	for k, v := range t.Env {
+		envStr += k + "=" + FilterRedacted(v) + " "
+	}
+	s := fmt.Sprintf("%s%s:%s / %s:%s [%s]: ", envStr, t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint, t.RedactedCommandLine)
 	if t.Err == nil {
 		s += "succeeded"
 		if t.Retries > 0 {
@@ -88,6 +97,11 @@ func (t Task) ToCSVNotRedacted() []string {
 	if t.Err != nil {
 		err = fmt.Sprintf("%+v", t.Err)
 	}
+	envStr := ""
+	for k, v := range t.Env {
+		envStr += k + "=" + v + " "
+	}
+	cmdLine := envStr + t.CommandLine
 	return []string{
 		fmt.Sprintf("%+v", time.Now()),
 		t.FxSlug,
@@ -98,7 +112,7 @@ func (t Task) ToCSVNotRedacted() []string {
 		fmt.Sprintf("%v", t.ProjectP2O),
 		t.Endpoint,
 		"{" + strings.Join(confAry, ", ") + "}",
-		t.CommandLine,
+		cmdLine,
 		t.Duration.String(),
 		fmt.Sprintf("%.3f", t.Duration.Seconds()),
 		fmt.Sprintf("%d", t.Retries),
@@ -116,6 +130,11 @@ func (t Task) ToCSV() []string {
 	if t.Err != nil {
 		err = fmt.Sprintf("%+v", t.Err)
 	}
+	envStr := ""
+	for k, v := range t.Env {
+		envStr += k + "=" + FilterRedacted(v) + " "
+	}
+	cmdLine := envStr + t.RedactedCommandLine
 	return []string{
 		fmt.Sprintf("%+v", time.Now()),
 		t.FxSlug,
@@ -126,7 +145,7 @@ func (t Task) ToCSV() []string {
 		fmt.Sprintf("%v", t.ProjectP2O),
 		t.Endpoint,
 		"{" + strings.Join(confAry, ", ") + "}",
-		t.RedactedCommandLine,
+		cmdLine,
 		t.Duration.String(),
 		fmt.Sprintf("%.3f", t.Duration.Seconds()),
 		fmt.Sprintf("%d", t.Retries),

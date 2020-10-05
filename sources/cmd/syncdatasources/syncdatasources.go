@@ -1816,138 +1816,222 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				ch <- result
 			}
 		}()
+		dads := isDADS(&tsk)
 		result[0] = tsk.ExternalIndex
 		result[1] = tsk.DsSlug
 		result[2] = tsk.Endpoint
 		updateInfo(true, result)
 		ds := tsk.DsSlug
 		idxSlug := tsk.ExternalIndex
-		commandLine := []string{
-			"p2o.py",
-			"--enrich",
-			"--index-enrich",
-			idxSlug,
-			"--only-enrich",
-			"--refresh-identities",
-			"--no_incremental",
-			"-e",
-			ctx.ElasticURL,
+		mainEnv := make(map[string]string)
+		var (
+			commandLine []string
+			envPrefix   string
+		)
+		if dads {
+			commandLine = []string{"dads"}
+			envPrefix = "DA_" + strings.ToUpper(strings.Split(tsk.DsSlug, "/")[0]) + "_"
+			mainEnv[envPrefix+"ENRICH"] = "1"
+			mainEnv[envPrefix+"RICH_INDEX"] = idxSlug
+			mainEnv[envPrefix+"NO_RAW"] = "1"
+			mainEnv[envPrefix+"REFRESH_AFFS"] = "1"
+			mainEnv[envPrefix+"FORCE_FULL"] = "1"
+			mainEnv[envPrefix+"ES_URL"] = ctx.ElasticURL
+		} else {
+			commandLine = []string{
+				"p2o.py",
+				"--enrich",
+				"--index-enrich",
+				idxSlug,
+				"--only-enrich",
+				"--refresh-identities",
+				"--no_incremental",
+				"-e",
+				ctx.ElasticURL,
+			}
 		}
 		redactedCommandLine := make([]string, len(commandLine))
 		copy(redactedCommandLine, commandLine)
-		redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
-		// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
-		if !ctx.Silent {
-			commandLine = append(commandLine, "-g")
-			redactedCommandLine = append(redactedCommandLine, "-g")
-		}
-		// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
-		if ctx.CmdDebug > 0 {
-			commandLine = append(commandLine, "--debug")
-			redactedCommandLine = append(redactedCommandLine, "--debug")
-		}
-		if ctx.EsBulkSize > 0 {
-			commandLine = append(commandLine, "--bulk-size")
-			commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
-			redactedCommandLine = append(redactedCommandLine, "--bulk-size")
-			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
-		}
-		if ctx.ScrollSize > 0 {
-			commandLine = append(commandLine, "--scroll-size")
-			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
-			redactedCommandLine = append(redactedCommandLine, "--scroll-size")
-			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
-		}
-		if ctx.ScrollWait > 0 {
-			commandLine = append(commandLine, "--scroll-wait")
-			commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
-			redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
-			redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
-		}
-		commandLine = append(
-			commandLine,
-			[]string{
-				"--db-host",
-				ctx.ShHost,
-				"--db-sortinghat",
-				ctx.ShDB,
-				"--db-user",
-				ctx.ShUser,
-				"--db-password",
-				ctx.ShPass,
-			}...,
-		)
-		redactedCommandLine = append(
-			redactedCommandLine,
-			[]string{
-				"--db-host",
-				lib.Redacted,
-				"--db-sortinghat",
-				lib.Redacted,
-				"--db-user",
-				lib.Redacted,
-				"--db-password",
-				lib.Redacted,
-			}...,
-		)
-		if strings.Contains(ds, "/") {
-			ary := strings.Split(ds, "/")
-			if len(ary) != 2 {
-				result[3] = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
-				return
+		if dads {
+			if tsk.PairProgramming {
+				mainEnv[envPrefix+"PAIR_PROGRAMMING"] = "1"
 			}
-			commandLine = append(commandLine, ary[0])
-			commandLine = append(commandLine, "--category")
-			commandLine = append(commandLine, ary[1])
-			redactedCommandLine = append(redactedCommandLine, ary[0])
-			redactedCommandLine = append(redactedCommandLine, "--category")
-			redactedCommandLine = append(redactedCommandLine, ary[1])
-			ds = ary[0]
+			switch ctx.CmdDebug {
+			case 0:
+			case 1, 2:
+				mainEnv[envPrefix+"DEBUG"] = "1"
+			default:
+				if ctx.CmdDebug > 0 {
+					mainEnv[envPrefix+"DEBUG"] = strconv.Itoa(ctx.CmdDebug - 1)
+				}
+			}
+			if ctx.EsBulkSize > 0 {
+				mainEnv[envPrefix+"ES_BULK_SIZE"] = strconv.Itoa(ctx.EsBulkSize)
+			}
+			if ctx.ScrollSize > 0 {
+				mainEnv[envPrefix+"ES_SCROLL_SIZE"] = strconv.Itoa(ctx.ScrollSize)
+			}
+			if ctx.ScrollWait > 0 {
+				mainEnv[envPrefix+"ES_SCROLL_WAIT"] = strconv.Itoa(ctx.ScrollWait) + "s"
+			}
+			if !ctx.SkipSH {
+				mainEnv[envPrefix+"DB_HOST"] = ctx.ShHost
+				mainEnv[envPrefix+"DB_NAME"] = ctx.ShDB
+				mainEnv[envPrefix+"DB_USER"] = ctx.ShUser
+				mainEnv[envPrefix+"DB_PASS"] = ctx.ShPass
+				if ctx.ShPort != "" {
+					mainEnv[envPrefix+"DB_PORT"] = ctx.ShPort
+				}
+			}
+			if strings.Contains(ds, "/") {
+				ary := strings.Split(ds, "/")
+				if len(ary) != 2 {
+					result[3] = fmt.Sprintf("%s: %+v: %s\n", ds, tsk, lib.ErrorStrings[1])
+					return
+				}
+				mainEnv[envPrefix+"CATEGORY"] = ary[1]
+				ds = ary[0]
+			}
 		} else {
-			commandLine = append(commandLine, ds)
-			redactedCommandLine = append(redactedCommandLine, ds)
+			redactedCommandLine[len(redactedCommandLine)-1] = lib.Redacted
+			if tsk.PairProgramming {
+				commandLine = append(commandLine, "--pair-programming")
+				redactedCommandLine = append(redactedCommandLine, "--pair-programming")
+			}
+			// This only enables p2o.py -g flag (so only subcommand is executed with debug mode)
+			if !ctx.Silent {
+				commandLine = append(commandLine, "-g")
+				redactedCommandLine = append(redactedCommandLine, "-g")
+			}
+			// This enabled debug mode on the p2o.py subcommand als also makes ExecCommand() call run in debug mode
+			if ctx.CmdDebug > 0 {
+				commandLine = append(commandLine, "--debug")
+				redactedCommandLine = append(redactedCommandLine, "--debug")
+			}
+			if ctx.EsBulkSize > 0 {
+				commandLine = append(commandLine, "--bulk-size")
+				commandLine = append(commandLine, strconv.Itoa(ctx.EsBulkSize))
+				redactedCommandLine = append(redactedCommandLine, "--bulk-size")
+				redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.EsBulkSize))
+			}
+			if ctx.ScrollSize > 0 {
+				commandLine = append(commandLine, "--scroll-size")
+				commandLine = append(commandLine, strconv.Itoa(ctx.ScrollSize))
+				redactedCommandLine = append(redactedCommandLine, "--scroll-size")
+				redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollSize))
+			}
+			if ctx.ScrollWait > 0 {
+				commandLine = append(commandLine, "--scroll-wait")
+				commandLine = append(commandLine, strconv.Itoa(ctx.ScrollWait))
+				redactedCommandLine = append(redactedCommandLine, "--scroll-wait")
+				redactedCommandLine = append(redactedCommandLine, strconv.Itoa(ctx.ScrollWait))
+			}
+			if !ctx.SkipSH {
+				commandLine = append(
+					commandLine,
+					[]string{
+						"--db-host",
+						ctx.ShHost,
+						"--db-sortinghat",
+						ctx.ShDB,
+						"--db-user",
+						ctx.ShUser,
+						"--db-password",
+						ctx.ShPass,
+					}...,
+				)
+				redactedCommandLine = append(
+					redactedCommandLine,
+					[]string{
+						"--db-host",
+						lib.Redacted,
+						"--db-sortinghat",
+						lib.Redacted,
+						"--db-user",
+						lib.Redacted,
+						"--db-password",
+						lib.Redacted,
+					}...,
+				)
+			}
+			if strings.Contains(ds, "/") {
+				ary := strings.Split(ds, "/")
+				if len(ary) != 2 {
+					result[3] = fmt.Sprintf("%s: %+v: %s", ds, tsk, lib.ErrorStrings[1])
+					return
+				}
+				commandLine = append(commandLine, ary[0])
+				commandLine = append(commandLine, "--category")
+				commandLine = append(commandLine, ary[1])
+				redactedCommandLine = append(redactedCommandLine, ary[0])
+				redactedCommandLine = append(redactedCommandLine, "--category")
+				redactedCommandLine = append(redactedCommandLine, ary[1])
+				ds = ary[0]
+			} else {
+				commandLine = append(commandLine, ds)
+				redactedCommandLine = append(redactedCommandLine, ds)
+			}
 		}
 
 		// Handle DS endpoint
-		eps, _ := massageEndpoint(tsk.Endpoint, ds, false)
+		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads)
 		if len(eps) == 0 {
 			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
 		}
-		for _, ep := range eps {
-			commandLine = append(commandLine, ep)
-			redactedCommandLine = append(redactedCommandLine, ep)
+		if dads {
+			for k, v := range epEnv {
+				mainEnv[k] = v
+			}
+		} else {
+			for _, ep := range eps {
+				commandLine = append(commandLine, ep)
+				redactedCommandLine = append(redactedCommandLine, ep)
+			}
 		}
 
 		// Handle DS config options
-		multiConfig, _, fail := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
+		multiConfig, cfgEnv, fail := massageConfig(ctx, &(tsk.Config), ds, idxSlug)
 		if fail == true {
 			result[3] = fmt.Sprintf("%+v: %s\n", tsk, lib.ErrorStrings[3])
 			return
 		}
-		for _, mcfg := range multiConfig {
-			if strings.HasPrefix(mcfg.Name, "-") {
-				commandLine = append(commandLine, mcfg.Name)
-			} else {
-				commandLine = append(commandLine, "--"+mcfg.Name)
+		if dads {
+			for k, v := range cfgEnv {
+				mainEnv[k] = v
 			}
-			for _, val := range mcfg.Value {
-				if val != "" {
-					commandLine = append(commandLine, val)
+			// Handle DS project
+			if tsk.ProjectP2O && tsk.Project != "" {
+				mainEnv[envPrefix+"PROJECT"] = tsk.Project
+			}
+		} else {
+			for _, mcfg := range multiConfig {
+				if strings.HasPrefix(mcfg.Name, "-") {
+					commandLine = append(commandLine, mcfg.Name)
+				} else {
+					commandLine = append(commandLine, "--"+mcfg.Name)
+				}
+				for _, val := range mcfg.Value {
+					if val != "" {
+						commandLine = append(commandLine, val)
+					}
+				}
+				for _, val := range mcfg.RedactedValue {
+					if val != "" {
+						redactedCommandLine = append(redactedCommandLine, val)
+					}
 				}
 			}
-			for _, val := range mcfg.RedactedValue {
-				if val != "" {
-					redactedCommandLine = append(redactedCommandLine, val)
-				}
+			// Handle DS project
+			if tsk.ProjectP2O && tsk.Project != "" {
+				commandLine = append(commandLine, "--project", tsk.Project)
+				redactedCommandLine = append(redactedCommandLine, "--project", tsk.Project)
 			}
 		}
-		// Handle DS project
-		if tsk.ProjectP2O && tsk.Project != "" {
-			commandLine = append(commandLine, "--project", tsk.Project)
-			redactedCommandLine = append(redactedCommandLine, "--project", tsk.Project)
-		}
+		mainEnv["PROJECT_SLUG"] = tsk.AffiliationSource
+		mainEnv[envPrefix+"PROJECT_SLUG"] = tsk.AffiliationSource
 		rcl := strings.Join(redactedCommandLine, " ")
+		redactedEnv := lib.FilterRedacted(fmt.Sprintf("%+v", mainEnv))
 		retries := 0
 		dtStart := time.Now()
 		for {
@@ -1972,14 +2056,14 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				return
 			}
 			if ctx.Debug > 0 {
-				lib.Printf("External endpoint: %s\n", rcl)
+				lib.Printf("External endpoint: %s %s\n", redactedEnv, rcl)
 			}
 			var (
 				err error
 				str string
 			)
 			if !ctx.SkipP2O {
-				str, err = lib.ExecCommand(ctx, commandLine, map[string]string{"PROJECT_SLUG": tsk.AffiliationSource}, nil)
+				str, err = lib.ExecCommand(ctx, commandLine, mainEnv, nil)
 			}
 			// str = strings.Replace(str, ctx.ElasticURL, lib.Redacted, -1)
 			// p2o.py do not return error even if its backend execution fails
@@ -1994,6 +2078,10 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				pyE = true
 				err = fmt.Errorf("%s", strippedStr)
 			}
+			if strings.Contains(str, lib.DadsException) {
+				pyE = true
+				err = fmt.Errorf("%s %s", redactedEnv, strippedStr)
+			}
 			if err == nil {
 				if ctx.Debug > 0 {
 					dtEnd := time.Now()
@@ -2003,7 +2091,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 			if isTimeoutError(err) {
 				dtEnd := time.Now()
-				lib.Printf("Timeout error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
+				lib.Printf("Timeout error for %s %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
 				str += fmt.Sprintf(": %+v", err)
 				result[3] = fmt.Sprintf("timeout: last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
 				return
@@ -2015,9 +2103,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 			dtEnd := time.Now()
 			if pyE {
-				lib.Printf("Python exception for %+v (took %v, tried %d times): %+v\n", rcl, dtEnd.Sub(dtStart), retries, err)
+				lib.Printf("Command error for %s %+v (took %v, tried %d times): %+v\n", redactedEnv, rcl, dtEnd.Sub(dtStart), retries, err)
 			} else {
-				lib.Printf("Error for %+v (took %v, tried %d times): %+v: %s\n", rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
+				lib.Printf("Error for %s %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, rcl, dtEnd.Sub(dtStart), retries, err, strippedStr)
 				str += fmt.Sprintf(": %+v", err)
 			}
 			result[3] = fmt.Sprintf("last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
@@ -3375,6 +3463,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					tIdx := res[0]
 					tasks[tIdx].CommandLine = result.CommandLine
 					tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
+					tasks[tIdx].Env = result.Env
 					tasks[tIdx].Retries = result.Retries
 					tasks[tIdx].Err = result.Err
 					nThreads--
@@ -3447,6 +3536,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tIdx := res[0]
 				tasks[tIdx].CommandLine = result.CommandLine
 				tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
+				tasks[tIdx].Env = result.Env
 				tasks[tIdx].Retries = result.Retries
 				tasks[tIdx].Err = result.Err
 				ds := tasks[tIdx].DsSlug
@@ -3503,6 +3593,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			tIdx := res[0]
 			tasks[tIdx].CommandLine = result.CommandLine
 			tasks[tIdx].RedactedCommandLine = result.RedactedCommandLine
+			tasks[tIdx].Env = result.Env
 			tasks[tIdx].Retries = result.Retries
 			tasks[tIdx].Err = result.Err
 			nThreads--
@@ -4554,8 +4645,14 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	if result.Err != nil {
 		errStr = lib.FilterRedacted(result.Err.Error())
 	}
-	cl := result.CommandLine
-	rcl := result.RedactedCommandLine
+	rEnvStr := ""
+	envStr := ""
+	for k, v := range result.Env {
+		rEnvStr += k + "=" + lib.FilterRedacted(v) + " "
+		envStr += k + "=" + v + " "
+	}
+	cl := envStr + result.CommandLine
+	rcl := rEnvStr + result.RedactedCommandLine
 	esQuery := fmt.Sprintf("index:\"%s\" AND endpoint:\"%s\"", result.Index, result.Endpoint)
 	id := searchByQueryFirstID(ctx, esIndex, esQuery)
 	var (
@@ -6054,7 +6151,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 		if isTimeoutError(err) {
 			dtEnd := time.Now()
-			lib.Printf("Timeout error for %+v %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
+			lib.Printf("Timeout error for %s %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
 			str += fmt.Sprintf(": %+v", err)
 			result.Code[1] = 6
 			result.Err = fmt.Errorf("timeout: last retry took %v: %+v", dtEnd.Sub(dtStart), strippedStr)
@@ -6068,9 +6165,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 		dtEnd := time.Now()
 		if pyE {
-			lib.Printf("Command error for %+v %+v (took %v, tried %d times): %+v\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
+			lib.Printf("Command error for %s %+v (took %v, tried %d times): %+v\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err)
 		} else {
-			lib.Printf("Error for %+v %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
+			lib.Printf("Error for %s %+v (took %v, tried %d times): %+v: %s\n", redactedEnv, redactedCommandLine, dtEnd.Sub(dtStart), retries, err, strippedStr)
 			str += fmt.Sprintf(": %+v", err)
 		}
 		result.Code[1] = 4
