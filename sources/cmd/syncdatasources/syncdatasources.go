@@ -986,7 +986,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 	}
 	for ai, alias := range fixture.Aliases {
 		var idxSlug string
-		if strings.HasPrefix(alias.From, "bitergia-") || strings.HasPrefix(alias.From, "pattern:") {
+		if strings.HasPrefix(alias.From, "bitergia-") || strings.HasPrefix(alias.From, "pattern:") || strings.HasPrefix(alias.From, "postprocess-") {
 			idxSlug = alias.From
 		} else {
 			idxSlug = "sds-" + alias.From
@@ -996,9 +996,15 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 		}
 		fixture.Aliases[ai].From = idxSlug
 		for ti, to := range alias.To {
-			idxSlug := "sds-" + to
+			idxSlug := ""
+			if strings.HasPrefix(to, "postprocess") {
+				idxSlug = "postprocess-sds-" + strings.TrimPrefix(to, "postprocess/")
+			} else {
+				idxSlug = "sds-" + to
+			}
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 			fixture.Aliases[ai].To[ti] = idxSlug
+
 		}
 		for vi, v := range alias.Views {
 			idxSlug := "sds-" + v.Name
