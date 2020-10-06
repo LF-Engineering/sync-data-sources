@@ -2,6 +2,7 @@ package syncdatasources
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -43,8 +44,13 @@ func (t Task) String() string {
 	}
 	configStr += "]"
 	envStr := ""
-	for k, v := range t.Env {
-		envStr += k + "=" + FilterRedacted(v) + " "
+	ks := []string{}
+	for k := range t.Env {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		envStr += k + "=" + FilterRedacted(t.Env[k]) + " "
 	}
 	return fmt.Sprintf(
 		"%s{Endpoint:%s Project:%s/%v DS:%s FDS:%s Slug:%s File:%s Configs:%s Cmd:%s Retries:%d Error:%v Duration: %v MaxFreq: %v ExternalIndex: %s AffSrc:%s}",
@@ -61,8 +67,13 @@ func (t Task) ShortString() string {
 // ShortStringCmd - output quick endpoint info (with command line)
 func (t Task) ShortStringCmd(ctx *Ctx) string {
 	envStr := ""
-	for k, v := range t.Env {
-		envStr += k + "=" + FilterRedacted(v) + " "
+	ks := []string{}
+	for k := range t.Env {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		envStr += k + "=" + FilterRedacted(t.Env[k]) + " "
 	}
 	s := fmt.Sprintf("%s%s:%s / %s:%s [%s]: ", envStr, t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint, t.RedactedCommandLine)
 	if t.Err == nil {
@@ -98,8 +109,13 @@ func (t Task) ToCSVNotRedacted() []string {
 		err = fmt.Sprintf("%+v", t.Err)
 	}
 	envStr := ""
-	for k, v := range t.Env {
-		envStr += k + "=" + v + " "
+	ks := []string{}
+	for k := range t.Env {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		envStr += k + "=" + t.Env[k] + " "
 	}
 	cmdLine := envStr + t.CommandLine
 	return []string{

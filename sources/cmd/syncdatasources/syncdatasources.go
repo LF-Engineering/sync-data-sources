@@ -2037,7 +2037,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		mainEnv["PROJECT_SLUG"] = tsk.AffiliationSource
 		mainEnv[envPrefix+"PROJECT_SLUG"] = tsk.AffiliationSource
 		rcl := strings.Join(redactedCommandLine, " ")
-		redactedEnv := lib.FilterRedacted(fmt.Sprintf("%+v", mainEnv))
+		redactedEnv := lib.FilterRedacted(fmt.Sprintf("%s", sortEnv(mainEnv)))
 		retries := 0
 		dtStart := time.Now()
 		for {
@@ -4240,12 +4240,17 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 	for _, i := range c {
 		opt := i.Name
 		switch opt {
+		case "no-archive":
+			opt = ""
 		case "-t", "api-token":
 			opt = "token"
 		case "from-date":
 			opt = "date-from"
 		case "to-date":
 			opt = "date-to"
+		}
+		if opt == "" {
+			continue
 		}
 		envOpt := prefix + strings.ToUpper(strings.Replace(opt, "-", "_", -1))
 		envVal := strings.Join(i.Value, " ")
@@ -4627,6 +4632,18 @@ func lastProjectDate(ctx *lib.Ctx, index, origin, must, mustNot string, silent b
 	return
 }
 
+func sortEnv(env map[string]string) (envStr string) {
+	ks := []string{}
+	for k := range env {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		envStr += k + "=" + env[k] + " "
+	}
+	return
+}
+
 func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before bool) {
 	if ctx.SkipSyncInfo || (ctx.DryRun && !ctx.DryRunAllowSyncInfo) || (!ctx.DryRun && ctx.SkipP2O) {
 		return
@@ -4653,7 +4670,13 @@ func setSyncInfo(ctx *lib.Ctx, tMtx *lib.TaskMtx, result *lib.TaskResult, before
 	}
 	rEnvStr := ""
 	envStr := ""
-	for k, v := range result.Env {
+	ks := []string{}
+	for k := range result.Env {
+		ks = append(ks, k)
+	}
+	sort.Strings(ks)
+	for _, k := range ks {
+		v := result.Env[k]
 		rEnvStr += k + "=" + lib.FilterRedacted(v) + " "
 		envStr += k + "=" + v + " "
 	}
@@ -6063,7 +6086,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.CommandLine = strings.Join(commandLine, " ")
 	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
 	result.Env = mainEnv
-	redactedEnv := lib.FilterRedacted(fmt.Sprintf("%+v", mainEnv))
+	redactedEnv := lib.FilterRedacted(fmt.Sprintf("%s", sortEnv(mainEnv)))
 	if affs && tMtx.OrderMtx != nil {
 		tMtx.TaskOrderMtx.Lock()
 		tmtx, ok := tMtx.OrderMtx[idx]
