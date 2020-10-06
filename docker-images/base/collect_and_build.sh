@@ -33,6 +33,7 @@ cd grimoirelab-sortinghat && git apply ../../patch/api.py.diff && cd .. || exit 
 cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../patch/elk.py.diff && git apply ../../patch/elastic.py.diff && git apply ../../patch/p2o.py.diff && cd .. || exit 10
 #cd grimoirelab-elk && git apply ../../patch/jira.py.diff && git apply ../../patch/confluence.py.diff && git apply ../../patch/github.py.diff && git apply ../../patch/github2.py.diff && cp ../../patch/identity.py grimoire_elk/enriched/ && cd .. || exit 11
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc.py.diff && cd .. || exit 15
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc-clean-up.py.diff && cd .. || exit 19
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-organize-repo.py.diff && cd .. || exit 17
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit_url.py.diff && cd .. || exit 18
