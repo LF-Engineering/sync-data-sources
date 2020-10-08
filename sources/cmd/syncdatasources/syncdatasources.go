@@ -21,12 +21,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/LF-Engineering/ssaw/ssawsync"
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
 	"github.com/google/go-github/github"
 	jsoniter "github.com/json-iterator/go"
 	yaml "gopkg.in/yaml.v2"
 )
+
+// "github.com/LF-Engineering/ssaw/ssawsync"
 
 var (
 	randInitOnce  sync.Once
@@ -1295,11 +1296,13 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 			ch <- struct{}{}
 		}(ch)
 	}
-	if !ctx.SkipSSAW {
-		if ctx.SSAWFreq > 0 {
-			go ssawLoop(ctx)
+	/*
+		if !ctx.SkipSSAW {
+			if ctx.SSAWFreq > 0 {
+				go ssawLoop(ctx)
+			}
 		}
-	}
+	*/
 	// Most important work
 	rslt := processTasks(ctx, &tasks, dss)
 	if !ctx.SkipSSAW {
@@ -1428,25 +1431,29 @@ func setLastDuration(ctx *lib.Ctx, task *lib.Task) {
 }
 
 func ssawSync(ctx *lib.Ctx, final bool) {
-	if ctx.DryRun && !ctx.DryRunAllowSSAW {
-		return
-	}
-	e := os.Setenv("SYNC_URL", ctx.SSAWURL)
-	if e != nil {
-		lib.Printf("ssaw failed to set SYNC_URL environment variable: %v\n", e)
-	}
-	origin := cOrigin + "-"
-	if final {
-		origin += "final"
-	} else {
-		origin += "partial"
-	}
-	e = ssawsync.Sync(origin)
-	if e != nil {
-		lib.Printf("ssaw sync error: %v\n", e)
-	}
+	// FIXME: v2 no longer needs ssaw
+	/*
+		if ctx.DryRun && !ctx.DryRunAllowSSAW {
+			return
+		}
+		e := os.Setenv("SYNC_URL", ctx.SSAWURL)
+		if e != nil {
+			lib.Printf("ssaw failed to set SYNC_URL environment variable: %v\n", e)
+		}
+		origin := cOrigin + "-"
+		if final {
+			origin += "final"
+		} else {
+			origin += "partial"
+		}
+		e = ssawsync.Sync(origin)
+		if e != nil {
+			lib.Printf("ssaw sync error: %v\n", e)
+		}
+	*/
 }
 
+/*
 func ssawLoop(ctx *lib.Ctx) {
 	if ctx.DryRun && !ctx.DryRunAllowSSAW {
 		return
@@ -1456,6 +1463,7 @@ func ssawLoop(ctx *lib.Ctx) {
 		ssawSync(ctx, false)
 	}
 }
+*/
 
 func dedupOrigins(first, second []string) (shared, onlyFirst []string) {
 	sharedMap := make(map[string]struct{})
