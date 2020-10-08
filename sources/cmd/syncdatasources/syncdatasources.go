@@ -41,8 +41,8 @@ var (
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
-	// Currently we just have jira, which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false}
+	// Currently we just have jira, groupsio, which must be enabled per-projetc in fixture files
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false}
 )
 
 const (
@@ -4216,6 +4216,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 	switch ds {
 	case lib.Jira:
 		env[prefix+"URL"] = e[0]
+	case lib.GroupsIO:
+		env[prefix+"GROUP_NAME"] = e[0]
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
@@ -4250,6 +4252,10 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		switch opt {
 		case "no-archive":
 			opt = ""
+		case "-e":
+			opt = "email"
+		case "-p":
+			opt = "password"
 		case "-t", "api-token":
 			opt = "token"
 		case "from-date":
