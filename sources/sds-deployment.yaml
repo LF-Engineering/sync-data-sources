@@ -75,7 +75,7 @@ environments:
       SDS_NCPUS_SCALE: 2
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
+      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github|lfedge-securedeviceonboard-slack|cncf-backstage-slack|cncf-jaeger-slack|cncf-kubernetes-slack|cncf-kudo-slack|cncf-opentelemetry-slack|lfedge-akraino-edge-stack-slack|lfedge-baetyl-slack|AuthToken-slack|cncf-envoy-slack|cncf-harbor-slack|cncf-prometheus-slack|cncf-rook-slack|cncf-spiffe-slack|cncf-smi-slack|lfedge-fledge-slack|cncf-coredns-slack|cncf-argo-slack|cncf-falco-slack|cncf-fluxcd-slack|cncf-intoto-slack|cncf-bfe-slack|cncf-nats-slack|cncf-notary-slack|cncf-openservicemesh-slack|cncf-volcano-slack|cncf-buildpacks-slack|cncf-rkt-slack|cncf-parsec-slack|cncf-strimzi-slack|cncf-tuf-slack|cncf-keptn-slack|lfedge-home-edge-slack|lfedge-state-of-the-edge-slack|cncf-cortex-slack|cncf-helm-slack|lfedge-open-horizon-slack|cncf-cncf-slack|cncf-chubaofs-slack|cncf-cloudevents-slack|cncf-keda-slack|test-test-project-slack|cncf-k3s-slack|cncf-grpc-slack|cncf-linkerd-slack|cncf-longhorn-slack|cncf-porter-slack|cncf-thanos-slack|cncf-tremor-slack|cncf-containerd-slack|cncf-nsm-slack|cncf-opentracing-slack|cncf-fluentd-slack|cncf-keylime-slack|cncf-openmetrics-slack|lfedge-project-eve-slack|cncf-openebs-slack)'
   - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
