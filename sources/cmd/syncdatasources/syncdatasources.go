@@ -54,7 +54,7 @@ var (
 			"DA_JIRA_NO_SSL_VERIFY": "1",
 			"DA_JIRA_MULTI_ORIGIN":  "1",
 		},
-		lib.Groupsio: {
+		lib.GroupsIO: {
 			"DA_GROUPSIO_LEGACY_UUID":   "1",
 			"DA_GROUPSIO_CATEGORY":      "message",
 			"DA_GROUPSIO_NCPUS":         "8",

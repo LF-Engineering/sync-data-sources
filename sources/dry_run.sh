@@ -5,7 +5,7 @@ then
   echo "$0: you need to specify env: test, prod"
   exit 1
 fi
-# TODO FIXME: when you try to use this to run the actuall commands
+# TODO FIXME: when you try to use this to run the actual commands
 # please almost always use SDS_ONLY_P2O=1 when not running in dry run mode
 #export SDS_ST=1
 #export SDS_NCPUS=16

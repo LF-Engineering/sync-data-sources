@@ -1,5 +1,5 @@
 #!/bin/bash
-# Example: SH_HOST=127.0.0.1 SH_PORT=13306 SH_DB=sortinghat SH_USER=sortinghat SH_PASS=pwd ./dry_run.sh test
+# Example: SH_HOST=127.0.0.1 SH_PORT=13306 SH_DB=sortinghat SH_USER=sortinghat SH_PASS=pwd ./debug_run.sh test
 if [ -z "$1" ]
 then
   echo "$0: you need to specify env: test, prod"
