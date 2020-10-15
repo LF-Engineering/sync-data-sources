@@ -1,0 +1,53 @@
+---
+native:
+  slug: lg/dads
+data_sources:
+- slug: groupsio
+  projects:
+  - name: Project
+    endpoints:
+    - name: zephyrproject+users
+  config:
+  - name: email
+    value: x@z.yy
+  - name: password
+    value: zzz
+  - name: dads
+    value: true
+  - name: legacy-uuid
+    value: true
+  - name: save-archives
+    value: true
+  - name: arch-path
+    value: '/var/tmp'
+  #- name: dry-run
+  #  value: true
+  #- name: no-cache
+  #  value: true
+  - name: from-date
+    value: '2020-09-01'
+  - name: multi-origin
+    value: true
+  - name: debug
+    value: 1
+  - name: debug-sql
+    value: 2
+  - name: retry
+    value: 3
+  - name: ncpus
+    value: 8
+  - name: es-bulk-size
+    value: 1000
+  - name: es-scroll-size
+    value: 1000
+  - name: es-scroll-wait
+    value: 15m
+  - name: db-bulk-size
+    value: 1000
+  - name: st        # single threaded mode
+    value: '<nil>'  # setting <nil> means creating an empty env variable
+  #- name: ncpus-scale
+  #  value: 0.2
+  #- name: tag
+  #  value: tag the data
+  max_frequency: "24h"
