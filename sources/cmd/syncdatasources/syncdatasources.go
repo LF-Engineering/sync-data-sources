@@ -43,6 +43,28 @@ var (
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, which must be enabled per-projetc in fixture files
 	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false}
+	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
+	dadsEnvDefaults = map[string]map[string]string{
+		lib.Jira: {
+			"DA_JIRA_LEGACY_UUID":   "1",
+			"DA_JIRA_CATEGORY":      "issue",
+			"DA_JIRA_NCPUS":         "8",
+			"DA_JIRA_DEBUG":         "1",
+			"DA_JIRA_RETRY":         "4",
+			"DA_JIRA_NO_SSL_VERIFY": "1",
+			"DA_JIRA_MULTI_ORIGIN":  "1",
+		},
+		lib.Groupsio: {
+			"DA_GROUPSIO_LEGACY_UUID":   "1",
+			"DA_GROUPSIO_CATEGORY":      "message",
+			"DA_GROUPSIO_NCPUS":         "8",
+			"DA_GROUPSIO_DEBUG":         "1",
+			"DA_GROUPSIO_RETRY":         "4",
+			"DA_GROUPSIO_NO_SSL_VERIFY": "1",
+			"DA_GROUPSIO_MULTI_ORIGIN":  "1",
+			"DA_GROUPSIO_SAVE_ARCHIVES": "false",
+		},
+	}
 )
 
 const (
@@ -4211,6 +4233,12 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 		return
 	}
 	env = make(map[string]string)
+	defaults, ok := dadsEnvDefaults[ds]
+	if ok {
+		for k, v := range defaults {
+			env[k] = v
+		}
+	}
 	env["DA_DS"] = ds
 	prefix := "DA_" + strings.ToUpper(ds) + "_"
 	switch ds {
