@@ -2848,18 +2848,18 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	}
 	extras = append(extras, curr)
 	for _, indices := range extras {
+		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, indices)
+		rurl = fmt.Sprintf("/%s", indices)
 		if ctx.DryRun {
 			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
-			return
+			continue
 		}
 		if ctx.NoIndexDrop {
 			lib.Printf("WARNING: Need to delete indices: %s\n", indices)
 			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
-			return
+			continue
 		}
 		lib.Printf("Deleting indices: %s\n", indices)
-		url = fmt.Sprintf("%s/%s", ctx.ElasticURL, indices)
-		rurl = fmt.Sprintf("/%s", indices)
 		req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 		if err != nil {
 			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
@@ -2993,7 +2993,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		rurl = fmt.Sprintf("/_all/_alias/%s", aliases)
 		if ctx.DryRun {
 			lib.Printf("Would execute: method:%s url:%s\n", method, os.ExpandEnv(rurl))
-			return
+			continue
 		}
 		req, err = http.NewRequest(method, os.ExpandEnv(url), nil)
 		if err != nil {
