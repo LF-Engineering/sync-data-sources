@@ -8,6 +8,7 @@ RUN go get -u github.com/LF-Engineering/da-ds
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN make -f ./Makefile dockerinstall
+# The final version should not use bthis base image, so it needs to have 'cloc' installed.
 FROM dajohn/dev-analytics-grimoire-docker-minimal
 COPY docker-images/.gitconfig /root/.gitconfig
 COPY docker-images/scripts/*.sh /
@@ -15,6 +16,7 @@ COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY --from=builder /go/bin/dads /usr/bin/
 COPY sources/data.zip /data.zip
 COPY sources/uuid.py /usr/bin/
+COPY sources/gitops.py /usr/bin/
 #COPY sources/sds.yaml /data/sds.txt
 COPY docker-images/.vimrc /root/.vimrc
 CMD /bin/bash
