@@ -4270,6 +4270,7 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		// fmt.Printf("p2oConfig2dadsConfig: check for DADS %+v --> %v\n", c, dads)
 	}
 	if !all && !dads {
+		oc = c
 		return
 	}
 	env = make(map[string]string)
