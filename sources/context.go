@@ -437,7 +437,7 @@ func (ctx *Ctx) Init() {
 	}
 	// ES scroll size p2o.py --scroll-size 100
 	if os.Getenv("SDS_SCROLL_SIZE") == "" {
-		ctx.ScrollSize = 100
+		ctx.ScrollSize = 1000
 	} else {
 		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
 		FatalNoLog(err)
