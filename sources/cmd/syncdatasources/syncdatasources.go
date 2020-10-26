@@ -42,7 +42,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -63,6 +63,14 @@ var (
 			"DA_GROUPSIO_NO_SSL_VERIFY": "1",
 			"DA_GROUPSIO_MULTI_ORIGIN":  "1",
 			"DA_GROUPSIO_SAVE_ARCHIVES": "false",
+		},
+		lib.Git: {
+			"DA_GIT_LEGACY_UUID":      "1",
+			"DA_GIT_CATEGORY":         "commit",
+			"DA_GIT_NCPUS":            "4",
+			"DA_GIT_DEBUG":            "1",
+			"DA_GIT_RETRY":            "4",
+			"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 	}
 )
@@ -4242,7 +4250,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 	env["DA_DS"] = ds
 	prefix := "DA_" + strings.ToUpper(ds) + "_"
 	switch ds {
-	case lib.Jira:
+	case lib.Jira, lib.Git:
 		env[prefix+"URL"] = e[0]
 	case lib.GroupsIO:
 		env[prefix+"GROUP_NAME"] = e[0]
