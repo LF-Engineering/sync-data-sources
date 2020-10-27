@@ -17,6 +17,7 @@ environments:
       SDS_SKIP_ES_LOG: 1
       SDS_SKIP_PROJECT: 1
       SDS_SKIP_PROJECT_TS: 1
+      SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
   - name: prod-main
     cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
@@ -79,7 +80,7 @@ environments:
       SDS_TASKS_RE: '^sds-(lfn-odl-gerrit|open-mainframe-project|accord|acr|acrn|allseen|alljoyn|act|agl|bitcoin-protocol|cc|CC|cephfoundation|chaoss|ojsf-chassis|chips|cip|clusterduck|cni|caf|ccc|cdf|cord-datacenter|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|dent|desktopwg|easycla|elisa|finops|finos|fossbazaar|foundationdb|frr|gql|internet-security-research-group|interuss|iovisor|janusgraph|kernelci|openkinetic|laminas|lets-encrypt|lf-asia-llc|lfph|lsb|linuxboot|llvmlinux|ltsi|lvfs|mapzen|mojaglobal|newticity|onf|O3DE|o3de|a11y|open-alliance-for-cloud-adoption|opencontainers|open-network-operating-system-onos|osecc|osapa|ova|open-voice-network|ovs|openbel|openbmc|openchain|OEEW|oeew|openfabrics-inc|openhpc|ojsf|openmama|openmessaging|openpowerfoundation|opensds|osquery|patentcommons|quartermaster|rcons|real-time-linux|redteam|rtdb|riscv|risc-v-international|sel4|soda-foundation|sof|tlf|openssf|reactive|tizen|ucf|cncf)-'
       SDS_DATASOURCES_SKIP_RE: '^slack$'
   - name: prod-slack
-    cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
+    cron: '0 6 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -109,6 +110,7 @@ environments:
       SDS_SKIP_ES_LOG: 1
       SDS_SKIP_PROJECT: 1
       SDS_SKIP_PROJECT_TS: 1
+      SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
   - name: test-main
     cron: '0 * * * *'
