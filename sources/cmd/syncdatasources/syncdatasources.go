@@ -73,11 +73,13 @@ var (
 			"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 		lib.Gerrit: {
-			"DA_GERRIT_LEGACY_UUID": "1",
-			"DA_GERRIT_CATEGORY":    "review",
-			"DA_GERRIT_NCPUS":       "3",
-			"DA_GERRIT_DEBUG":       "1",
-			"DA_GERRIT_RETRY":       "4",
+			"DA_GERRIT_LEGACY_UUID":            "1",
+			"DA_GERRIT_CATEGORY":               "review",
+			"DA_GERRIT_NCPUS":                  "3",
+			"DA_GERRIT_DEBUG":                  "1",
+			"DA_GERRIT_RETRY":                  "4",
+			"DA_GERRIT_NO_SSL_VERIFY":          "1",
+			"DA_GERRIT_DISABLE_HOST_KEY_CHECK": "1",
 		},
 	}
 )
