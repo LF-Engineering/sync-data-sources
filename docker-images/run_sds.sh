@@ -117,8 +117,10 @@ done
 if [ -z "${2}" ]
 then
   flg="-v /root/.perceval:/root/.perceval"
+  cname="`date +%s`"
 else
   flg="-v /root/.perceval:/root/.perceval -v /data/${2}:/root"
+  cname="${2}-`date +%s`"
 fi
 if [ -z "${SH}" ]
 then
@@ -131,7 +133,7 @@ else
   cmd="/bin/bash"
   flg="${flg} -it"
 fi
-cmd="docker run ${envstr} ${flg} \"dajohn/sync-data-sources-${1}:latest\" \"${cmd}\""
+cmd="docker run ${envstr} ${flg} --name ${cname} \"dajohn/sync-data-sources-${1}:latest\" \"${cmd}\""
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
