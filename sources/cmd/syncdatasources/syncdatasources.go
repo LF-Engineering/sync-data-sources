@@ -42,7 +42,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -50,7 +50,7 @@ var (
 			"DA_JIRA_CATEGORY":      "issue",
 			"DA_JIRA_NCPUS":         "8",
 			"DA_JIRA_DEBUG":         "1",
-			"DA_JIRA_RETRY":         "4",
+			"DA_JIRA_RETRY":         "3",
 			"DA_JIRA_NO_SSL_VERIFY": "1",
 			"DA_JIRA_MULTI_ORIGIN":  "1",
 		},
@@ -67,10 +67,17 @@ var (
 		lib.Git: {
 			"DA_GIT_LEGACY_UUID":      "1",
 			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "4",
+			"DA_GIT_NCPUS":            "3",
 			"DA_GIT_DEBUG":            "1",
 			"DA_GIT_RETRY":            "4",
 			"DA_GIT_PAIR_PROGRAMMING": "false",
+		},
+		lib.Gerrit: {
+			"DA_GERRIT_LEGACY_UUID": "1",
+			"DA_GERRIT_CATEGORY":    "review",
+			"DA_GERRIT_NCPUS":       "3",
+			"DA_GERRIT_DEBUG":       "1",
+			"DA_GERRIT_RETRY":       "4",
 		},
 	}
 )
@@ -4254,7 +4261,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 	env["DA_DS"] = ds
 	prefix := "DA_" + strings.ToUpper(ds) + "_"
 	switch ds {
-	case lib.Jira, lib.Git:
+	case lib.Jira, lib.Git, lib.Gerrit:
 		env[prefix+"URL"] = e[0]
 	case lib.GroupsIO:
 		env[prefix+"GROUP_NAME"] = e[0]
@@ -4303,6 +4310,8 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 			opt = "date-from"
 		case "to-date":
 			opt = "date-to"
+		case "ssh-id-filepath":
+			opt = "ssh-key-path"
 		}
 		if opt == "" {
 			continue
