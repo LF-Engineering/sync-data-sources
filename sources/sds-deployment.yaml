@@ -11,6 +11,12 @@ environments:
     temp_dir: '/tmp'
     env:                                # List of all possible SDS env variables is here: https://github.com/LF-Engineering/sync-data-sources/blob/master/sources/context.go#L12
       SDS_SKIP_P2O: 1                   # Only special tasks like maintaining aliases/views/renames/drops etc
+      SDS_SKIP_DATA: 1
+      SDS_SKIP_AFFS: 1
+      SDS_SKIP_ES_DATA: 1
+      SDS_SKIP_ES_LOG: 1
+      SDS_SKIP_PROJECT: 1
+      SDS_SKIP_PROJECT_TS: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
   - name: prod-main
     cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
@@ -97,6 +103,12 @@ environments:
     temp_dir: '/tmp'
     env:                                # List of all possible SDS env variables is here: https://github.com/LF-Engineering/sync-data-sources/blob/master/sources/context.go#L12
       SDS_SKIP_P2O: 1                   # Only special tasks like maintaining aliases/views/renames/drops etc
+      SDS_SKIP_DATA: 1
+      SDS_SKIP_AFFS: 1
+      SDS_SKIP_ES_DATA: 1
+      SDS_SKIP_ES_LOG: 1
+      SDS_SKIP_PROJECT: 1
+      SDS_SKIP_PROJECT_TS: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
   - name: test-main
     cron: '0 * * * *'
