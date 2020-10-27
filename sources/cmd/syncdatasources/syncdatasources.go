@@ -2983,6 +2983,10 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	maxSize := 0x800
 	for _, ex := range extra {
 		ex = lib.SafeString(ex)
+		if strings.Contains(ex, "-f-") {
+			lib.Printf("Skipping dropping special alias: '%s'\n", ex)
+			continue
+		}
 		if curr == "" {
 			curr = ex
 		} else {
