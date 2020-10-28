@@ -4,7 +4,7 @@ environments:
   deployments:
   - name: prod-master
     master: true                        # master task, this one will process all special SDS tasks, other tasks will receive "SDS_ONLY_P2O=1"
-    cron: '50 */2 * * *'                # it means that task will attempt to sync every 30 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
+    cron: '50 */4 * * *'                # it means that task will attempt to sync every 30 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
     command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -97,7 +97,7 @@ environments:
   deployments:
   - name: test-master
     master: true                        # master task, this one will process all special SDS tasks, other tasks will receive "SDS_ONLY_P2O=1"
-    cron: '50 */2 * * *'                # it means that task will attempt to sync every 30 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
+    cron: '50 */4 * * *'                # it means that task will attempt to sync every 30 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
     command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
