@@ -48,7 +48,7 @@ var (
 		lib.Jira: {
 			"DA_JIRA_LEGACY_UUID":   "1",
 			"DA_JIRA_CATEGORY":      "issue",
-			"DA_JIRA_NCPUS":         "8",
+			"DA_JIRA_NCPUS":         "16",
 			"DA_JIRA_DEBUG":         "1",
 			"DA_JIRA_RETRY":         "3",
 			"DA_JIRA_NO_SSL_VERIFY": "1",
@@ -67,7 +67,7 @@ var (
 		lib.Git: {
 			"DA_GIT_LEGACY_UUID":      "1",
 			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "3",
+			"DA_GIT_NCPUS":            "4",
 			"DA_GIT_DEBUG":            "1",
 			"DA_GIT_RETRY":            "4",
 			"DA_GIT_PAIR_PROGRAMMING": "false",
@@ -75,7 +75,7 @@ var (
 		lib.Gerrit: {
 			"DA_GERRIT_LEGACY_UUID":            "1",
 			"DA_GERRIT_CATEGORY":               "review",
-			"DA_GERRIT_NCPUS":                  "3",
+			"DA_GERRIT_NCPUS":                  "8",
 			"DA_GERRIT_DEBUG":                  "1",
 			"DA_GERRIT_RETRY":                  "4",
 			"DA_GERRIT_NO_SSL_VERIFY":          "1",
