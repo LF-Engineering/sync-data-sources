@@ -84,7 +84,7 @@ var (
 		lib.Confluence: {
 			"DA_CONFLUENCE_LEGACY_UUID":   "1",
 			"DA_CONFLUENCE_CATEGORY":      "historical content",
-			"DA_CONFLUENCE_NCPUS":         "8",
+			"DA_CONFLUENCE_NCPUS":         "16",
 			"DA_CONFLUENCE_DEBUG":         "1",
 			"DA_CONFLUENCE_RETRY":         "4",
 			"DA_CONFLUENCE_MULTI_ORIGIN":  "1",
