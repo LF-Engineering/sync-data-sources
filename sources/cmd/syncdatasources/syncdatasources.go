@@ -41,8 +41,8 @@ var (
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
-	// Currently we just have jira, groupsio, which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false}
+	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -89,6 +89,14 @@ var (
 			"DA_CONFLUENCE_RETRY":         "4",
 			"DA_CONFLUENCE_MULTI_ORIGIN":  "1",
 			"DA_CONFLUENCE_NO_SSL_VERIFY": "1",
+		},
+		lib.RocketChat: {
+			"DA_ROCKETCHAT_LEGACY_UUID":   "1",
+			"DA_ROCKETCHAT_CATEGORY":      "message",
+			"DA_ROCKETCHAT_NCPUS":         "4",
+			"DA_ROCKETCHAT_DEBUG":         "1",
+			"DA_ROCKETCHAT_RETRY":         "4",
+			"DA_ROCKETCHAT_NO_SSL_VERIFY": "1",
 		},
 	}
 )
@@ -4276,6 +4284,9 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 		env[prefix+"URL"] = e[0]
 	case lib.GroupsIO:
 		env[prefix+"GROUP_NAME"] = e[0]
+	case lib.RocketChat:
+		env[prefix+"URL"] = e[0]
+		env[prefix+"CHANNEL"] = e[1]
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
@@ -4311,6 +4322,8 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		switch opt {
 		case "no-archive":
 			opt = ""
+		case "-u":
+			opt = "user"
 		case "-e":
 			opt = "email"
 		case "-p":
