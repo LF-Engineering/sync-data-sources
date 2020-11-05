@@ -97,6 +97,7 @@ var (
 			"DA_ROCKETCHAT_DEBUG":         "1",
 			"DA_ROCKETCHAT_RETRY":         "4",
 			"DA_ROCKETCHAT_NO_SSL_VERIFY": "1",
+			"DA_ROCKETCHAT_WAIT_RATE":     "1",
 		},
 	}
 )
