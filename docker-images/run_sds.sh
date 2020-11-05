@@ -137,6 +137,7 @@ cmd="docker run ${envstr} ${flg} --name ${cname} \"dajohn/sync-data-sources-${1}
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
+  echo "you can use /debug_run.sh to test SDS sync"
 fi
 if [ -z "${NO}" ]
 then
