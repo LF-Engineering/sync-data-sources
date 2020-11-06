@@ -38,6 +38,7 @@ var (
 	gRateMtx      *sync.Mutex
 	gToken        string
 	gHint         int
+	noDropPattern = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-slack)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
@@ -2863,6 +2864,14 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	if partialRun(ctx) {
 		return
 	}
+	newExtra := []string{}
+	for _, idx := range extra {
+		if noDropPattern.MatchString(idx) {
+			continue
+		}
+		newExtra = append(newExtra, idx)
+	}
+	extra = newExtra
 	lib.Printf("Indices to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
@@ -3003,6 +3012,14 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if partialRun(ctx) {
 		return
 	}
+	newExtra := []string{}
+	for _, idx := range extra {
+		if noDropPattern.MatchString(idx) {
+			continue
+		}
+		newExtra = append(newExtra, idx)
+	}
+	extra = newExtra
 	lib.Printf("Aliases to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
@@ -3010,10 +3027,6 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	maxSize := 0x800
 	for _, ex := range extra {
 		ex = lib.SafeString(ex)
-		if strings.Contains(ex, "-f-") {
-			lib.Printf("Skipping dropping special alias: '%s'\n", ex)
-			continue
-		}
 		if curr == "" {
 			curr = ex
 		} else {
