@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -99,6 +99,12 @@ var (
 			"DA_ROCKETCHAT_RETRY":         "4",
 			"DA_ROCKETCHAT_NO_SSL_VERIFY": "1",
 			"DA_ROCKETCHAT_WAIT_RATE":     "1",
+		},
+		lib.DockerHub: {
+			"USERNAME": nil,
+			"PASSWORD": nil,
+			"REPOSITORIES_JSON": nil,
+			"NO_INCREMENTAL": "1",
 		},
 	}
 )
