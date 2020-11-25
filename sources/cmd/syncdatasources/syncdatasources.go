@@ -101,10 +101,10 @@ var (
 			"DA_ROCKETCHAT_WAIT_RATE":     "1",
 		},
 		lib.DockerHub: {
-			"USERNAME": nil,
-			"PASSWORD": nil,
-			"REPOSITORIES_JSON": nil,
-			"NO_INCREMENTAL": "1",
+			"USERNAME":          "",
+			"PASSWORD":          "",
+			"REPOSITORIES_JSON": "",
+			"NO_INCREMENTAL":    "1",
 		},
 	}
 )
