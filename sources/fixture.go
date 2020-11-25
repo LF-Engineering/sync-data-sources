@@ -267,10 +267,12 @@ func GetFixtures(ctx *Ctx, path string) (fixtures []string) {
 		nil,
 		nil,
 	)
-	dtEnd := time.Now()
+
 	if err != nil {
+		dtEnd := time.Now()
 		Fatalf("Error finding fixtures (took %v): %+v\n", dtEnd.Sub(dtStart), err)
 	}
+
 	fixtures = strings.Split(res, "\n")
 	if ctx.Debug > 0 {
 		Printf("Fixtures to process: %+v\n", fixtures)
