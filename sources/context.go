@@ -127,7 +127,6 @@ func (ctx *Ctx) Init() {
 	ctx.ExecQuiet = false
 	ctx.ExecOutput = false
 	ctx.ExecOutputStderr = false
-	ctx.TestMode = true
 
 	// ElasticSearch
 	ctx.ElasticURL = os.Getenv("SDS_ES_URL")

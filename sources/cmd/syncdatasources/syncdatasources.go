@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: true}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -6572,13 +6572,13 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
 	} else {
-		err := ensureGrimoireStackAvail(&ctx)
+		/*err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
-		}
+		}*/
 		go finishAfterTimeout(ctx)
 		processFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
-		err = hideEmails(&ctx)
+		err := hideEmails(&ctx)
 		if err != nil {
 			lib.Printf("Hide emails result: %+v\n", err)
 		}
