@@ -26,3 +26,4 @@ out
 docker-images/base/repos
 
 .idea
+*/.idea
