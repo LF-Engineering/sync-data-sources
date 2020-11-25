@@ -1,0 +1,9 @@
+---
+native:
+  slug: lfn/onap
+data_sources:
+- slug: dockerhub
+  endpoints:
+  - name: onap
+    flags:
+      type: dockerhub_org
