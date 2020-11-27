@@ -47,7 +47,7 @@ var (
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
-			"DA_JIRA_LEGACY_UUID":   "1",
+			// "DA_JIRA_LEGACY_UUID":   "1",
 			"DA_JIRA_CATEGORY":      "issue",
 			"DA_JIRA_NCPUS":         "16",
 			"DA_JIRA_DEBUG":         "1",
@@ -56,7 +56,7 @@ var (
 			"DA_JIRA_MULTI_ORIGIN":  "1",
 		},
 		lib.GroupsIO: {
-			"DA_GROUPSIO_LEGACY_UUID":   "1",
+			//"DA_GROUPSIO_LEGACY_UUID":   "1",
 			"DA_GROUPSIO_CATEGORY":      "message",
 			"DA_GROUPSIO_NCPUS":         "8",
 			"DA_GROUPSIO_DEBUG":         "1",
@@ -66,7 +66,7 @@ var (
 			"DA_GROUPSIO_SAVE_ARCHIVES": "false",
 		},
 		lib.Git: {
-			"DA_GIT_LEGACY_UUID":      "1",
+			///"DA_GIT_LEGACY_UUID":      "1",
 			"DA_GIT_CATEGORY":         "commit",
 			"DA_GIT_NCPUS":            "4",
 			"DA_GIT_DEBUG":            "1",
@@ -74,7 +74,7 @@ var (
 			"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 		lib.Gerrit: {
-			"DA_GERRIT_LEGACY_UUID":            "1",
+			//"DA_GERRIT_LEGACY_UUID":            "1",
 			"DA_GERRIT_CATEGORY":               "review",
 			"DA_GERRIT_NCPUS":                  "8",
 			"DA_GERRIT_DEBUG":                  "1",
@@ -83,7 +83,7 @@ var (
 			"DA_GERRIT_DISABLE_HOST_KEY_CHECK": "1",
 		},
 		lib.Confluence: {
-			"DA_CONFLUENCE_LEGACY_UUID":   "1",
+			//"DA_CONFLUENCE_LEGACY_UUID":   "1",
 			"DA_CONFLUENCE_CATEGORY":      "historical content",
 			"DA_CONFLUENCE_NCPUS":         "16",
 			"DA_CONFLUENCE_DEBUG":         "1",
@@ -92,7 +92,7 @@ var (
 			"DA_CONFLUENCE_NO_SSL_VERIFY": "1",
 		},
 		lib.RocketChat: {
-			"DA_ROCKETCHAT_LEGACY_UUID":   "1",
+			//"DA_ROCKETCHAT_LEGACY_UUID":   "1",
 			"DA_ROCKETCHAT_CATEGORY":      "message",
 			"DA_ROCKETCHAT_NCPUS":         "4",
 			"DA_ROCKETCHAT_DEBUG":         "1",
