@@ -6573,13 +6573,13 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
 	} else {
-		/*err := ensureGrimoireStackAvail(&ctx)
+		err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
-		}*/
+		}
 		go finishAfterTimeout(ctx)
 		processFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
-		err := hideEmails(&ctx)
+		err = hideEmails(&ctx)
 		if err != nil {
 			lib.Printf("Hide emails result: %+v\n", err)
 		}
