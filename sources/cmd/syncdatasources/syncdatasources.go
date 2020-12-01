@@ -5504,7 +5504,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 		return
 	}
 	scrollSize := 1000
-	scrollTime := "15m"
+	scrollTime := "45m"
 	bulkSize := 1000
 	conf := task.CopyFrom
 	origin := mapOrigin(task.Endpoint, task.DsSlug)
