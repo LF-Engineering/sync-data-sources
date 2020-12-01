@@ -95,8 +95,8 @@ type Ctx struct {
 	Silent                          bool           // From SDS_SILENT, skip p2o.py debug mode if set, else it will pass "-g" flag to 'p2o.py' call
 	NoMultiAliases                  bool           // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
 	CleanupAliases                  bool           // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
-	ScrollWait                      int            // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds)
-	ScrollSize                      int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 100
+	ScrollWait                      int            // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds), default 2700 (45 minutes)
+	ScrollSize                      int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 200
 	MaxDeleteTrials                 int            // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait                      int            // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal                 bool           // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
@@ -425,9 +425,9 @@ func (ctx *Ctx) Init() {
 		ctx.CSVPrefix = "/root/.perceval/jobs"
 	}
 
-	// Scroll wait p2o.py --scroll-wait 900
+	// Scroll wait p2o.py --scroll-wait 2700
 	if os.Getenv("SDS_SCROLL_WAIT") == "" {
-		ctx.ScrollWait = 0
+		ctx.ScrollWait = 2700
 	} else {
 		scrollWait, err := strconv.Atoi(os.Getenv("SDS_SCROLL_WAIT"))
 		FatalNoLog(err)
@@ -435,9 +435,9 @@ func (ctx *Ctx) Init() {
 			ctx.ScrollWait = scrollWait
 		}
 	}
-	// ES scroll size p2o.py --scroll-size 100
+	// ES scroll size p2o.py --scroll-size 200
 	if os.Getenv("SDS_SCROLL_SIZE") == "" {
-		ctx.ScrollSize = 1000
+		ctx.ScrollSize = 200
 	} else {
 		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
 		FatalNoLog(err)
