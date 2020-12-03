@@ -131,7 +131,7 @@ func (ctx *Ctx) Init() {
 	// ElasticSearch
 	ctx.ElasticURL = os.Getenv("SDS_ES_URL")
 	if ctx.ElasticURL == "" {
-		ctx.ElasticURL = "http://elastic:changeme@127.0.0.1:9200"
+		ctx.ElasticURL = "http://127.0.0.1:9200"
 	}
 	AddRedacted(ctx.ElasticURL, false)
 
