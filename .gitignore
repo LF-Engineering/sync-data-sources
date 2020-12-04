@@ -24,3 +24,6 @@
 out
 *.secret
 docker-images/base/repos
+
+.idea
+*/.idea
