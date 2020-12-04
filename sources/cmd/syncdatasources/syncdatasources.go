@@ -101,7 +101,7 @@ var (
 			"DA_ROCKETCHAT_WAIT_RATE":     "1",
 		},
 		lib.DockerHub: {
-			"DA_DOCKERHUB_HTTP_TIMEOUT": "60s",
+			"DA_DOCKERHUB_HTTP_TIMEOUT":   "60s",
 			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
 		},
 	}
@@ -4317,9 +4317,9 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		// fill repos
 		repos[0] = Repository{e[0], e[1], project, idxSlug}
 
-		data,err := json.Marshal(&repos)
+		data, err := json.Marshal(&repos)
 		if err != nil {
-			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories", ds)
+			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories: DS%s", ds)
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
 	default:
