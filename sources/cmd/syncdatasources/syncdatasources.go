@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -99,6 +99,10 @@ var (
 			"DA_ROCKETCHAT_RETRY":         "4",
 			"DA_ROCKETCHAT_NO_SSL_VERIFY": "1",
 			"DA_ROCKETCHAT_WAIT_RATE":     "1",
+		},
+		lib.DockerHub: {
+			"DA_DOCKERHUB_HTTP_TIMEOUT": "60s",
+			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -2046,7 +2050,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 
 		// Handle DS endpoint
-		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads)
+		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads, idxSlug, tsk.Project)
 		if len(eps) == 0 {
 			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
@@ -3797,9 +3801,9 @@ func addSSHPrivKey(ctx *lib.Ctx, key, idxSlug string) bool {
 }
 
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
-func massageEndpoint(endpoint string, ds string, dads bool) (e []string, env map[string]string) {
+func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, project string) (e []string, env map[string]string) {
 	defer func() {
-		env = p2oEndpoint2dadsEndpoint(e, ds, dads)
+		env = p2oEndpoint2dadsEndpoint(e, ds, dads, idxSlug, project)
 	}()
 	defaults := map[string]struct{}{
 		lib.Git:          {},
@@ -4275,7 +4279,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 }
 
 // p2oEndpoint2dadsEndpoint - map p2o.py endpoint to dads endpoint
-func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]string) {
+func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, project string) (env map[string]string) {
 	all, ok := dadsTasks[ds]
 	if !ok {
 		return
@@ -4301,6 +4305,23 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool) (env map[string]
 	case lib.RocketChat:
 		env[prefix+"URL"] = e[0]
 		env[prefix+"CHANNEL"] = e[1]
+	case lib.DockerHub:
+		type Repository struct {
+			Owner      string
+			Repository string
+			Project    string
+			ESIndex    string
+		}
+		repos := make([]Repository, 1)
+
+		// fill repos
+		repos[0] = Repository{e[0], e[1], project, idxSlug}
+
+		data,err := json.Marshal(&repos)
+		if err != nil {
+			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories", ds)
+		}
+		env[prefix+"REPOSITORIES_JSON"] = string(data)
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
@@ -6118,7 +6139,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 	}
 	// Handle DS endpoint
-	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads)
+	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads, idxSlug, task.Project)
 	if len(eps) == 0 {
 		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
 		result.Code[1] = 2
