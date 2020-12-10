@@ -2,6 +2,7 @@ FROM golang:1.15 AS builder
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
 RUN go get -u gopkg.in/yaml.v2
 RUN go get -u github.com/json-iterator/go
+RUN git clone --branch v7.10.0 https://github.com/elastic/go-elasticsearch.git $GOPATH/src/github.com/elastic/go-elasticsearch/v7
 RUN go get -u github.com/LF-Engineering/ssaw/ssawsync
 RUN go get -u github.com/LF-Engineering/sync-data-sources/sources
 RUN go get -u github.com/LF-Engineering/da-ds
