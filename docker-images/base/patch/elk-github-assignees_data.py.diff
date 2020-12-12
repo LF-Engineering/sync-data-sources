@@ -1,0 +1,62 @@
+diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
+index e2da0c27..87a1e744 100644
+--- a/grimoire_elk/enriched/github.py
++++ b/grimoire_elk/enriched/github.py
+@@ -36,7 +36,7 @@ from grimoirelab_toolkit.datetime import (datetime_utcnow,
+ 
+ from elasticsearch import Elasticsearch as ES, RequestsHttpConnection
+ 
+-from .utils import get_time_diff_days
++from .utils import get_time_diff_days, get_github_profile_details
+ 
+ from .enrich import Enrich, metadata, anonymize_url
+ from ..elastic_mapping import Mapping as BaseMapping
+@@ -476,6 +476,20 @@ class GitHubEnrich(Enrich):
+             rich_pr['merge_author_location'] = None
+             rich_pr['merge_author_geolocation'] = None
+ 
++        rich_pr['assignees_data'] = list()
++        assignees = pull_request.get('assignees', list())
++        for assignee in assignees:
++            profile_url = assignee.get('url', '')
++            data = get_github_profile_details(profile_url)
++            rich_pr['assignees_data'].append({
++                'assignee_login': data.get('login', None),
++                'assignee_name': data.get('name', None),
++                'assignee_domain': self.get_email_domain(data['email']) if data['email'] else None,
++                'assignee_org': data.get('company', None),
++                'assignee_location': data.get('location', None),
++                'assignee_geolocation': data.get('geolocation', None)
++            })
++
+         rich_pr['id'] = pull_request['id']
+         rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
+         rich_pr['repository'] = self.get_project_repository(rich_pr)
+diff --git a/grimoire_elk/enriched/utils.py b/grimoire_elk/enriched/utils.py
+index 0881a43a..6249badb 100755
+--- a/grimoire_elk/enriched/utils.py
++++ b/grimoire_elk/enriched/utils.py
+@@ -234,3 +234,23 @@ def fix_field_date(date_value):
+         field_date = field_date.replace(tzinfo=None)
+ 
+     return field_date.isoformat()
++
++
++def get_github_profile_details(url):
++    data = {}
++    try:
++        if url is not None and len(url) > 0:
++            response = requests.get(url)
++            response.raise_for_status()
++            data = response.json()
++    except requests.exceptions.HTTPError as e:
++        if response.status_code == 429:
++            logger.error("Github rate limit issue", str(e))
++        elif response.status_code == 404:
++            logger.error("Profile not found", str(e))
++        else:
++            logger.error("Github profile call error", str(e))
++    except requests.exceptions.ConnectionError as e:
++        logger.error("Connection error", str(e))
++    finally:
++        return data
