@@ -37,7 +37,8 @@ cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace .
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-organize-repo.py.diff && cd .. || exit 17
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit_url.py.diff && cd .. || exit 18
-cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-assignees_data.py.diff && cd .. || exit 19
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-assignees-data.py.diff && cd .. || exit 19
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-reviews-data.py.diff && cd .. || exit 20
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
 echo 'All patching OK'
