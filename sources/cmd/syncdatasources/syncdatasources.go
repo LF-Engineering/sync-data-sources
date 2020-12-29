@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla :false, lib.BugzillaRest:false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -103,6 +103,12 @@ var (
 		lib.DockerHub: {
 			"DA_DOCKERHUB_HTTP_TIMEOUT":   "60s",
 			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
+		},
+		lib.Bugzilla: {
+			"DA_BUGZILLA_CATEGORY":"bug",
+		},
+		lib.BugzillaRest: {
+			"DA_BUGZILLA_REST_CATEGORY":"bug",
 		},
 	}
 )
@@ -4322,6 +4328,18 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories: DS%s", ds)
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
+	case lib.Bugzilla, lib.BugzillaRest:
+		env["--bugzilla-origin"] = e[1]
+		env["--bugzilla-do-fetch"] = e[2]
+		env["--bugzilla-do-enrich"] = e[3]
+		env["--bugzilla-from"] = e[4]
+		env["--bugzilla-project"] = e[5]
+		env["--bugzilla-fetch-size"] = e[6]
+		env["--bugzilla-enrich-size"] = e[7]
+		env["--bugzilla-retries"] = e[8]
+		env["--bugzilla-delay"] = e[9]
+		env["--bugzilla-gab-url"] = e[10]
+
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
