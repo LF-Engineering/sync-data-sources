@@ -4338,7 +4338,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			Project:  project,
 			Index:    idxSlug,
 		}
-		data, err := json.Marshal(&buildServers)
+		data, err := jsoniter.Marshal(&buildServers)
 		if err != nil {
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in Jenkins buildservers: DS %s", ds)
 		}
