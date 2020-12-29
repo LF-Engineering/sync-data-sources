@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Jenkins: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -103,6 +103,10 @@ var (
 		lib.DockerHub: {
 			"DA_DOCKERHUB_HTTP_TIMEOUT":   "60s",
 			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
+		},
+		lib.Jenkins: {
+			"DA_JENKINS_HTTP_TIMEOUT":   "60s",
+			"DA_JENKINS_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -4322,6 +4326,23 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories: DS%s", ds)
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
+	case lib.Jenkins:
+		type BuildServer struct {
+			URL      string `json:"url"`
+			Project  string `json:"project"`
+			Index    string `json:"index"`
+		}
+		buildServers := make([]BuildServer, 1)
+		buildServers[0] = BuildServer{
+			URL:      e[0],
+			Project:  project,
+			Index:    idxSlug,
+		}
+		data, err := json.Marshal(&buildServers)
+		if err != nil {
+			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in Jenkins buildservers: DS %s", ds)
+		}
+		env[prefix+"JENKINS_JSON"] = string(data)
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
