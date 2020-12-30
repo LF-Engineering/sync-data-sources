@@ -4306,16 +4306,16 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		env[prefix+"URL"] = e[0]
 		env[prefix+"CHANNEL"] = e[1]
 	case lib.DockerHub:
-		type Repository struct {
+		type repository struct {
 			Owner      string
 			Repository string
 			Project    string
 			ESIndex    string
 		}
-		repos := make([]Repository, 1)
+		repos := make([]repository, 1)
 
 		// fill repos
-		repos[0] = Repository{e[0], e[1], project, idxSlug}
+		repos[0] = repository{e[0], e[1], project, idxSlug}
 
 		data, err := json.Marshal(&repos)
 		if err != nil {
