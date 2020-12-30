@@ -4327,16 +4327,16 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
 	case lib.Jenkins:
-		type BuildServer struct {
-			URL      string `json:"url"`
-			Project  string `json:"project"`
-			Index    string `json:"index"`
+		type buildServer struct {
+			URL     string `json:"url"`
+			Project string `json:"project"`
+			Index   string `json:"index"`
 		}
-		buildServers := make([]BuildServer, 1)
-		buildServers[0] = BuildServer{
-			URL:      e[0],
-			Project:  project,
-			Index:    idxSlug,
+		buildServers := make([]buildServer, 1)
+		buildServers[0] = buildServer{
+			URL:     e[0],
+			Project: project,
+			Index:   idxSlug,
 		}
 		data, err := jsoniter.Marshal(&buildServers)
 		if err != nil {
