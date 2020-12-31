@@ -34,6 +34,7 @@ type Task struct {
 	PairProgramming     bool
 	AffiliationSource   string
 	Dummy               bool
+	Flags               map[string]string
 }
 
 // String - default string output for a task (generic)

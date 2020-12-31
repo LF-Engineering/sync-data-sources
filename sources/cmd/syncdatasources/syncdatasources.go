@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla :false, lib.BugzillaRest:false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla: true, lib.BugzillaRest: true}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -105,10 +105,10 @@ var (
 			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
 		},
 		lib.Bugzilla: {
-			"DA_BUGZILLA_CATEGORY":"bug",
+			"DA_BUGZILLA_CATEGORY": "bug",
 		},
 		lib.BugzillaRest: {
-			"DA_BUGZILLA_REST_CATEGORY":"bug",
+			"DA_BUGZILLA_REST_CATEGORY": "bug",
 		},
 	}
 )
@@ -1132,11 +1132,21 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	return
 }
 
+// todo: move it from here
+func getFlagByName(name string, flags []lib.Config) string {
+
+	for _, flag := range flags {
+		if flag.Name == name {
+			return flag.Value
+		}
+	}
+	return ""
+}
+
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
 	gHint = -1
-
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
 	fixtures := []lib.Fixture{}
@@ -1289,6 +1299,14 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						fixture.Slug,
 					)
 				}
+				flags := map[string]string{
+					"--bugzilla-origin":      name,
+					"--bugzilla-do-fetch":    getFlagByName("dofetch", dataSource.Config),
+					"--bugzilla-do-enrich":   getFlagByName("doenrich", dataSource.Config),
+					"--bugzilla-project":     endpoint.Project,
+					"--bugzilla-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
+					"--bugzilla-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
@@ -1308,6 +1326,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						MaxFreq:           dataSource.MaxFreq,
 						AffiliationSource: affiliationSource,
 						Dummy:             endpoint.Dummy,
+						Flags:             flags,
 					},
 				)
 			}
@@ -2056,7 +2075,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 
 		// Handle DS endpoint
-		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads, idxSlug, tsk.Project)
+		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads, idxSlug, tsk.Project, &tsk)
 		if len(eps) == 0 {
 			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
@@ -3807,9 +3826,9 @@ func addSSHPrivKey(ctx *lib.Ctx, key, idxSlug string) bool {
 }
 
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
-func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, project string) (e []string, env map[string]string) {
+func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, project string, task *lib.Task) (e []string, env map[string]string) {
 	defer func() {
-		env = p2oEndpoint2dadsEndpoint(e, ds, dads, idxSlug, project)
+		env = p2oEndpoint2dadsEndpoint(e, ds, dads, idxSlug, project, task )
 	}()
 	defaults := map[string]struct{}{
 		lib.Git:          {},
@@ -4285,7 +4304,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 }
 
 // p2oEndpoint2dadsEndpoint - map p2o.py endpoint to dads endpoint
-func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, project string) (env map[string]string) {
+func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, project string, task *lib.Task) (env map[string]string) {
 	all, ok := dadsTasks[ds]
 	if !ok {
 		return
@@ -4329,16 +4348,13 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
 	case lib.Bugzilla, lib.BugzillaRest:
-		env["--bugzilla-origin"] = e[1]
-		env["--bugzilla-do-fetch"] = e[2]
-		env["--bugzilla-do-enrich"] = e[3]
-		env["--bugzilla-from"] = e[4]
-		env["--bugzilla-project"] = e[5]
-		env["--bugzilla-fetch-size"] = e[6]
-		env["--bugzilla-enrich-size"] = e[7]
-		env["--bugzilla-retries"] = e[8]
-		env["--bugzilla-delay"] = e[9]
-		env["--bugzilla-gab-url"] = e[10]
+		env["--bugzilla-origin"] = e[0]
+		env["--bugzilla-do-fetch"] = task.Flags["dofetch"]
+		env["--bugzilla-do-enrich"] = task.Flags["doenrich"]
+		env["--bugzilla-from"] = task.Flags["from"]
+		env["--bugzilla-project"] = task.Flags["project"]
+		env["--bugzilla-fetch-size"] = task.Flags["fetchsize"]
+		env["--bugzilla-enrich-size"] = task.Flags["enrichsize"]
 
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
@@ -6005,6 +6021,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	)
 	if dads {
 		commandLine = []string{"dads"}
+		// add dads arguments
+		for k, v := range task.Flags {
+			commandLine = append(commandLine, k)
+			commandLine = append(commandLine, v)
+		}
 		envPrefix = "DA_" + strings.ToUpper(strings.Split(task.DsSlug, "/")[0]) + "_"
 		mainEnv[envPrefix+"ENRICH"] = "1"
 		mainEnv[envPrefix+"RAW_INDEX"] = idxSlug + "-raw"
@@ -6056,6 +6077,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			mainEnv[envPrefix+"DB_NAME"] = ctx.ShDB
 			mainEnv[envPrefix+"DB_USER"] = ctx.ShUser
 			mainEnv[envPrefix+"DB_PASS"] = ctx.ShPass
+
+			mainEnv[envPrefix+"GAP_URL"] = ctx.GapURL
+			mainEnv[envPrefix+"RETRIES"] = ctx.Retries
+			mainEnv[envPrefix+"DELAY"] = ctx.Delay
+
 			if ctx.ShPort != "" {
 				mainEnv[envPrefix+"DB_PORT"] = ctx.ShPort
 			}
@@ -6157,7 +6183,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 	}
 	// Handle DS endpoint
-	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads, idxSlug, task.Project)
+	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads, idxSlug, task.Project, &task)
 	if len(eps) == 0 {
 		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
 		result.Code[1] = 2

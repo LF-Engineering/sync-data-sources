@@ -119,6 +119,9 @@ type Ctx struct {
 	ShDB                            string         // From SH_DB
 	TestMode                        bool           // True when running tests
 	OAuthKeys                       []string       // GitHub oauth keys recevide from SDS_GITHUB_OAUTH configuration (initialized only when lib.GHClient() is called)
+	GapURL                          string         // Data gab handelar api url
+	Retries                         string            // number of retries to insert into elastic
+	Delay                           string  // duration between each retry
 }
 
 // Init - get context from environment variables
@@ -283,6 +286,10 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.ShPort, false)
 	AddRedacted(ctx.ShPass, false)
 	AddRedacted(ctx.ShDB, false)
+
+	ctx.GapURL = os.Getenv("GAP_URL")
+	ctx.Retries = os.Getenv("RETRIES")
+	ctx.Delay = os.Getenv("DELAY")
 
 	// Auth0 parameters for obtaining DA-affiliation API token
 	ctx.Auth0URL = os.Getenv("AUTH0_URL")
