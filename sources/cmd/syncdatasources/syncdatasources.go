@@ -2073,7 +2073,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 
 		// Handle DS endpoint
-		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads, idxSlug, tsk.Project, &tsk)
+		eps, epEnv := massageEndpoint(tsk.Endpoint, ds, dads, idxSlug, tsk.Project)
 		if len(eps) == 0 {
 			result[3] = fmt.Sprintf("%s: %+v: %s", tsk.Endpoint, tsk, lib.ErrorStrings[2])
 			return
@@ -3824,9 +3824,9 @@ func addSSHPrivKey(ctx *lib.Ctx, key, idxSlug string) bool {
 }
 
 // massageEndpoint - this function is used to make sure endpoint is correct for a given datasource
-func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, project string, task *lib.Task) (e []string, env map[string]string) {
+func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, project string) (e []string, env map[string]string) {
 	defer func() {
-		env = p2oEndpoint2dadsEndpoint(e, ds, dads, idxSlug, project, task)
+		env = p2oEndpoint2dadsEndpoint(e, ds, dads, idxSlug, project)
 	}()
 	defaults := map[string]struct{}{
 		lib.Git:          {},
@@ -4302,7 +4302,7 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 }
 
 // p2oEndpoint2dadsEndpoint - map p2o.py endpoint to dads endpoint
-func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, project string, task *lib.Task) (env map[string]string) {
+func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, project string) (env map[string]string) {
 	all, ok := dadsTasks[ds]
 	if !ok {
 		return
@@ -4346,13 +4346,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
 	case lib.Bugzilla, lib.BugzillaRest:
-		env["--bugzilla-origin"] = e[0]
-		env["--bugzilla-do-fetch"] = task.Flags["dofetch"]
-		env["--bugzilla-do-enrich"] = task.Flags["doenrich"]
-		env["--bugzilla-from"] = task.Flags["from"]
-		env["--bugzilla-project"] = task.Flags["project"]
-		env["--bugzilla-fetch-size"] = task.Flags["fetchsize"]
-		env["--bugzilla-enrich-size"] = task.Flags["enrichsize"]
+
 	case lib.Jenkins:
 		type buildServer struct {
 			URL     string `json:"url"`
@@ -6197,7 +6191,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		}
 	}
 	// Handle DS endpoint
-	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads, idxSlug, task.Project, &task)
+	eps, epEnv := massageEndpoint(task.Endpoint, ds, dads, idxSlug, task.Project)
 	if len(eps) == 0 {
 		lib.Printf("%s: %+v: %s\n", task.Endpoint, task, lib.ErrorStrings[2])
 		result.Code[1] = 2
