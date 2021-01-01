@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla: false, lib.BugzillaRest: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla: false, lib.BugzillaRest: false, lib.Jenkins: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -104,11 +104,9 @@ var (
 			"DA_DOCKERHUB_HTTP_TIMEOUT":   "60s",
 			"DA_DOCKERHUB_NO_INCREMENTAL": "1",
 		},
-		lib.Bugzilla: {
-			"DA_BUGZILLA_CATEGORY": "bug",
-		},
-		lib.BugzillaRest: {
-			"DA_BUGZILLA_REST_CATEGORY": "bug",
+		lib.Jenkins: {
+			"DA_JENKINS_HTTP_TIMEOUT":   "60s",
+			"DA_JENKINS_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -4355,7 +4353,23 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		env["--bugzilla-project"] = task.Flags["project"]
 		env["--bugzilla-fetch-size"] = task.Flags["fetchsize"]
 		env["--bugzilla-enrich-size"] = task.Flags["enrichsize"]
-
+	case lib.Jenkins:
+		type buildServer struct {
+			URL     string `json:"url"`
+			Project string `json:"project"`
+			Index   string `json:"index"`
+		}
+		buildServers := make([]buildServer, 1)
+		buildServers[0] = buildServer{
+			URL:     e[0],
+			Project: project,
+			Index:   idxSlug,
+		}
+		data, err := jsoniter.Marshal(&buildServers)
+		if err != nil {
+			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in Jenkins buildservers: DS %s", ds)
+		}
+		env[prefix+"JENKINS_JSON"] = string(data)
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
