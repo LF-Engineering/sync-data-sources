@@ -43,7 +43,7 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Jenkins: false}
+	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: false, lib.Bugzilla: false, lib.BugzillaRest: false, lib.Jenkins: false}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -1130,11 +1130,21 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 	return
 }
 
+// todo: move it from here
+func getFlagByName(name string, flags []lib.Config) string {
+
+	for _, flag := range flags {
+		if flag.Name == name {
+			return flag.Value
+		}
+	}
+	return ""
+}
+
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
 	gHint = -1
-
 	// Get number of CPUs available
 	thrN := lib.GetThreadsNum(ctx)
 	fixtures := []lib.Fixture{}
@@ -1287,6 +1297,14 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						fixture.Slug,
 					)
 				}
+				flags := map[string]string{
+					"--bugzilla-origin":      name,
+					"--bugzilla-do-fetch":    getFlagByName("dofetch", dataSource.Config),
+					"--bugzilla-do-enrich":   getFlagByName("doenrich", dataSource.Config),
+					"--bugzilla-project":     endpoint.Project,
+					"--bugzilla-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
+					"--bugzilla-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+				}
 				tasks = append(
 					tasks,
 					lib.Task{
@@ -1306,6 +1324,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						MaxFreq:           dataSource.MaxFreq,
 						AffiliationSource: affiliationSource,
 						Dummy:             endpoint.Dummy,
+						Flags:             flags,
 					},
 				)
 			}
@@ -4326,6 +4345,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories: DS%s", ds)
 		}
 		env[prefix+"REPOSITORIES_JSON"] = string(data)
+	case lib.Bugzilla, lib.BugzillaRest:
+
 	case lib.Jenkins:
 		type buildServer struct {
 			URL     string `json:"url"`
@@ -6008,6 +6029,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	)
 	if dads {
 		commandLine = []string{"dads"}
+		// add dads arguments
+		for k, v := range task.Flags {
+			commandLine = append(commandLine, k)
+			commandLine = append(commandLine, v)
+		}
 		envPrefix = "DA_" + strings.ToUpper(strings.Split(task.DsSlug, "/")[0]) + "_"
 		mainEnv[envPrefix+"ENRICH"] = "1"
 		mainEnv[envPrefix+"RAW_INDEX"] = idxSlug + "-raw"
@@ -6059,6 +6085,11 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			mainEnv[envPrefix+"DB_NAME"] = ctx.ShDB
 			mainEnv[envPrefix+"DB_USER"] = ctx.ShUser
 			mainEnv[envPrefix+"DB_PASS"] = ctx.ShPass
+
+			mainEnv[envPrefix+"GAP_URL"] = ctx.GapURL
+			mainEnv[envPrefix+"RETRIES"] = ctx.Retries
+			mainEnv[envPrefix+"DELAY"] = ctx.Delay
+
 			if ctx.ShPort != "" {
 				mainEnv[envPrefix+"DB_PORT"] = ctx.ShPort
 			}
