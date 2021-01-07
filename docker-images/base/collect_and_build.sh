@@ -6,6 +6,7 @@ cd repos || exit 2
 org=chaoss
 git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
+cd grimoirelab-elk && git checkout "ecb00c9" && cd .. || exit 21
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
 git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch || exit 17

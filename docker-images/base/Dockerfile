@@ -1,4 +1,4 @@
-FROM debian:stretch-slim
+FROM debian:10-slim
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get -y install --no-install-recommends apt-utils bash locales gcc cloc git git-core jq procps tree ccze psmisc python python3 \
