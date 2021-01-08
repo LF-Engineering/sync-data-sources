@@ -2,7 +2,7 @@
 
 The full workflow is to start in SDS directory and then:
 - `cd ./docker-images/base/`.
-- ./collect_and_build.sh`.
+- `./collect_and_build.sh`.
 - `docker build -f Dockerfile -t "dajohn/dev-analytics-grimoire-docker-minimal" .`.
 - Do not push yet! Check if p2o.py works inside the image (which is not the case very often due to internal incompatibilities withing the p2o stack):
 - `docker run -it "dajohn/dev-analytics-grimoire-docker-minimal" p2o.py`.
