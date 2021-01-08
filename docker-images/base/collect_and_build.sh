@@ -6,6 +6,7 @@ cd repos || exit 2
 org=chaoss
 git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
+# Following command is used to forcefully avoid the weblate integrations 
 cd grimoirelab-elk && git checkout "ecb00c9" && cd .. || exit 21
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
@@ -25,7 +26,7 @@ git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch
 # revert slack api commit from perceval
 cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master && cd ..
 # rocketchat support
-cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase master && cd ..
+cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd ..
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
 # p2o.py per-project affiliations support (specify project via env: PROJECT_SLUG=lfn/onap p2o.py ...)
 vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7
