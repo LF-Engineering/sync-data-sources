@@ -24,9 +24,10 @@ git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch
 #vim --not-a-term -c "%s/if entry is not None:/if entry is not None and 'sortKey' in entry:/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/gerrit.py
 #git diff > api.py.diff
 # revert slack api commit from perceval
-cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master && cd ..
+# cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master/slack-history-api-revert && cd .. || exit 22
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-slack-revert-channel.py.diff && cd .. || exit 15
 # rocketchat support
-cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd ..
+cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd .. || exit 23
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
 # p2o.py per-project affiliations support (specify project via env: PROJECT_SLUG=lfn/onap p2o.py ...)
 vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7

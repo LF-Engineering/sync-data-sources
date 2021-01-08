@@ -1,0 +1,16 @@
+diff --git a/perceval/backends/core/slack.py b/perceval/backends/core/slack.py
+index d3dbc55..8456ffa 100644
+--- a/perceval/backends/core/slack.py
++++ b/perceval/backends/core/slack.py
+@@ -371,7 +371,10 @@ class SlackClient(HttpClient):
+ 
+         # the channels.history endpoint will be working until Feb 24th 2021
+         # apps created after June 10th 2020 won't work with this endpoint
+-        resource = self.RCHANNEL_HISTORY
++        # resource = self.RCHANNEL_HISTORY
++
++        # reverted the channel to retrieve message
++        resource = self.RCONVERSATION_HISTORY
+ 
+         params = {
+             self.PCHANNEL: channel,
