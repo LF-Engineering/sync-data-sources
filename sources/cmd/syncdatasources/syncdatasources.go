@@ -4364,7 +4364,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in Jenkins buildservers: DS %s", ds)
 		}
 		// wrap JSON with single quote for da-ds Unmarshal
-		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("'%s'", string(data))
+		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("%s", string(data))
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
