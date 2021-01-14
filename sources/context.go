@@ -310,6 +310,7 @@ func (ctx *Ctx) Init() {
 
 	// Auth0 data JSON
 	ctx.Auth0Data = os.Getenv("AUTH0_DATA")
+	AddRedacted(ctx.Auth0Data, false)
 
 	// Only validate support
 	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""
