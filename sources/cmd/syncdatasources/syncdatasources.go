@@ -1936,6 +1936,8 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			mainEnv[envPrefix+"REFRESH_AFFS"] = "1"
 			mainEnv[envPrefix+"FORCE_FULL"] = "1"
 			mainEnv[envPrefix+"ES_URL"] = ctx.ElasticURL
+			mainEnv[envPrefix+"AFFILIATION_API_URL"] = ctx.AffiliationAPIURL
+			mainEnv["AUTH0_DATA"] = ctx.Auth0Data
 		} else {
 			commandLine = []string{
 				"p2o.py",
@@ -6040,6 +6042,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		mainEnv[envPrefix+"RAW_INDEX"] = idxSlug + "-raw"
 		mainEnv[envPrefix+"RICH_INDEX"] = idxSlug
 		mainEnv[envPrefix+"ES_URL"] = ctx.ElasticURL
+		mainEnv[envPrefix+"AFFILIATION_API_URL"] = ctx.AffiliationAPIURL
+		mainEnv["AUTH0_DATA"] = ctx.Auth0Data
 	} else {
 		commandLine = []string{
 			"p2o.py",
