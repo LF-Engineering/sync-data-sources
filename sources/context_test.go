@@ -120,6 +120,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		Auth0ClientID:                   in.Auth0ClientID,
 		Auth0ClientSecret:               in.Auth0ClientSecret,
 		AffiliationAPIURL:               in.AffiliationAPIURL,
+		Auth0Data:                       in.Auth0Data,
 		MetricsAPIURL:                   in.MetricsAPIURL,
 	}
 	return &out
@@ -359,6 +360,7 @@ func TestInit(t *testing.T) {
 		Auth0ClientID:                   "",
 		Auth0ClientSecret:               "",
 		AffiliationAPIURL:               "",
+		Auth0Data:                       "",
 		MetricsAPIURL:                   "",
 	}
 
@@ -1202,6 +1204,19 @@ func TestInit(t *testing.T) {
 				map[string]interface{}{
 					"AffiliationAPIURL": "https://affs-api.com",
 					"MetricsAPIURL":     "https://metrics-api.com",
+				},
+			),
+		},
+		{
+			"Set da-ds auth0 data JSON",
+			map[string]string{
+				"AUTH0_DATA": `{"a":"b", "c": "d", "x": 120, "y": null, z: [1, 2, 3], h: {"a":"b"}, "aa": ["a", "b", "c"]}`,
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"Auth0Data": `{"a":"b", "c": "d", "x": 120, "y": null, z: [1, 2, 3], h: {"a":"b"}, "aa": ["a", "b", "c"]}`,
 				},
 			),
 		},

@@ -254,6 +254,11 @@ spec:
         secretKeyRef:
           name: {{ $root.Values.auth0Secret }}
           key: AUTH0_CLIENT_SECRET.secret
+    - name: AUTH0_DATA
+      valueFrom:
+        secretKeyRef:
+          name: {{ $root.Values.auth0Secret }}
+          key: AUTH0_DATA.secret
     - name: SSO_API_KEY
       valueFrom:
         secretKeyRef:

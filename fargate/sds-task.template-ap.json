@@ -380,6 +380,10 @@
           "value": "${SDS_AFFILIATION_API_URL}"
         },
         {
+          "name": "AUTH0_DATA",
+          "value": "${SDS_AUTH0_DATA}"
+        },
+        {
           "name": "METRICS_API_URL",
           "value": "${SDS_METRICS_API_URL}"
         },

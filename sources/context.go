@@ -107,6 +107,7 @@ type Ctx struct {
 	OnlyP2O                         bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
 	SkipReenrich                    string         // From SDS_SKIP_REENRICH, list of backend types where re-enrich phase is not needed, because they always fetch full data (don't support incremental updates), probably we can specify "jira,gerrit,confluence,bugzilla"
 	AffiliationAPIURL               string         // From AFFILIATION_API_URL - DA affiliations API url
+	Auth0Data                       string         // From AUTH0_DATA - auth0 data for da-ds (can be different than SDS auth0 data) - it's a stringified JSON
 	MetricsAPIURL                   string         // From METRICS_API_URL - DA metrics API url
 	Auth0URL                        string         // From AUTH0_URL: Auth0 parameters for obtaining DA-affiliation API token
 	Auth0Audience                   string         // From AUTH0_AUDIENCE
@@ -306,6 +307,9 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.AffiliationAPIURL, false)
 	ctx.MetricsAPIURL = os.Getenv("METRICS_API_URL")
 	AddRedacted(ctx.MetricsAPIURL, false)
+
+	// Auth0 data JSON
+	ctx.Auth0Data = os.Getenv("AUTH0_DATA")
 
 	// Only validate support
 	ctx.OnlyValidate = os.Getenv("SDS_ONLY_VALIDATE") != ""

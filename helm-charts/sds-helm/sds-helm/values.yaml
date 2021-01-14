@@ -12,6 +12,7 @@
 # auth0Audience: ''
 # auth0ClientID: ''
 # auth0ClientSecret: ''
+# auth0Data: ''
 # ssawURL: ''
 # affiliationAPIURL: ''
 # metricsAPIURL: ''

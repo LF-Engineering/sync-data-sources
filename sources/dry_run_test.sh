@@ -117,6 +117,10 @@ if [ -z "${AFFILIATION_API_URL}" ]
 then
   export AFFILIATION_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/AFFILIATION_API_URL.$1.secret`
 fi
+if [ -z "${AUTH0_DATA}" ]
+then
+  export AUTH0_DATA=`cat ../helm-charts/sds-helm/sds-helm/secrets/AUTH0_DATA.$1.secret`
+fi
 if [ -z "${METRICS_API_URL}" ]
 then
   export METRICS_API_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/METRICS_API_URL.$1.secret`
