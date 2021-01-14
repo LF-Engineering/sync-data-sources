@@ -9,6 +9,10 @@ then
   echo "$0: you need to specify env as a 1st argument: test|prod"
   exit 1
 fi
+if [ -z "${DOCKER_USER}" ]
+then
+  export DOCKER_USER=dajohn
+fi
 if [ ! -z "${DRY}" ]
 then
   #export SDS_ST=1
@@ -133,7 +137,7 @@ else
   cmd="/bin/bash"
   flg="${flg} -it"
 fi
-cmd="docker run ${envstr} ${flg} --name ${cname} \"dajohn/sync-data-sources-${1}:latest\" \"${cmd}\""
+cmd="docker run ${envstr} ${flg} --name ${cname} \"${DOCKER_USER}/sync-data-sources-${1}:latest\" \"${cmd}\""
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
@@ -141,6 +145,6 @@ then
 fi
 if [ -z "${NO}" ]
 then
-  docker pull "dajohn/sync-data-sources-${1}:latest"
+  docker pull "${DOCKER_USER}/sync-data-sources-${1}:latest"
   eval $cmd
 fi
