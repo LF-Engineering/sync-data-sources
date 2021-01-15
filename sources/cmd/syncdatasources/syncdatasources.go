@@ -6033,10 +6033,13 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if dads {
 		commandLine = []string{"dads"}
 		// add dads arguments
-		for k, v := range task.Flags {
-			commandLine = append(commandLine, k)
-			commandLine = append(commandLine, v)
+		if task.DsSlug == lib.Bugzilla || task.DsSlug == lib.BugzillaRest {
+			for k, v := range task.Flags {
+				commandLine = append(commandLine, k)
+				commandLine = append(commandLine, v)
+			}
 		}
+
 		envPrefix = "DA_" + strings.ToUpper(strings.Split(task.DsSlug, "/")[0]) + "_"
 		mainEnv[envPrefix+"ENRICH"] = "1"
 		mainEnv[envPrefix+"RAW_INDEX"] = idxSlug + "-raw"
