@@ -19,6 +19,7 @@ environments:
       SDS_SKIP_PROJECT_TS: 1
       SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
+      SDS_SKIP_SSAW: 1
   - name: prod-main
     cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
     command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
@@ -34,6 +35,7 @@ environments:
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '^sds-(lfn-odl-gerrit|open-mainframe-project|accord|acrn|allseen|alljoyn|act|agl|bitcoin-protocol|cc|CC|cephfoundation|chaoss|ojsf-chassis|chips|cip|clusterduck|cni|caf|ccc|cdf|cord-datacenter|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|dent|desktopwg|easycla|elisa|finops|finos|fossbazaar|frr|gql|internet-security-research-group|interuss|iovisor|janusgraph|kernelci|openkinetic|laminas|lets-encrypt|lf-asia-llc|lfph|lsb|linuxboot|llvmlinux|ltsi|lvfs|mapzen|mojaglobal|newticity|onf|O3DE|o3de|a11y|open-alliance-for-cloud-adoption|opencontainers|open-network-operating-system-onos|osecc|osapa|ova|open-voice-network|ovs|openbel|openbmc|openchain|OEEW|oeew|openfabrics-inc|openhpc|ojsf|openmama|openmessaging|openpowerfoundation|opensds|osquery|patentcommons|quartermaster|rcons|real-time-linux|redteam|rtdb|riscv|risc-v-international|sel4|soda-foundation|sof|tlf|openssf|reactive|tizen|ucf|korg|cncf)-'   # specifying which tasks should be skipped, can be something like '^sds-(foundation1|foundation2|...|foundationN)-'
       SDS_DATASOURCES_SKIP_RE: '^slack$'
+      SDS_SKIP_SSAW: 1
   - name: prod-cncf
     cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -49,6 +51,7 @@ environments:
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
       SDS_DATASOURCES_SKIP_RE: '^slack$'
+      SDS_SKIP_SSAW: 1
   - name: prod-korg
     cron: '0 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -64,6 +67,7 @@ environments:
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
+      SDS_SKIP_SSAW: 1
   - name: prod-others
     cron: '0 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -79,6 +83,7 @@ environments:
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '^sds-(lfn-odl-gerrit|open-mainframe-project|accord|acrn|allseen|alljoyn|act|agl|bitcoin-protocol|cc|CC|cephfoundation|chaoss|ojsf-chassis|chips|cip|clusterduck|cni|caf|ccc|cdf|cord-datacenter|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|dent|desktopwg|easycla|elisa|finops|finos|fossbazaar|frr|gql|internet-security-research-group|interuss|iovisor|janusgraph|kernelci|openkinetic|laminas|lets-encrypt|lf-asia-llc|lfph|lsb|linuxboot|llvmlinux|ltsi|lvfs|mapzen|mojaglobal|newticity|onf|O3DE|o3de|a11y|open-alliance-for-cloud-adoption|opencontainers|open-network-operating-system-onos|osecc|osapa|ova|open-voice-network|ovs|openbel|openbmc|openchain|OEEW|oeew|openfabrics-inc|openhpc|ojsf|openmama|openmessaging|openpowerfoundation|opensds|osquery|patentcommons|quartermaster|rcons|real-time-linux|redteam|rtdb|riscv|risc-v-international|sel4|soda-foundation|sof|tlf|openssf|reactive|tizen|ucf|cncf)-'
       SDS_DATASOURCES_SKIP_RE: '^slack$'
+      SDS_SKIP_SSAW: 1
   - name: prod-slack
     cron: '0 6 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -93,6 +98,7 @@ environments:
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_TASKS_RE: '(academy-software-foundation|dronecode|odpi)(.*)-slack'
+      SDS_SKIP_SSAW: 1
 - name: test                            # this will run on the 'test' env
   deployments:
   - name: test-master
@@ -113,6 +119,7 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
       SDS_DATASOURCES_SKIP_RE: '^github'
+      SDS_SKIP_SSAW: 1
   - name: test-main
     cron: '0 * * * *'
     command_prefix: '/usr/bin'
@@ -127,6 +134,7 @@ environments:
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github|cncf-fluxcd-slack|cncf-keda-slack|cncf-opentracing-slack|open-mainframe-project-cobol-programming-course-slack|open-mainframe-project-genevaers-slack|test-test-project-slack|cncf-nats-slack|open-mainframe-project-tersedecompress-slack|open-mainframe-project-education-slack|open-mainframe-project-zorow-slack|lfedge-project-eve-slack|cncf-chubaofs-slack|cncf-harbor-slack|cncf-helm-slack|cncf-jaeger-slack|cncf-kubernetes-slack|lfedge-fledge-slack|cncf-nsm-slack|cncf-openebs-slack|open-mainframe-project-zowe-slack|cncf-backstage-slack|cncf-bfe-slack|cncf-coredns-slack|cncf-rook-slack|open-mainframe-project-feilong-slack|cncf-falco-slack|cncf-longhorn-slack|cncf-strimzi-slack|cncf-thanos-slack|open-mainframe-project-atom-plugins-slack|cncf-fluentd-slack|cncf-keptn-slack|cncf-opentelemetry-slack|cncf-rkt-slack|cncf-cortex-slack|cncf-smi-slack|lfedge-open-horizon-slack|cncf-argo-slack|cncf-envoy-slack|open-mainframe-project-ade-slack|open-mainframe-project-polycephaly-slack|lfedge-home-edge-slack|cncf-k3s-slack|cncf-spiffe-slack|lfai-shared-slack|cncf-openservicemesh-slack|cncf-porter-slack|cncf-cncf-slack|AuthToken-slack|cncf-buildpacks-slack|cncf-grpc-slack|cncf-notary-slack|cncf-prometheus-slack|lfedge-akraino-edge-stack-slack|cncf-kudo-slack|cncf-linkerd-slack|cncf-openmetrics-slack|cncf-tremor-slack|open-mainframe-project-ambitus-slack|open-mainframe-project-softwarediscoverytool-slack|lfedge-baetyl-slack|lfedge-state-of-the-edge-slack|cncf-cloudevents-slack|cncf-containerd-slack|cncf-tuf-slack|cncf-volcano-slack|lfedge-securedeviceonboard-slack|cncf-intoto-slack|cncf-keylime-slack|cncf-parsec-slack|lfedge-edgex-foundry-slack)'
       SDS_DATASOURCES_SKIP_RE: '^github'
+      SDS_SKIP_SSAW: 1
   - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
@@ -139,3 +147,4 @@ environments:
       SDS_ES_BULKSIZE: 100
       SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
       SDS_DATASOURCES_SKIP_RE: '^github'
+      SDS_SKIP_SSAW: 1
