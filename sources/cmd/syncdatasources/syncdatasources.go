@@ -1625,13 +1625,41 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 	fixtures := *pfixtures
 	tasks := *ptasks
 	manualEnrich := make(map[string][]string)
+	noEnrich := make(map[string]struct{})
+	rename := func(arg string) string {
+		arg = strings.Replace(arg, "/", "-", -1)
+		if !strings.HasPrefix(arg, "sds-") {
+			arg = "sds-" + arg
+		}
+		return arg
+	}
 	for _, fixture := range fixtures {
 		for _, aliasFrom := range fixture.Aliases {
 			if !strings.HasPrefix(aliasFrom.From, "bitergia-") {
 				continue
 			}
+			lib.Printf("Enrich external indices: candidate: %s\n", aliasFrom.From)
+			if aliasFrom.NoEnrich {
+				noEnrich[aliasFrom.From] = struct{}{}
+			}
+			if len(aliasFrom.Dedup) > 0 {
+				for _, dedup := range aliasFrom.Dedup {
+					if !strings.HasSuffix(dedup, "-raw") {
+						dedup = rename(dedup)
+						ary, ok := manualEnrich[dedup]
+						if !ok {
+							manualEnrich[dedup] = []string{aliasFrom.From}
+						} else {
+							ary = append(ary, aliasFrom.From)
+							manualEnrich[dedup] = ary
+						}
+					}
+				}
+				continue
+			}
 			for _, aliasTo := range aliasFrom.To {
 				if !strings.HasSuffix(aliasTo, "-raw") {
+					aliasTo = rename(aliasTo)
 					ary, ok := manualEnrich[aliasTo]
 					if !ok {
 						manualEnrich[aliasTo] = []string{aliasFrom.From}
@@ -1643,12 +1671,14 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 		}
 	}
+	lib.Printf("Enrich external indices: list: %+v\n", manualEnrich)
 	indexToTask := make(map[string]lib.Task)
 	dataSourceToTask := make(map[string]lib.Task)
 	dsToCategory := make(map[string]map[string]struct{})
 	for i, task := range tasks {
-		idxSlug := "sds-" + task.FxSlug + "-" + task.DsSlug
+		idxSlug := "sds-" + task.FxSlug + "-" + task.DsFullSlug
 		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+		//fmt.Printf("%v -> %s\n", task, idxSlug)
 		_, ok := indexToTask[idxSlug]
 		if !ok {
 			indexToTask[idxSlug] = tasks[i]
@@ -1675,13 +1705,19 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 		}
 	}
+	//fmt.Printf("indexToTask: %+v\n", indexToTask)
 	newTasks := []lib.Task{}
 	processedIndices := make(map[string]struct{})
 	for sdsIndex, bitergiaIndices := range manualEnrich {
 		sdsTask, ok := indexToTask[sdsIndex]
+		lib.Printf("Enrich external indices: SDS %s -> %+v -> %v\n", sdsIndex, bitergiaIndices, ok)
 		if !ok {
 			lib.Printf("WARNING: External index/indices have no corresponding configuration in SDS: %+v\n", bitergiaIndices)
 			for _, bitergiaIndex := range bitergiaIndices {
+				_, ok := noEnrich[bitergiaIndex]
+				if ok {
+					continue
+				}
 				dsSlug := figureOutDatasourceFromIndexName(bitergiaIndex)
 				if dsSlug == "" {
 					lib.Printf("ERROR(not fatal): External index %s: cannot guess data source type from index name\n", bitergiaIndex)
@@ -1732,7 +1768,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			if ctx.SkipDedup {
 				endpoints = bitergiaEndpoints
 			} else {
-				sdsIndex := "sds-" + sdsTask.FxSlug + "-" + sdsTask.DsSlug
+				sdsIndex := "sds-" + sdsTask.FxSlug + "-" + sdsTask.DsFullSlug
 				sdsIndex = strings.Replace(sdsIndex, "/", "-", -1)
 				_, sdsOrigins := figureOutEndpoints(ctx, sdsIndex, sdsTask.DsSlug)
 				originsShared, originsOnlyBitergia := dedupOrigins(bitergiaOrigins, sdsOrigins)
@@ -1754,6 +1790,10 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				} else {
 					endpoints = bitergiaEndpoints
 				}
+			}
+			_, ok := noEnrich[bitergiaIndex]
+			if ok {
+				continue
 			}
 			for _, endpoint := range endpoints {
 				newTasks = append(
@@ -1858,7 +1898,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			lib.Printf("External indices enrichment info:\n")
 		}
 		for _, line := range msgs {
-			lib.Printf("%s\n", line)
+			lib.Printf("External indices: %s\n", line)
 		}
 	}
 	enrichExternal := func(ch chan [4]string, tsk lib.Task) (result [4]string) {
@@ -2231,6 +2271,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 		return
 	}
 	//lib.Printf("figureOutEndpoints(%s, %s)\n", index, dataSource)
+	//defer func() { lib.Printf("figureOutEndpoints(%s, %s) -> (%v,%v)\n", index, dataSource, endpoints, origins) }()
 	//curl -H "Content-Type: application/json" URL/idx/_search -d'{"size":0,"aggs":{"origin":{"terms":{"field":"origin"}}}}'
 	data := `{"size":0,"aggs":{"origin":{"terms":{"field":"origin","size":2147483647}}}}`
 	payloadBytes := []byte(data)
@@ -2722,12 +2763,17 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		}
 		for _, alias := range fixture.Aliases {
 			idxSlug := alias.From
-			if strings.HasPrefix(alias.From, "pattern:") {
+			if strings.HasPrefix(alias.From, "pattern:") || strings.HasPrefix(alias.From, "bitergia-") {
 				continue
 			}
 			should[idxSlug] = struct{}{}
 			// should[idxSlug+"-raw"] = struct{}{}
 		}
+	}
+	if ctx.Debug > 1 {
+		lib.Printf("should: %+v\n", should)
+		lib.Printf("fromFull: %+v\n", fromFull)
+		lib.Printf("toFull: %+v\n", toFull)
 	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
@@ -2796,6 +2842,11 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	}
 	sort.Strings(missing)
 	sort.Strings(extra)
+	if ctx.Debug > 1 {
+		lib.Printf("got: %+v\n", got)
+		lib.Printf("missing: %+v\n", missing)
+		lib.Printf("extra: %+v\n", extra)
+	}
 	if len(missing) > 0 {
 		lib.Printf("NOTICE: Missing indices (%d): %s\n", len(missing), strings.Join(missing, ", "))
 	}
