@@ -34,7 +34,6 @@ export SDS_SKIP_ES_LOG=1
 #export SDS_SKIP_PROJECT_TS=1
 #export SDS_SKIP_SYNC_INFO=1
 #export SDS_SKIP_VALIDATE_GITHUB_API=1
-#export SDS_SKIP_SSAW=1
 #export SDS_SKIP_SORT_DURATION=1
 export SDS_SKIP_MERGE=1
 #export SDS_SKIP_HIDE_EMAILS=1
@@ -66,16 +65,11 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_ENRICH_DS=1
 #export SDS_DRY_RUN_ALLOW_DET_AFF_RANGE=1
 #export SDS_DRY_RUN_ALLOW_COPY_FROM=1
-#export SDS_DRY_RUN_ALLOW_SSAW=1
 #export SDS_ONLY_VALIDATE=1
 export SDS_ONLY_P2O=1
 if [ -z "${SDS_ES_URL}" ]
 then
   export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
-fi
-if [ -z "${SDS_SSAW_URL}" ]
-then
-  export SDS_SSAW_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/SSAW_URL.$1.secret`
 fi
 if [ -z "${SH_HOST}" ]
 then

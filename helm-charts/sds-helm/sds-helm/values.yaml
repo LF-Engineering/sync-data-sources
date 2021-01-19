@@ -13,7 +13,6 @@
 # auth0ClientID: ''
 # auth0ClientSecret: ''
 # auth0Data: ''
-# ssawURL: ''
 # affiliationAPIURL: ''
 # metricsAPIURL: ''
 # ssoAPIKey: ''
@@ -32,7 +31,6 @@
 # skipSSOSecret (will skip creating SSO secret)
 # skipRepoSecret (will skip creating repo access secret)
 # skipAuth0Secret (will skip creating Auth0 secret)
-# skipSSAWSecret (will skip creating SSAW secret)
 # skipAPISecret (will skip creating API secret)
 # skipNamespace (will skip sds namespace creation)
 # skipPV (will skip persistent volume creation)
@@ -47,7 +45,6 @@
 # skipNamespace: 1
 # skipRepoSecret: 1
 # skipAuth0Secret: 1
-# skipSSAWSecret: 1
 # skipAPISecret: 1
 # skipPV: 1
 #
@@ -175,7 +172,6 @@ skipOrgMap: ''
 skipEnrichDS: ''
 skipP2O: ''
 skipValGitHubAPI: ''
-skipSSAW: ''
 skipAPI: ''
 onlyValidate: ''
 onlyP2O: ''
@@ -215,7 +211,6 @@ githubSecret: github-oauth
 ssoSecret: sso-secret
 repoSecret: repo-secret
 auth0Secret: auth0-secret
-ssawSecret: ssaw-secret
 apiSecret: api-secret
 pvName: sds
 pvAccessMode: ReadWriteOnce
@@ -233,7 +228,6 @@ debugCommand: '/bin/sleep'
 debugCommandArgs: ['36525d']
 debugImage: 'dajohn/sync-data-sources'
 validateImage: 'dajohn/validate-sync-data-sources'
-ssawFreq: ''
 useNodeSelector: '1'
 nodeSelector:
   lfda: grimoire

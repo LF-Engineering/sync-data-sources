@@ -172,10 +172,6 @@
           "value": "${SDS_DRY_RUN_ALLOW_COPY_FROM}"
         },
         {
-          "name": "SDS_DRY_RUN_ALLOW_SSAW",
-          "value": "${SDS_DRY_RUN_ALLOW_SSAW}"
-        },
-        {
           "name": "SDS_TIMEOUT_SECONDS",
           "value": "${SDS_TIMEOUT_SECONDS}"
         },
@@ -238,10 +234,6 @@
         {
           "name": "SDS_SKIP_SYNC_INFO",
           "value": "${SDS_SKIP_SYNC_INFO}"
-        },
-        {
-          "name": "SDS_SKIP_SSAW",
-          "value": "${SDS_SKIP_SSAW}"
         },
         {
           "name": "SDS_SKIP_SORT_DURATION",
@@ -366,14 +358,6 @@
         {
           "name": "SDS_MAX_DELETE_TRIALS",
           "value": "${SDS_MAX_DELETE_TRIALS}"
-        },
-        {
-          "name": "SDS_SSAW_FREQ",
-          "value": "${SDS_SSAW_FREQ}"
-        },
-        {
-          "name": "SDS_SSAW_URL",
-          "value": "${SDS_SSAW_URL}"
         },
         {
           "name": "AFFILIATION_API_URL",

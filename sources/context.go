@@ -52,7 +52,6 @@ type Ctx struct {
 	DryRunAllowProject              bool           // From SDS_DRY_RUN_ALLOW_PROJECT, if set it will allow running set project by SDS (on endpoints with project set and p2o mode set to false)
 	DryRunAllowSyncInfo             bool           // From SDS_DRY_RUN_ALLOW_SYNC_INFO, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSortDuration         bool           // From SDS_DRY_RUN_ALLOW_SORT_DURATION, if set it will allow setting sync info in sds-sync-info index
-	DryRunAllowSSAW                 bool           // From SDS_DRY_RUN_ALLOW_SSAW, if set - self serve affiliation workflow notification will be enabled in dry run mode
 	DryRunAllowMerge                bool           // From SDS_DRY_RUN_ALLOW_MERGE, if set it will allow calling DA-affiliation merge_all API after all tasks finished in dry run mode
 	DryRunAllowHideEmails           bool           // From SDS_DRY_RUN_ALLOW_HIDE_EMAILS, if set it will allow calling DA-affiliation hide_emails API in dry run mode
 	DryRunAllowCacheTopContributors bool           // From SDS_DRY_RUN_ALLOW_CACHE_TOP_CONTRIBUTORS, if set it will allow calling DA-affiliation cache_top_contributors API in dry run mode
@@ -78,7 +77,6 @@ type Ctx struct {
 	SkipProjectTS                   bool           // From SDS_SKIP_PROJECT_TS, will add project column as described above, without using "project_ts" column to determine from which document to start
 	SkipSyncInfo                    bool           // From SDS_SKIP_SYNC_INFO, will skip adding sync info to sds-sync-info index
 	SkipValGitHubAPI                bool           // From SDS_SKIP_VALIDATE_GITHUB_API, will not process GitHub orgs/users in validate step (will not attempt to get org's/user's repo lists)
-	SkipSSAW                        bool           // From SDS_SKIP_SSAW, if set - it will completelly skip SSAW processing
 	SkipSortDuration                bool           // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
 	SkipMerge                       bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails                  bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
@@ -101,8 +99,6 @@ type Ctx struct {
 	MaxMtxWait                      int            // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal                 bool           // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
 	EnrichExternalFreq              time.Duration  // From SDS_ENRICH_EXTERNAL_FREQ, how often enrich external indexes, default is 168h (7 days, week) which means no more often than 168h.
-	SSAWURL                         string         // From SDS_SSAW_URL, URL of the SSAW service to send notification to, must be set or SkipSSAW flag must be set
-	SSAWFreq                        int            // From SDS_SSAW_FREQ, default 0 - means call SSAW only when all tasks are finished, setting to 30 will spawn a separate thread that will call SSAW every 30 seconds, minimal frequency (when set) is 20
 	OnlyValidate                    bool           // From SDS_ONLY_VALIDATE, if defined, SDS will only validate fixtures and exit 0 if all of them are valide, non-zero + error message otherwise
 	OnlyP2O                         bool           // From SDS_ONLY_P2O, if defined, SDS will only run p2o tasks, will not do anything else.
 	SkipReenrich                    string         // From SDS_SKIP_REENRICH, list of backend types where re-enrich phase is not needed, because they always fetch full data (don't support incremental updates), probably we can specify "jira,gerrit,confluence,bugzilla"
@@ -563,26 +559,6 @@ func (ctx *Ctx) Init() {
 		dur, err := time.ParseDuration(os.Getenv("SDS_ENRICH_EXTERNAL_FREQ"))
 		FatalNoLog(err)
 		ctx.EnrichExternalFreq = dur
-	}
-
-	// SSAW stuff
-	ctx.SkipSSAW = os.Getenv("SDS_SKIP_SSAW") != ""
-	ctx.SSAWURL = os.Getenv("SDS_SSAW_URL")
-	if !ctx.TestMode && !ctx.OnlyValidate && !ctx.SkipSSAW && ctx.SSAWURL == "" {
-		FatalNoLog(fmt.Errorf("you must provide SDS_SSAW_URL=... or use SDS_SKIP_SSAW=1"))
-	}
-	ctx.DryRunAllowSSAW = os.Getenv("SDS_DRY_RUN_ALLOW_SSAW") != ""
-	if os.Getenv("SDS_SSAW_FREQ") == "" {
-		ctx.SSAWFreq = 0
-	} else {
-		secs, err := strconv.Atoi(os.Getenv("SDS_SSAW_FREQ"))
-		FatalNoLog(err)
-		if secs > 0 {
-			ctx.SSAWFreq = secs
-			if ctx.SSAWFreq < 20 {
-				ctx.SSAWFreq = 20
-			}
-		}
 	}
 
 	// Only validate support - overrides

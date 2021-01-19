@@ -9,7 +9,6 @@ List of secrets:
 - File `secrets/SH_PASS.env.secret` or --set `shPass=...` setup MariaDB password.
 - File `secrets/SH_DB.secret` or --set `shDB=...` setup MariaDB database.
 - File `secrets/ES_URL.secret` or --set `esURL=...` setup ElasticSearch connection.
-- File `secrets/SSAW_URL.secret` or --set `ssawURL=...` setup SSAW endpoint.
 - File `secrets/ZIPPASS.secret` or --set `zipPass=...` fixtures unzip password (fixtures contain sensitive information so they're stored in password protected zip file inside the docker image).
 
 To install:

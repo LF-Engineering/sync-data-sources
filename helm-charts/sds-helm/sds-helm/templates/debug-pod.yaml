@@ -130,8 +130,6 @@ spec:
       value: '{{ $root.Values.skipCopyFrom }}'
     - name: SDS_SKIP_P2O
       value: '{{ $root.Values.skipP2O }}'
-    - name: SDS_SKIP_SSAW
-      value: '{{ $root.Values.skipSSAW }}'
     - name: SDS_ONLY_VALIDATE
       value: '{{ $root.Values.onlyValidate }}'
     - name: SDS_ONLY_P2O
@@ -182,13 +180,6 @@ spec:
       value: '{{ $root.Values.maxDeleteTrials }}'
     - name: BRANCH
       value: '{{ $root.Values.deployEnv }}'
-    - name: SDS_SSAW_FREQ
-      value: '{{ $root.Values.ssawFreq }}'
-    - name: SDS_SSAW_URL
-      valueFrom:
-        secretKeyRef:
-          name: {{ $root.Values.ssawSecret }}
-          key: SSAW_URL.secret
     - name: AFFILIATION_API_URL
       valueFrom:
         secretKeyRef:

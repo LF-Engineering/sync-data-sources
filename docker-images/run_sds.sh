@@ -9,6 +9,11 @@ then
   echo "$0: you need to specify env as a 1st argument: test|prod"
   exit 1
 fi
+e="${1}"
+if [ "${e}" = "local" ]
+then
+  e=test
+fi
 if [ -z "${DOCKER_USER}" ]
 then
   export DOCKER_USER=dajohn
@@ -46,7 +51,6 @@ then
   export SDS_SKIP_PROJECT_TS=1
   export SDS_SKIP_SYNC_INFO=1
   export SDS_SKIP_VALIDATE_GITHUB_API=1
-  export SDS_SKIP_SSAW=1
   export SDS_SKIP_SORT_DURATION=1
   export SDS_SKIP_MERGE=1
   export SDS_SKIP_HIDE_EMAILS=1
@@ -77,14 +81,13 @@ then
   #export SDS_DRY_RUN_ALLOW_ENRICH_DS=1
   #export SDS_DRY_RUN_ALLOW_DET_AFF_RANGE=1
   #export SDS_DRY_RUN_ALLOW_COPY_FROM=1
-  #export SDS_DRY_RUN_ALLOW_SSAW=1
   #export SDS_ONLY_VALIDATE=1
   #export SDS_ONLY_P2O=1
 fi
-envstr="-e BRANCH=\"$1\""
-for renv in SDS_SSAW_URL SH_USER SH_HOST SH_PORT SH_PASS SH_DB SDS_ES_URL SDS_GITHUB_OAUTH AUTH0_URL AUTH0_AUDIENCE AUTH0_CLIENT_ID AUTH0_CLIENT_SECRET AFFILIATION_API_URL AUTH0_DATA METRICS_API_URL REPO_ACCESS
+envstr="-e BRANCH=\"${e}\""
+for renv in SH_USER SH_HOST SH_PORT SH_PASS SH_DB SDS_ES_URL SDS_GITHUB_OAUTH AUTH0_URL AUTH0_AUDIENCE AUTH0_CLIENT_ID AUTH0_CLIENT_SECRET AFFILIATION_API_URL AUTH0_DATA METRICS_API_URL REPO_ACCESS
 do
-  if ( [ "${renv}" = "SDS_SSAW_URL" ] || [ "${renv}" = "SDS_ES_URL" ]  || [ "${renv}" = "SDS_GITHUB_OAUTH" ] )
+  if ( [ "${renv}" = "SDS_ES_URL" ]  || [ "${renv}" = "SDS_GITHUB_OAUTH" ] )
   then
     fn="helm-charts/sds-helm/sds-helm/secrets/${renv:4}.${1}.secret"
     fn2="helm-charts/sds-helm/sds-helm/secrets/${renv:4}.secret"
@@ -137,7 +140,7 @@ else
   cmd="/bin/bash"
   flg="${flg} -it"
 fi
-cmd="docker run ${envstr} ${flg} --name ${cname} \"${DOCKER_USER}/sync-data-sources-${1}:latest\" \"${cmd}\""
+cmd="docker run ${envstr} ${flg} --name ${cname} \"${DOCKER_USER}/sync-data-sources-${e}:latest\" \"${cmd}\""
 if [ ! -z "${DBG}" ]
 then
   echo $cmd
@@ -145,6 +148,6 @@ then
 fi
 if [ -z "${NO}" ]
 then
-  docker pull "${DOCKER_USER}/sync-data-sources-${1}:latest"
+  docker pull "${DOCKER_USER}/sync-data-sources-${e}:latest"
   eval $cmd
 fi
