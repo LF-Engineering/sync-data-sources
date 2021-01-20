@@ -1680,7 +1680,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 	for i, task := range tasks {
 		idxSlug := "sds-" + task.FxSlug + "-" + task.DsFullSlug
 		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
-		//fmt.Printf("%v -> %s\n", task, idxSlug)
+		if ctx.Debug > 1 {
+			fmt.Printf("Enrich external indices: %v -> %s\n", task, idxSlug)
+		}
 		_, ok := indexToTask[idxSlug]
 		if !ok {
 			indexToTask[idxSlug] = tasks[i]
@@ -1707,7 +1709,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 		}
 	}
-	//fmt.Printf("indexToTask: %+v\n", indexToTask)
+	if ctx.Debug > 1 {
+		fmt.Printf("Enrich external indices: indexToTask: %+v\n", indexToTask)
+	}
 	newTasks := []lib.Task{}
 	processedIndices := make(map[string]struct{})
 	for sdsIndex, bitergiaIndices := range manualEnrich {
@@ -1748,24 +1752,28 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 						continue
 					}
 					endpoints, _ := figureOutEndpoints(ctx, bitergiaIndex, ds)
+					if ctx.Debug > 0 {
+						lib.Printf("Enrich external indices: %s/%s: adding %d artificial tasks (random task %+v, endpoints %+v)\n", bitergiaIndex, ds, len(endpoints), randomSdsTask, endpoints)
+					}
 					for _, endpoint := range endpoints {
-						newTasks = append(
-							newTasks,
-							lib.Task{
-								Project:           "",
-								ProjectP2O:        false,
-								ProjectNoOrigin:   false,
-								Endpoint:          endpoint,
-								Config:            randomSdsTask.Config,
-								DsSlug:            ds,
-								DsFullSlug:        randomSdsTask.DsFullSlug,
-								FxSlug:            "random:" + randomSdsTask.FxSlug,
-								AffiliationSource: randomSdsTask.FxSlug,
-								FxFn:              "random:" + randomSdsTask.FxFn,
-								MaxFreq:           randomSdsTask.MaxFreq,
-								ExternalIndex:     bitergiaIndex,
-							},
-						)
+						tsk := lib.Task{
+							Project:           "",
+							ProjectP2O:        false,
+							ProjectNoOrigin:   false,
+							Endpoint:          endpoint,
+							Config:            randomSdsTask.Config,
+							DsSlug:            ds,
+							DsFullSlug:        randomSdsTask.DsFullSlug,
+							FxSlug:            "random:" + randomSdsTask.FxSlug,
+							AffiliationSource: randomSdsTask.FxSlug,
+							FxFn:              "random:" + randomSdsTask.FxFn,
+							MaxFreq:           randomSdsTask.MaxFreq,
+							ExternalIndex:     bitergiaIndex,
+						}
+						if ctx.Debug > 1 {
+							lib.Printf("Enrich external indices: task based on random sds task: %+v\n", tsk)
+						}
+						newTasks = append(newTasks, tsk)
 						processedIndices[bitergiaIndex] = struct{}{}
 					}
 				}
@@ -1773,11 +1781,6 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			continue
 		}
 		for _, bitergiaIndex := range bitergiaIndices {
-			_, ok := processedIndices[bitergiaIndex]
-			if ok {
-				lib.Printf("Enrich external indices: '%s' was already processed (skipping enrichment and deduplication)\n", bitergiaIndex)
-				continue
-			}
 			bitergiaEndpoints, bitergiaOrigins := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
 			endpoints := []string{}
 			if ctx.SkipDedup {
@@ -1811,24 +1814,33 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				lib.Printf("Enrich external indices: '%s' has enrichment disabled (but not deduplication)\n", bitergiaIndex)
 				continue
 			}
+			_, ok := processedIndices[bitergiaIndex]
+			if ok {
+				lib.Printf("Enrich external indices: '%s' was already processed (skipping enrichment and deduplication)\n", bitergiaIndex)
+				continue
+			}
+			if ctx.Debug > 0 {
+				lib.Printf("Enrich external indices: %s/%s: adding %d external tasks (cloned task %+v, endpoints %+v)\n", bitergiaIndex, sdsTask.DsFullSlug, len(endpoints), sdsTask, endpoints)
+			}
 			for _, endpoint := range endpoints {
-				newTasks = append(
-					newTasks,
-					lib.Task{
-						Project:           "",
-						ProjectP2O:        false,
-						ProjectNoOrigin:   false,
-						Endpoint:          endpoint,
-						Config:            sdsTask.Config,
-						DsSlug:            sdsTask.DsSlug,
-						DsFullSlug:        sdsTask.DsFullSlug,
-						FxSlug:            sdsTask.FxSlug,
-						AffiliationSource: sdsTask.AffiliationSource,
-						FxFn:              sdsTask.FxFn,
-						MaxFreq:           sdsTask.MaxFreq,
-						ExternalIndex:     bitergiaIndex,
-					},
-				)
+				tsk := lib.Task{
+					Project:           "",
+					ProjectP2O:        false,
+					ProjectNoOrigin:   false,
+					Endpoint:          endpoint,
+					Config:            sdsTask.Config,
+					DsSlug:            sdsTask.DsSlug,
+					DsFullSlug:        sdsTask.DsFullSlug,
+					FxSlug:            sdsTask.FxSlug,
+					AffiliationSource: sdsTask.AffiliationSource,
+					FxFn:              sdsTask.FxFn,
+					MaxFreq:           sdsTask.MaxFreq,
+					ExternalIndex:     bitergiaIndex,
+				}
+				if ctx.Debug > 1 {
+					lib.Printf("Enrich external indices: external task: %+v\n", tsk)
+				}
+				newTasks = append(newTasks, tsk)
 				processedIndices[bitergiaIndex] = struct{}{}
 			}
 		}
@@ -1865,6 +1877,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 		infoMtx.Unlock()
 	}
+	fmt.Printf("Enrich external indices: external enrichment tasks: %d\n", len(newTasks))
 	gInfoExternal = func() {
 		infoMtx.Lock()
 		msg := ""

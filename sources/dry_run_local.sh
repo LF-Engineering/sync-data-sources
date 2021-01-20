@@ -7,7 +7,7 @@ fi
 export SDS_ST=1
 export SDS_NCPUS=1
 #export SDS_NCPUS_SCALE=4
-export SDS_DEBUG=1
+export SDS_DEBUG=2
 #export SDS_FIXTURES_RE=''
 #export SDS_DATASOURCES_RE=''
 #export SDS_PROJECTS_RE=''
@@ -127,4 +127,4 @@ if [ -z "${JWT_TOKEN}" ]
 then
   export JWT_TOKEN=`cat token.secret`
 fi
-./syncdatasources
+./syncdatasources 2>&1 | tee -a sds.log
