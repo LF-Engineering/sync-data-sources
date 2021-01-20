@@ -1681,7 +1681,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		idxSlug := "sds-" + task.FxSlug + "-" + task.DsFullSlug
 		idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 		if ctx.Debug > 1 {
-			fmt.Printf("Enrich external indices: %v -> %s\n", task, idxSlug)
+			lib.Printf("Enrich external indices: %v -> %s\n", task, idxSlug)
 		}
 		_, ok := indexToTask[idxSlug]
 		if !ok {
@@ -1710,7 +1710,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 	}
 	if ctx.Debug > 1 {
-		fmt.Printf("Enrich external indices: indexToTask: %+v\n", indexToTask)
+		lib.Printf("Enrich external indices: indexToTask: %+v\n", indexToTask)
 	}
 	newTasks := []lib.Task{}
 	processedIndices := make(map[string]struct{})
@@ -1883,7 +1883,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 		infoMtx.Unlock()
 	}
-	fmt.Printf("Enrich external indices: external enrichment tasks: %d\n", len(newTasks))
+	lib.Printf("Enrich external indices: external enrichment tasks: %d\n", len(newTasks))
 	gInfoExternal = func() {
 		infoMtx.Lock()
 		msg := ""
