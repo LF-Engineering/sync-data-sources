@@ -1671,7 +1671,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			}
 		}
 	}
-	lib.Printf("Enrich external indices: list: %+v\n", manualEnrich)
+	if ctx.Debug > 0 {
+		lib.Printf("Enrich external indices: list: %+v\n", manualEnrich)
+	}
 	indexToTask := make(map[string]lib.Task)
 	dataSourceToTask := make(map[string]lib.Task)
 	dsToCategory := make(map[string]map[string]struct{})
@@ -1710,12 +1712,20 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 	processedIndices := make(map[string]struct{})
 	for sdsIndex, bitergiaIndices := range manualEnrich {
 		sdsTask, ok := indexToTask[sdsIndex]
-		lib.Printf("Enrich external indices: SDS %s -> %+v -> %v\n", sdsIndex, bitergiaIndices, ok)
+		if ctx.Debug > 0 {
+			lib.Printf("Enrich external indices: %s -> %+v -> %v\n", sdsIndex, bitergiaIndices, ok)
+		}
 		if !ok {
 			lib.Printf("WARNING: External index/indices have no corresponding configuration in SDS: %+v\n", bitergiaIndices)
 			for _, bitergiaIndex := range bitergiaIndices {
 				_, ok := noEnrich[bitergiaIndex]
 				if ok {
+					lib.Printf("Enrich external indices: '%s' has enrichment disabled, skipping\n", bitergiaIndex)
+					continue
+				}
+				_, ok = processedIndices[bitergiaIndex]
+				if ok {
+					lib.Printf("Enrich external indices: '%s' was already processed\n", bitergiaIndex)
 					continue
 				}
 				dsSlug := figureOutDatasourceFromIndexName(bitergiaIndex)
@@ -1763,6 +1773,11 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			continue
 		}
 		for _, bitergiaIndex := range bitergiaIndices {
+			_, ok := processedIndices[bitergiaIndex]
+			if ok {
+				lib.Printf("Enrich external indices: '%s' was already processed (skipping enrichment and deduplication)\n", bitergiaIndex)
+				continue
+			}
 			bitergiaEndpoints, bitergiaOrigins := figureOutEndpoints(ctx, bitergiaIndex, sdsTask.DsSlug)
 			endpoints := []string{}
 			if ctx.SkipDedup {
@@ -1791,8 +1806,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 					endpoints = bitergiaEndpoints
 				}
 			}
-			_, ok := noEnrich[bitergiaIndex]
+			_, ok = noEnrich[bitergiaIndex]
 			if ok {
+				lib.Printf("Enrich external indices: '%s' has enrichment disabled (but not deduplication)\n", bitergiaIndex)
 				continue
 			}
 			for _, endpoint := range endpoints {
