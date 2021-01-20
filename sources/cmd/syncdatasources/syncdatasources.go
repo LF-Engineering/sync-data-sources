@@ -1599,8 +1599,8 @@ func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
 }
 
 func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptasks *[]lib.Task) {
-	if ctx.SkipExternal || ctx.SkipSH || ctx.SkipAffs {
-		lib.Printf("Skip External or Skip SH or Skip affs is set, skipping enriching external indices\n")
+	if ctx.SkipExternal {
+		lib.Printf("Skip External is set, skipping enriching external indices\n")
 		return
 	}
 	st := time.Now()
@@ -1721,6 +1721,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 		if !ok {
 			lib.Printf("WARNING: External index/indices have no corresponding configuration in SDS: %+v\n", bitergiaIndices)
+			if ctx.SkipSH || ctx.SkipAffs {
+				continue
+			}
 			for _, bitergiaIndex := range bitergiaIndices {
 				_, ok := noEnrich[bitergiaIndex]
 				if ok {
@@ -1808,6 +1811,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				} else {
 					endpoints = bitergiaEndpoints
 				}
+			}
+			if ctx.SkipSH || ctx.SkipAffs {
+				continue
 			}
 			_, ok = noEnrich[bitergiaIndex]
 			if ok {
