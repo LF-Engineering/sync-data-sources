@@ -1,5 +1,5 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index e2da0c27..87a1e744 100644
+index 1631b686..4bc0aaf1 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
 @@ -36,7 +36,7 @@ from grimoirelab_toolkit.datetime import (datetime_utcnow,
