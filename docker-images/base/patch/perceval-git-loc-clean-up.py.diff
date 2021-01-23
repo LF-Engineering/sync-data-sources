@@ -1,5 +1,5 @@
 diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
-index 5b93eed..e090875 100644
+index a9ebe9c..19bf8e4 100644
 --- a/perceval/backends/core/git.py
 +++ b/perceval/backends/core/git.py
 @@ -529,6 +529,7 @@ class GitParser:
@@ -10,7 +10,7 @@ index 5b93eed..e090875 100644
          self.total_lines_of_code = loc
          self.program_language_summary = pls
  
-@@ -753,6 +754,11 @@ class GitParser:
+@@ -759,6 +760,11 @@ class GitParser:
              return repo.git_loc.get_stats()
          return 0, []
  
@@ -23,7 +23,7 @@ index 5b93eed..e090875 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index acaa63f..57d8bf4 100644
+index 1cc65a7..9bff885 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -351,6 +351,43 @@ class GitLOC:

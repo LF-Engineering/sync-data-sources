@@ -7,7 +7,7 @@ org=chaoss
 git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
 # Following command is used to forcefully avoid the weblate integrations 
-cd grimoirelab-elk && git checkout "ecb00c9" && cd .. || exit 21
+cd grimoirelab-elk && git checkout "ecb00c9" && cd .. || exit 22
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
 git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch || exit 17
@@ -25,9 +25,9 @@ git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch
 #git diff > api.py.diff
 # revert slack api commit from perceval
 # cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master/slack-history-api-revert && cd .. || exit 22
-cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-slack-revert-channel.py.diff && cd .. || exit 22
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-slack-revert-channel.py.diff && cd .. || exit 23
 # rocketchat support
-cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd .. || exit 23
+cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd .. || exit 24
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
 # p2o.py per-project affiliations support (specify project via env: PROJECT_SLUG=lfn/onap p2o.py ...)
 vim --not-a-term -c "%s/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\n/end = Column(DateTime, default=MAX_PERIOD_DATE, nullable=False)\r    project_slug = Column(String(128))\r/g" -c 'wq!' grimoirelab-sortinghat/sortinghat/db/model.py || exit 7
@@ -39,8 +39,9 @@ cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace .
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc-clean-up.py.diff && cd .. || exit 19
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-organize-repo.py.diff && cd .. || exit 17
-cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit_url.py.diff && cd .. || exit 18
-cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-assignees_data.py.diff && cd .. || exit 20
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit-url.py.diff && cd .. || exit 18
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-assignees-data.py.diff && cd .. || exit 20
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-reviews-data.py.diff && cd .. || exit 21
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
 echo 'All patching OK'

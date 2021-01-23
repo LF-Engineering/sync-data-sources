@@ -1,5 +1,5 @@
 diff --git a/grimoire_elk/enriched/git.py b/grimoire_elk/enriched/git.py
-index 46ab7f2..f9a8dfe 100644
+index 41b62085..d49d2d21 100644
 --- a/grimoire_elk/enriched/git.py
 +++ b/grimoire_elk/enriched/git.py
 @@ -283,6 +283,8 @@ class GitEnrich(Enrich):
@@ -12,7 +12,7 @@ index 46ab7f2..f9a8dfe 100644
          # author_name and author_domain are added always
          identity = self.get_sh_identity(commit["Author"])
 diff --git a/grimoire_elk/enriched/mappings/git_aoc.json b/grimoire_elk/enriched/mappings/git_aoc.json
-index 52ac651..b867819 100644
+index 52ac651a..b8678192 100644
 --- a/grimoire_elk/enriched/mappings/git_aoc.json
 +++ b/grimoire_elk/enriched/mappings/git_aoc.json
 @@ -118,6 +118,12 @@
@@ -29,7 +29,7 @@ index 52ac651..b867819 100644
        }
      }
 diff --git a/grimoire_elk/enriched/mappings/git_aoc_es7.json b/grimoire_elk/enriched/mappings/git_aoc_es7.json
-index 016a4ab..46c1970 100644
+index 016a4ab5..46c1970c 100644
 --- a/grimoire_elk/enriched/mappings/git_aoc_es7.json
 +++ b/grimoire_elk/enriched/mappings/git_aoc_es7.json
 @@ -20,7 +20,7 @@
@@ -55,7 +55,7 @@ index 016a4ab..46c1970 100644
      }
    }
 diff --git a/schema/git.csv b/schema/git.csv
-index 3bcbd26..4fadcd4 100644
+index 3bcbd268..4fadcd4f 100644
 --- a/schema/git.csv
 +++ b/schema/git.csv
 @@ -28,6 +28,8 @@ is_git_commit,long,true,"Field containing '1' that allows to sum fields when con
