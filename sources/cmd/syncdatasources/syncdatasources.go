@@ -888,8 +888,9 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						if err != nil && !retried {
 							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate\n", org, response, err)
 							if isAbuse(err) {
-								lib.Printf("GitHub detected abuse, waiting for 30s\n")
-								time.Sleep(time.Duration(30) * time.Second)
+								sleepFor := 30 + rand.Intn(30)
+								lib.Printf("GitHub detected abuse, waiting for %ds\n", sleepFor)
+								time.Sleep(time.Duration(sleepFor) * time.Second)
 								aHint, _ = handleRate()
 							} else {
 								aHint, _ = handleRate()
