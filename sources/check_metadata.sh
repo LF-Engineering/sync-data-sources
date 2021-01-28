@@ -12,7 +12,7 @@ do
     curl -s -XPOST -H 'Content-type: application/json' "${ES}/_sql?format=csv" -d"{\"query\":\"select workinggroup from \\\"${f}\\\" group by workinggroup order by workinggroup\"}"
   else
     echo "index: $f"
-    curl -s -XPOST -H 'Content-type: application/json' "${ES}/_sql?format=txt" -d"{\"query\":\"select workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_formed, meta_state from \\\"${f}\\\" group by workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_formed, meta_state order by workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_formed, meta_state\"}"
+    curl -s -XPOST -H 'Content-type: application/json' "${ES}/_sql?format=txt" -d"{\"query\":\"select workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_state from \\\"${f}\\\" group by workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_state order by workinggroup, meta_title, meta_type, meta_program, meta_contributed, meta_state\"}"
   fi
   echo "======================="
 done
