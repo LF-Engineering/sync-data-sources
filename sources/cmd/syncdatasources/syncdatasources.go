@@ -1383,6 +1383,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	rslt := processTasks(ctx, &tasks, dss)
 	if !ctx.OnlyP2O {
 		gAliasesFunc()
+		processFixturesMetadata(ctx, &fixtures)
 		<-ch
 	}
 	if rslt != nil {
@@ -6659,10 +6660,64 @@ func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	return
 }
 
+func processFixturesMetadata(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+	if ctx.SkipMetadata || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowMetadata) {
+		return
+	}
+	fixtures := *pfixtures
+	lib.Printf("Processing fixtures metadata\n")
+	for i, fixture := range fixtures {
+		fmt.Printf("%d: %+v\n", i, fixture.Metadata)
+	}
+}
+
+func wip(ctx *lib.Ctx) {
+	fixtureFiles := []string{"shared.secret", "shared.secret"}
+	gctx, gcs := lib.GHClient(ctx)
+	gHint = -1
+	// Get number of CPUs available
+	thrN := lib.GetThreadsNum(ctx)
+	fixtures := []lib.Fixture{}
+	ch := make(chan lib.Fixture)
+	nThreads := 0
+	gRateMtx = &sync.Mutex{}
+	for _, fixtureFile := range fixtureFiles {
+		if fixtureFile == "" {
+			continue
+		}
+		go processFixtureFile(gctx, gcs, ch, ctx, fixtureFile)
+		nThreads++
+		if nThreads == thrN {
+			fixture := <-ch
+			nThreads--
+			if fixture.Disabled != true {
+				fixtures = append(fixtures, fixture)
+			}
+		}
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Final threads join\n")
+	}
+	for nThreads > 0 {
+		fixture := <-ch
+		nThreads--
+		if fixture.Disabled != true {
+			fixtures = append(fixtures, fixture)
+		}
+	}
+	processFixturesMetadata(ctx, &fixtures)
+	lib.Printf("exiting\n")
+	os.Exit(1)
+}
+
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
 	ctx.Init()
+	// FIXME
+	if 1 == 1 {
+		wip(&ctx)
+	}
 	if ctx.DryRun {
 		lib.Printf("Running in dry-run mode\n")
 	}

@@ -210,8 +210,38 @@ type Fixture struct {
 	Native      Native       `yaml:"native"`
 	DataSources []DataSource `yaml:"data_sources"`
 	Aliases     []Alias      `yaml:"aliases"`
+	Metadata    Metadata     `yaml:"metadata"`
 	Fn          string
 	Slug        string
+}
+
+// Metadata - keeps special data settings, currently this is used by FINOS
+type Metadata struct {
+	DataSources   []MetaDataSource   `yaml:"datasources"`
+	WorkingGroups []MetaWorkingGroup `yaml:"workinggroups"`
+}
+
+// MetaDataSource - information about indices configured for a given data source (metadata section)
+type MetaDataSource struct {
+	Name      string   `yaml:"name"`      // can be git, github/pull_request etc
+	Slugs     []string `yaml:"slugs"`     // list of indices like 'finos/open-developer-platform/jira-for-merge', can start with 'pattern:', 'pattern:sds-finos-*-git-for-merge'
+	Externals []string `yaml:"externals"` // external indices, for example 'bitergia-git-dump'
+}
+
+// MetaWorkingGroup - information about working groups configured in a fixture (metadata section)
+// To actually apply config at MetaDataSource must be found for WGDataSource and Meta map must have at least one element
+// If meta map is empty, only "workinggroup" value will be set
+type MetaWorkingGroup struct {
+	Name        string            `yaml:"name"`        // will map to "workinggroup" ES document field
+	Meta        map[string]string `yaml:"meta"`        // values from this map (key/value) will map to ES "meta_key" = "value"
+	DataSources []WGDataSource    `yaml:"datasources"` // condintion where to apply metadata (origins and filters)
+}
+
+// WGDataSource - contains origins and eventually filter(s) to specify where to apply metadata
+type WGDataSource struct {
+	Name    string                 `yaml:"name"`    // must match name from MetaDataSource to find indices/patterns to apply to
+	Origins []string               `yaml:"origins"` // List of origins to apply metadata to
+	Filter  map[string]interface{} `yaml:"filter"`  // Eventual filter definition - to apply metadata to (in addition to origins)
 }
 
 // AliasView - allows creating "filtered aliases"/"views"
