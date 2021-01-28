@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math"
 	"math/rand"
 	"net/http"
 	"os"
@@ -606,6 +607,12 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				lib.Printf("Found usable token %d/%d/%v, cache enabled: %v\n", aHint, rem[h], wait[h], canCache)
 				return
 			}
+			isAbuse := func(e error) bool {
+				if e == nil {
+					return false
+				}
+				return strings.Contains(e.Error(), "403 You have triggered an abuse detection mechanism") || strings.Contains(e.Error(), "502 Server Error")
+			}
 			switch epType {
 			case "slack_bot_channels":
 				token := ""
@@ -880,8 +887,14 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						repositories, response, err := gc[aHint].Repositories.ListByOrg(gctx, org, opt)
 						if err != nil && !retried {
 							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate\n", org, response, err)
-							aHint, _ = handleRate()
-							retried = true
+							if isAbuse(err) {
+								lib.Printf("GitHub detected abuse, waiting for 30s\n")
+								time.Sleep(time.Duration(30) * time.Second)
+								aHint, _ = handleRate()
+							} else {
+								aHint, _ = handleRate()
+								retried = true
+							}
 							continue
 						}
 						if err != nil {
@@ -5057,7 +5070,7 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 		var err error
 		data := ""
 		var projectVal string
-		if project == "(null)" {
+		if project == lib.Null {
 			projectVal = "null"
 		} else {
 			projectVal = `\"` + jsonEscape(project) + `\"`
@@ -6660,64 +6673,242 @@ func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	return
 }
 
+func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
+	patt := make(map[string][2]string)
+	for _, ds := range m.DataSources {
+		hasIndices := false
+		hasPatterns := false
+		items := []string{}
+		var key [2]string
+		for _, item := range ds.Slugs {
+			if strings.HasPrefix(item, "pattern:") {
+				items = append(items, item[8:])
+				hasPatterns = true
+				continue
+			}
+			items = append(items, "sds-"+strings.Replace(item, "/", "-", -1))
+			hasIndices = true
+		}
+		if hasIndices && hasPatterns {
+			lib.Printf("WARNING: incorrect metadata datasources slugs '%s' section, you cannot have both index names and patterns: %+v\n", ds.Name, ds)
+			continue
+		}
+		key[0] = strings.Join(items, ",")
+		hasIndices = false
+		hasPatterns = false
+		items = []string{}
+		for _, item := range ds.Externals {
+			if strings.HasPrefix(item, "pattern:") {
+				items = append(items, item[8:])
+				hasPatterns = true
+				continue
+			}
+			items = append(items, strings.Replace(item, "/", "-", -1))
+			hasIndices = true
+		}
+		if hasIndices && hasPatterns {
+			lib.Printf("WARNING: incorrect metadata datasources externals '%s' section, you cannot have both index names and patterns: %+v\n", ds.Name, ds)
+			continue
+		}
+		key[1] = strings.Join(items, ",")
+		patt[ds.Name] = key
+	}
+	addQuery := func(dest [2]string, query string) {
+		if dest[0] != "" {
+			result = append(result, [2]string{dest[0], query})
+		}
+		if dest[1] != "" {
+			result = append(result, [2]string{dest[1], query})
+		}
+	}
+	for _, wg := range m.WorkingGroups {
+		if len(wg.DataSources) == 0 {
+			continue
+		}
+		noOverwrite := wg.NoOverwrite
+		apply := map[string]string{"workinggroup": wg.Name}
+		for k, v := range wg.Meta {
+			apply["meta_"+k] = v
+		}
+		// {"script":{"inline":"ctx._source.field1=%s;ctx._source.field2=%s;"},
+		queryRoot := `{"script":{"inline":"`
+		ks := []string{}
+		for k := range apply {
+			ks = append(ks, k)
+		}
+		sort.Strings(ks)
+		if noOverwrite {
+			for _, k := range ks {
+				v := apply[k]
+				if v == lib.Null {
+					queryRoot += `if(!ctx._source.containsKey(\"` + k + `\")){ctx._source.` + k + `=null;}`
+					continue
+				}
+				queryRoot += `if(!ctx._source.containsKey(\"` + k + `\")){ctx._source.` + k + `=\"` + jsonEscape(v) + `\";}`
+			}
+		} else {
+			for _, k := range ks {
+				v := apply[k]
+				if v == lib.Null {
+					queryRoot += `ctx._source.` + k + `=null;`
+					continue
+				}
+				queryRoot += `ctx._source.` + k + `=\"` + jsonEscape(v) + `\";`
+			}
+		}
+		queryRoot += `"},`
+		for _, ds := range wg.DataSources {
+			dest, ok := patt[ds.Name]
+			if !ok {
+				lib.Printf("WARNING: working group data source '%s' not found in metadata data sources: '%+v'\n", ds.Name, wg)
+				continue
+			}
+			if len(ds.Filter) == 0 {
+				if len(ds.Origins) == 0 {
+					lib.Printf("WARNING: working group data source '%s' has no origins and no filter, skipping: '%+v'\n", ds.Name, wg)
+					continue
+				}
+				// {"query":{"bool":{"should":[{"term":{"origin":"..."}},{"term":{"origin":"..."}}]}}}
+				query := queryRoot + `"query":{"bool":{"should":[`
+				for _, origin := range ds.Origins {
+					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+				}
+				query = query[:len(query)-1] + `]}}}`
+				addQuery(dest, query)
+				continue
+			}
+			b, err := jsoniter.Marshal(ds.Filter)
+			if err != nil {
+				lib.Printf("WARNING: working group data source '%s' filter '%v' is broken: '%+v'\n", ds.Name, ds.Filter, wg)
+				continue
+			}
+			if len(ds.Origins) == 0 {
+				// {"query":{"bool":{"filter":{"term":{"ancestors_links":"..."}}}}}
+				query := queryRoot + `"query":{"bool":{"filter":` + string(b) + `}}}`
+				addQuery(dest, query)
+				continue
+			}
+			// {"query":{"bool":{"should":[{"term":{"origin":".."}},{"term":{"origin":"..."}}],"filter":{"term":{"ancestors_links":"..."}}}}}
+			query := queryRoot + `"query":{"bool":{"should":[`
+			for _, origin := range ds.Origins {
+				query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+			}
+			query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
+			addQuery(dest, query)
+		}
+	}
+	return
+}
+
+func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
+	if ch != nil {
+		defer func() {
+			ch <- struct{}{}
+		}()
+	}
+	if ctx.Debug > 0 {
+		lib.Printf("Processing %v\n", cfg)
+	}
+	pattern := cfg[0]
+	data := cfg[1]
+	payloadBytes := []byte(data)
+	payloadBody := bytes.NewReader(payloadBytes)
+	method := lib.Post
+	url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, pattern)
+	rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", pattern)
+	req, err := http.NewRequest(method, url, payloadBody)
+	if err != nil {
+		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		lib.Printf("do request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+		return
+	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
+	if resp.StatusCode != 200 {
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			lib.Printf("ReadAll request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
+		return
+	}
+	payload := lib.EsUpdateByQueryPayload{}
+	err = json.NewDecoder(resp.Body).Decode(&payload)
+	if err != nil {
+		body, err2 := ioutil.ReadAll(resp.Body)
+		if err2 != nil {
+			lib.Printf("ReadAll request error when parsing response: %+v/%+v for %s url: %s, data: %+v", err, err2, method, rurl, data)
+			return
+		}
+		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
+		return
+	}
+	if ctx.Debug >= 0 {
+		lib.Printf("%s/%s updated: %d\n", pattern, data, payload.Updated)
+	} else {
+		lib.Printf("metadata updated: %d\n", payload.Updated)
+	}
+}
+
 func processFixturesMetadata(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if ctx.SkipMetadata || ctx.OnlyP2O || (ctx.DryRun && !ctx.DryRunAllowMetadata) {
 		return
 	}
 	fixtures := *pfixtures
-	lib.Printf("Processing fixtures metadata\n")
-	for i, fixture := range fixtures {
-		fmt.Printf("%d: %+v\n", i, fixture.Metadata)
-	}
-}
-
-func wip(ctx *lib.Ctx) {
-	fixtureFiles := []string{"shared.secret", "shared.secret"}
-	gctx, gcs := lib.GHClient(ctx)
-	gHint = -1
-	// Get number of CPUs available
-	thrN := lib.GetThreadsNum(ctx)
-	fixtures := []lib.Fixture{}
-	ch := make(chan lib.Fixture)
-	nThreads := 0
-	gRateMtx = &sync.Mutex{}
-	for _, fixtureFile := range fixtureFiles {
-		if fixtureFile == "" {
+	lib.Printf("Processing %d fixtures metadata\n", len(fixtures))
+	md := make(map[[2]string]struct{})
+	for _, fixture := range fixtures {
+		m := fixture.Metadata
+		if len(m.DataSources) == 0 || len(m.WorkingGroups) == 0 {
 			continue
 		}
-		go processFixtureFile(gctx, gcs, ch, ctx, fixtureFile)
-		nThreads++
-		if nThreads == thrN {
-			fixture := <-ch
-			nThreads--
-			if fixture.Disabled != true {
-				fixtures = append(fixtures, fixture)
+		data := getMetadataQueries(ctx, &m)
+		for _, item := range data {
+			md[item] = struct{}{}
+		}
+	}
+	if len(md) == 0 {
+		return
+	}
+	thrN := lib.GetThreadsNum(ctx)
+	if thrN > 8 {
+		thrN = int(math.Round(math.Sqrt(float64(thrN))))
+	}
+	lib.Printf("%d metadata objects to process using %d threads\n", len(md), thrN)
+	if thrN > 1 {
+		ch := make(chan struct{})
+		nThreads := 0
+		for item := range md {
+			go processMetadataItem(ch, ctx, item)
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
 			}
 		}
-	}
-	if ctx.Debug > 0 {
-		lib.Printf("Final threads join\n")
-	}
-	for nThreads > 0 {
-		fixture := <-ch
-		nThreads--
-		if fixture.Disabled != true {
-			fixtures = append(fixtures, fixture)
+		for nThreads > 0 {
+			<-ch
+			nThreads--
+		}
+	} else {
+		for item := range md {
+			processMetadataItem(nil, ctx, item)
 		}
 	}
-	processFixturesMetadata(ctx, &fixtures)
-	lib.Printf("exiting\n")
-	os.Exit(1)
+	lib.Printf("Processing fixtures metadata finished\n")
 }
 
 func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
 	ctx.Init()
-	// FIXME
-	if 1 == 1 {
-		wip(&ctx)
-	}
 	if ctx.DryRun {
 		lib.Printf("Running in dry-run mode\n")
 	}

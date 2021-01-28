@@ -129,6 +129,9 @@ const ProjectNoOrigin string = "--no-origin--"
 // Nil - used to specify an empty environment variable in the fixture (fo dads)
 const Nil string = "<nil>"
 
+// Null - used to specify a null value
+const Null string = "(null)"
+
 // DADS - config flag in the fixture that allows selecting when to run dads instead of p2o
 const DADS string = "dads"
 

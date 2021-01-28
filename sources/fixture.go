@@ -232,9 +232,10 @@ type MetaDataSource struct {
 // To actually apply config at MetaDataSource must be found for WGDataSource and Meta map must have at least one element
 // If meta map is empty, only "workinggroup" value will be set
 type MetaWorkingGroup struct {
-	Name        string            `yaml:"name"`        // will map to "workinggroup" ES document field
-	Meta        map[string]string `yaml:"meta"`        // values from this map (key/value) will map to ES "meta_key" = "value"
-	DataSources []WGDataSource    `yaml:"datasources"` // condintion where to apply metadata (origins and filters)
+	Name        string            `yaml:"name"`         // will map to "workinggroup" ES document field
+	Meta        map[string]string `yaml:"meta"`         // values from this map (key/value) will map to ES "meta_key" = "value"
+	NoOverwrite bool              `yaml:"no_overwrite"` // only set workinggroup and meta_* filed if they're not present yet
+	DataSources []WGDataSource    `yaml:"datasources"`  // condintion where to apply metadata (origins and filters)
 }
 
 // WGDataSource - contains origins and eventually filter(s) to specify where to apply metadata
