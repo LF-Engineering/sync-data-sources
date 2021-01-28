@@ -23,7 +23,7 @@ import (
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
-	"github.com/google/go-github/github"
+	"github.com/google/go-github/v33/github"
 	jsoniter "github.com/json-iterator/go"
 	yaml "gopkg.in/yaml.v2"
 )
@@ -611,7 +611,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				if e == nil {
 					return false
 				}
-				return strings.Contains(e.Error(), "403 You have triggered an abuse detection mechanism") || strings.Contains(e.Error(), "502 Server Error")
+				return strings.Contains(e.Error(), "403 You have triggered an abuse detection mechanism")
 			}
 			switch epType {
 			case "slack_bot_channels":
@@ -994,9 +994,9 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 								time.Sleep(time.Duration(sleepFor) * time.Second)
 								aHint, _ = handleRate()
 							} else {
-							  aHint, _ = handleRate()
-							  retried = true
-              }
+								aHint, _ = handleRate()
+								retried = true
+							}
 							continue
 						}
 						if err != nil {
