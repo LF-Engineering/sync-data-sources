@@ -130,6 +130,8 @@ spec:
               value: '{{ $root.Values.skipMerge }}'
             - name: SDS_SKIP_HIDE_EMAILS
               value: '{{ $root.Values.skipHideEmails }}'
+            - name: SDS_SKIP_METADATA
+              value: '{{ $root.Values.skipMetadata }}'
             - name: SDS_SKIP_CACHE_TOP_CONTRIBUTORS
               value: '{{ $root.Values.skipCacheTopContributors }}'
             - name: SDS_SKIP_ORG_MAP

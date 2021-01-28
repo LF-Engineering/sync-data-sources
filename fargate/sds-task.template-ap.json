@@ -152,6 +152,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_HIDE_EMAILS}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_METADATA",
+          "value": "${SDS_DRY_RUN_ALLOW_METADATA}"
+        },
+        {
           "name": "SDS_DRY_RUN_ALLOW_CACHE_TOP_CONTRIBUTORS",
           "value": "${SDS_DRY_RUN_ALLOW_CACHE_TOP_CONTRIBUTORS}"
         },
@@ -246,6 +250,10 @@
         {
           "name": "SDS_SKIP_HIDE_EMAILS",
           "value": "${SDS_SKIP_HIDE_EMAILS}"
+        },
+        {
+          "name": "SDS_SKIP_METADATA",
+          "value": "${SDS_SKIP_METADATA}"
         },
         {
           "name": "SDS_SKIP_CACHE_TOP_CONTRIBUTORS",

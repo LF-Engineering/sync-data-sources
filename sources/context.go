@@ -59,6 +59,7 @@ type Ctx struct {
 	DryRunAllowEnrichDS             bool           // From SDS_DRY_RUN_ALLOW_ENRICH_DS, if set it will allow calling DA-metrics enrich API in dry run mode
 	DryRunAllowDetAffRange          bool           // From SDS_DRY_RUN_ALLOW_DET_AFF_RANGE, if set it will allow calling DA-affiliation det_aff_range API in dry run mode
 	DryRunAllowCopyFrom             bool           // From SDS_DRY_RUN_ALLOW_COPY_FROM, if set it will allow copy index in dry run mode
+	DryRunAllowMetadata             bool           // From SDS_DRY_RUN_ALLOW_METADATA, if set it will allow processing fixture metadata in dry run mode
 	TimeoutSeconds                  int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
 	TaskTimeoutSeconds              int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
 	NLongest                        int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 30
@@ -80,6 +81,7 @@ type Ctx struct {
 	SkipSortDuration                bool           // From SDS_SKIP_SORT_DURATION, if set - it will skip tasks run order by last running time duration desc
 	SkipMerge                       bool           // From SDS_SKIP_MERGE, if set - it will skip calling DA-affiliation merge_all API after all tasks finished
 	SkipHideEmails                  bool           // From SDS_SKIP_HIDE_EMAILS, if set - it will skip calling DA-affiliation hide_emails API
+	SkipMetadata                    bool           // From SDS_SKIP_METADATA, if set - it will skip processing fixture metadata
 	SkipCacheTopContributors        bool           // From SDS_SKIP_CACHE_TOP_CONTRIBUTORS, if set - it will skip calling DA-affiliation cache_top_contributors API
 	SkipOrgMap                      bool           // From SDS_SKIP_ORG_MAP, if set - it will skip calling DA-affiliation map_org_name API
 	SkipEnrichDS                    bool           // From SDS_SKIP_ENRICH_DS, if set - it will skip calling DA-matrics enrich API
@@ -250,6 +252,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowEnrichDS = os.Getenv("SDS_DRY_RUN_ALLOW_ENRICH_DS") != ""
 	ctx.DryRunAllowDetAffRange = os.Getenv("SDS_DRY_RUN_ALLOW_DET_AFF_RANGE") != ""
 	ctx.DryRunAllowCopyFrom = os.Getenv("SDS_DRY_RUN_ALLOW_COPY_FROM") != ""
+	ctx.DryRunAllowMetadata = os.Getenv("SDS_DRY_RUN_ALLOW_METADATA") != ""
 	if os.Getenv("SDS_DRY_RUN_CODE") == "" {
 		ctx.DryRunCode = 0
 	} else {
@@ -522,6 +525,9 @@ func (ctx *Ctx) Init() {
 
 	// Run DA-affiliation det_aff_range API
 	ctx.RunDetAffRange = os.Getenv("SDS_RUN_DET_AFF_RANGE") != ""
+
+	// Skip processing fixture metadata
+	ctx.SkipMetadata = os.Getenv("SDS_SKIP_METADATA") != ""
 
 	// Skip all p2o commands
 	ctx.SkipP2O = os.Getenv("SDS_SKIP_P2O") != ""

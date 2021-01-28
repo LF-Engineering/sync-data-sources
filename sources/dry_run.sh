@@ -41,6 +41,7 @@ export SDS_SKIP_VALIDATE_GITHUB_API=1
 export SDS_SKIP_SORT_DURATION=1
 export SDS_SKIP_MERGE=1
 export SDS_SKIP_HIDE_EMAILS=1
+export SDS_SKIP_METADATA=1
 export SDS_SKIP_CACHE_TOP_CONTRIBUTORS=1
 export SDS_SKIP_ORG_MAP=1
 export SDS_SKIP_ENRICH_DS=1
@@ -63,6 +64,7 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_SORT_DURATION=1
 #export SDS_DRY_RUN_ALLOW_MERGE=1
 #export SDS_DRY_RUN_ALLOW_HIDE_EMAILS=1
+#export SDS_DRY_RUN_ALLOW_METADATA=1
 #export SDS_DRY_RUN_ALLOW_CACHE_TOP_CONTRIBUTORS=1
 #export SDS_DRY_RUN_ALLOW_ORG_MAP=1
 #export SDS_DRY_RUN_ALLOW_ENRICH_DS=1
@@ -126,7 +128,7 @@ if [ -z "${SDS_GITHUB_OAUTH}" ]
 then
   export SDS_GITHUB_OAUTH="`cat /etc/github/oauths`"
 fi
-if [ -z "${JWT_TOKEN}" ]
+if ( [ -z "${JWT_TOKEN}" ] && [ -f "token.secret" ] )
 then
   export JWT_TOKEN=`cat token.secret`
 fi

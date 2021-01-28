@@ -52,6 +52,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		DryRunAllowEnrichDS:             in.DryRunAllowEnrichDS,
 		DryRunAllowDetAffRange:          in.DryRunAllowDetAffRange,
 		DryRunAllowCopyFrom:             in.DryRunAllowCopyFrom,
+		DryRunAllowMetadata:             in.DryRunAllowMetadata,
 		OnlyValidate:                    in.OnlyValidate,
 		OnlyP2O:                         in.OnlyP2O,
 		TimeoutSeconds:                  in.TimeoutSeconds,
@@ -99,6 +100,7 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		SkipOrgMap:                      in.SkipOrgMap,
 		SkipEnrichDS:                    in.SkipEnrichDS,
 		SkipCopyFrom:                    in.SkipCopyFrom,
+		SkipMetadata:                    in.SkipMetadata,
 		RunDetAffRange:                  in.RunDetAffRange,
 		SkipP2O:                         in.SkipP2O,
 		MaxDeleteTrials:                 in.MaxDeleteTrials,
@@ -289,6 +291,7 @@ func TestInit(t *testing.T) {
 		DryRunAllowEnrichDS:             false,
 		DryRunAllowDetAffRange:          false,
 		DryRunAllowCopyFrom:             false,
+		DryRunAllowMetadata:             false,
 		OnlyValidate:                    false,
 		OnlyP2O:                         false,
 		TimeoutSeconds:                  171900,
@@ -335,6 +338,7 @@ func TestInit(t *testing.T) {
 		SkipOrgMap:                      false,
 		SkipEnrichDS:                    false,
 		SkipCopyFrom:                    false,
+		SkipMetadata:                    false,
 		RunDetAffRange:                  false,
 		SkipP2O:                         false,
 		MaxDeleteTrials:                 10,
@@ -725,6 +729,7 @@ func TestInit(t *testing.T) {
 				"SDS_DRY_RUN_ALLOW_ENRICH_DS":              "t",
 				"SDS_DRY_RUN_ALLOW_DET_AFF_RANGE":          "t",
 				"SDS_DRY_RUN_ALLOW_COPY_FROM":              "1",
+				"SDS_DRY_RUN_ALLOW_METADATA":               "1",
 			},
 			dynamicSetFields(
 				t,
@@ -751,6 +756,7 @@ func TestInit(t *testing.T) {
 					"DryRunAllowEnrichDS":             true,
 					"DryRunAllowDetAffRange":          true,
 					"DryRunAllowCopyFrom":             true,
+					"DryRunAllowMetadata":             true,
 				},
 			),
 		},
@@ -1016,6 +1022,19 @@ func TestInit(t *testing.T) {
 				copyContext(&defaultContext),
 				map[string]interface{}{
 					"SkipOrgMap": true,
+				},
+			),
+		},
+		{
+			"Set skip fixture metadata",
+			map[string]string{
+				"SDS_SKIP_METADATA": "1",
+			},
+			dynamicSetFields(
+				t,
+				copyContext(&defaultContext),
+				map[string]interface{}{
+					"SkipMetadata": true,
 				},
 			),
 		},
