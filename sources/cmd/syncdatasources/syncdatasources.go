@@ -611,7 +611,8 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				if e == nil {
 					return false
 				}
-				return strings.Contains(e.Error(), "403 You have triggered an abuse detection mechanism")
+				errStr := e.Error()
+				return strings.Contains(errStr, "403 You have triggered an abuse detection mechanism") || strings.Contains(errStr, "403 API rate limit")
 			}
 			switch epType {
 			case "slack_bot_channels":
