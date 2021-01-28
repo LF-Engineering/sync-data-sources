@@ -886,7 +886,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						// fmt.Printf("non-cache call %s %v (%d tokens)\n", org, fixture.Native, len(gc))
 						repositories, response, err := gc[aHint].Repositories.ListByOrg(gctx, org, opt)
 						if err != nil && !retried {
-							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate\n", org, response, err)
+							lib.Printf("Error getting repositories list for org: %s: response: %+v, error: %+v, retrying rate (hint %d, opt %+v)\n", org, response, err, aHint, opt)
 							if isAbuse(err) {
 								sleepFor := 30 + rand.Intn(30)
 								lib.Printf("GitHub detected abuse, waiting for %ds\n", sleepFor)
@@ -988,8 +988,15 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						repositories, response, err := gc[aHint].Repositories.List(gctx, user, opt)
 						if err != nil && !retried {
 							lib.Printf("Error getting repositories list for user: %s: response: %+v, error: %+v, retrying rate\n", user, response, err)
-							aHint, _ = handleRate()
-							retried = true
+							if isAbuse(err) {
+								sleepFor := 30 + rand.Intn(30)
+								lib.Printf("GitHub detected abuse, waiting for %ds\n", sleepFor)
+								time.Sleep(time.Duration(sleepFor) * time.Second)
+								aHint, _ = handleRate()
+							} else {
+							  aHint, _ = handleRate()
+							  retried = true
+              }
 							continue
 						}
 						if err != nil {
