@@ -1,5 +1,5 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index 4bc0aaf1..03559e73 100644
+index f4788d47..9059a716 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
 @@ -490,6 +490,26 @@ class GitHubEnrich(Enrich):
