@@ -1,9 +1,9 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index f4788d47..9059a716 100644
+index 5aae3bce..0245e1b2 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
-@@ -490,6 +490,26 @@ class GitHubEnrich(Enrich):
-                 'assignee_geolocation': data.get('geolocation', None)
+@@ -493,6 +493,26 @@ class GitHubEnrich(Enrich):
+                 'assignee_geolocation': assignee.get('geolocation', None)
              })
  
 +        reviews_data = pull_request.get('reviews_data', list())

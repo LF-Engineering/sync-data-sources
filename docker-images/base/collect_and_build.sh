@@ -6,7 +6,7 @@ cd repos || exit 2
 org=chaoss
 git clone "https://github.com/$org/grimoirelab-perceval" || exit 3
 git clone "https://github.com/$org/grimoirelab-elk" || exit 4
-# Following command is used to forcefully avoid the weblate integrations 
+# Following command is used to forcefully avoid the weblate integrations
 cd grimoirelab-elk && git checkout "ecb00c9" && cd .. || exit 22
 git clone "https://github.com/$org/grimoirelab-sortinghat" || exit 5
 git clone "https://github.com/$org/grimoirelab-kingarthur" || exit 6
@@ -37,6 +37,7 @@ cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../pa
 #cd grimoirelab-elk && git apply ../../patch/jira.py.diff && git apply ../../patch/confluence.py.diff && git apply ../../patch/github.py.diff && git apply ../../patch/github2.py.diff && cp ../../patch/identity.py grimoire_elk/enriched/ && cd .. || exit 11
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc.py.diff && cd .. || exit 15
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc-clean-up.py.diff && cd .. || exit 19
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-github-assignees-data.py.diff && cd .. || exit 23
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-organize-repo.py.diff && cd .. || exit 17
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit-url.py.diff && cd .. || exit 18
