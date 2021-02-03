@@ -29,3 +29,5 @@ docker-images/base/repos
 .idea
 */.idea
 *.csv
+/*.json
+/*.gz
