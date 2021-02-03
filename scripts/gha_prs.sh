@@ -13,7 +13,7 @@ fns=${2}
 if [ ${#2} -le "10" ]
 then
   fns="${fns}-0 "
-  for i in {1..3}
+  for i in {1..23}
   do
     fns="${fns} ${2}-${i}"
   done
@@ -23,30 +23,39 @@ for f in $fns
 do
   fn="${f}.json"
   zfn="${fn}.gz"
-  echo -n "$f -> $zfn -> $fn -> "
+  echo -n "$f -> "
   if ( [ ! -f "${zfn}" ] && [ ! -f "${fn}" ] )
   then
     wget "http://data.gharchive.org/${zfn}" 1>/dev/null 2>/dev/null || exit 3
   fi
+  echo -n "$zfn -> "
   if [ ! -f "${fn}" ]
   then
     gzip -d "${zfn}" || exit 4
   fi
+  echo -n "$fn -> "
   pfn="processed_${fn}"
   if [ ! -f "${pfn}" ]
   then
     sed '1s/^/[/;$!s/$/,/;$s/$/]/' "${fn}" > "${pfn}" || exit 5
   fi
   echo -n "$pfn: "
+  got=''
   for r in `cat "${pfn}" | jq ".[] | select(.repo.name == \"${1}\") | .payload.pull_request.number" | sort | uniq`
   do
     if [ ! "$r" = "null" ]
     then
       prs[$r]=1
       echo -n "$r, "
+      got=1
     fi
   done
-  echo ''
+  if [ -z "$got" ]
+  then
+    echo 'no hits'
+  else
+    echo ''
+  fi
 done
 echo "${!prs[@]}" | tr ' ' '\n' | sort -n | tr '\n' ', '
 echo ''
