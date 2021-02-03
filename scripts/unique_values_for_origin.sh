@@ -1,12 +1,12 @@
 #!/bin/bash
-# ES_URL=... IDX=sds-foundation-project-datasource COL=id_in_repo ./unique_values.sh
+# ES_URL=... IDX=sds-foundation-project-datasource ORIGIN=https://github.com/org/repo COL=id_in_repo ./unique_values.sh
 fn="`echo $RANDOM`.json"
 function cleanup {
   #cat $fn
   rm -f $fn
 }
 trap cleanup EXIT
-echo -n "{\"query\":\"select ${COL} from \\\"${IDX}\\\" group by ${COL} order by ${COL}\"}" > $fn
+echo -n "{\"query\":\"select ${COL} from \\\"${IDX}\\\" where origin = '${ORIGIN}' group by ${COL} order by ${COL}\"}" > $fn
 data=`curl -s -XPOST -H 'Content-type: application/json' "${ES_URL}/_sql?format=json" -d@$fn`
 cursor=`echo $data | jq -r .cursor`
 vals=''
