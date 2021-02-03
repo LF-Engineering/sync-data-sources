@@ -26,7 +26,12 @@ do
   echo -n "$f -> "
   if ( [ ! -f "${zfn}" ] && [ ! -f "${fn}" ] )
   then
-    wget "http://data.gharchive.org/${zfn}" 1>/dev/null 2>/dev/null || exit 3
+    wget "http://data.gharchive.org/${zfn}" 1>/dev/null 2>/dev/null
+    if [ ! "$?" = "0" ]
+    then
+      echo "failed to get ${zfn}, skipping"
+      continue
+    fi
   fi
   echo -n "$zfn -> "
   if [ ! -f "${fn}" ]
@@ -57,5 +62,6 @@ do
     echo ''
   fi
 done
+echo -n "$1 $2: "
 echo "${!prs[@]}" | tr ' ' '\n' | sort -n | tr '\n' ', '
 echo ''

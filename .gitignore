@@ -31,3 +31,6 @@ docker-images/base/repos
 *.csv
 /*.json
 /*.gz
+/prod.txt
+/test.txt
+/diff.txt
