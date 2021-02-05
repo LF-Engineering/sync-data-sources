@@ -23,7 +23,7 @@ index a9ebe9c..19bf8e4 100644
  class EmptyRepositoryError(RepositoryError):
      """Exception raised when a repository is empty"""
 diff --git a/perceval/utils.py b/perceval/utils.py
-index b7d9106..7126edc 100644
+index 0e30a41..34d08fe 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -359,6 +359,43 @@ class GitLOC:
@@ -70,16 +70,16 @@ index b7d9106..7126edc 100644
      @staticmethod
      def is_gitsource(host):
          if 'github.com' in host \
-@@ -503,7 +540,7 @@ class GitLOC:
+@@ -502,7 +539,7 @@ class GitLOC:
          except (RuntimeError, Exception) as cloe:
-             logger.error("Git clone error %s ", str(cloe))
+             logger.error('Git clone error %s ', str(cloe))
  
 -    def _clean(self):
 +    def _clean(self, force=False):
          cmd = ['rm', '-rf', self.repo_path]
          env = {
              'LANG': 'C',
-@@ -511,8 +548,13 @@ class GitLOC:
+@@ -510,8 +547,13 @@ class GitLOC:
          }
  
          try:
@@ -93,5 +93,5 @@ index b7d9106..7126edc 100644
 +            else:
 +                logger.debug("Git %s repository clean skip", self.repo_path)
          except (RuntimeError, Exception) as cle:
-             logger.error("Git clone error %s", str(cle))
+             logger.error('Git clone error %s', str(cle))
  
