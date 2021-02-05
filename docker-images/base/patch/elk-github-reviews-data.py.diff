@@ -1,14 +1,15 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index 5aae3bce..0245e1b2 100644
+index 5aae3bce..27a92655 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
-@@ -493,6 +493,26 @@ class GitHubEnrich(Enrich):
+@@ -493,6 +493,27 @@ class GitHubEnrich(Enrich):
                  'assignee_geolocation': assignee.get('geolocation', None)
              })
  
++        rich_pr['reviewer_data'] = list()
 +        reviews_data = pull_request.get('reviews_data', list())
-+        for idx, review in enumerate(reviews_data):
-+            rich_pr['reviewer_{0}'.format(idx + 1)] = {
++        for review in reviews_data:
++            rich_pr['reviewer_data'].append({
 +                'review_author_association': review.get('author_association', None),
 +                'review_comment': review.get('body', None),
 +                'review_commit_id': review.get('commit_id', None),
@@ -24,8 +25,40 @@ index 5aae3bce..0245e1b2 100644
 +                'review_user_name': review.get('user_data', {}).get('name', None),
 +                'review_user_company': review.get('user_data', {}).get('company', None),
 +                'review_user_organizations': review.get('user_data', {}).get('organizations', None),
-+            }
++            })
 +
          rich_pr['id'] = pull_request['id']
          rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
+diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
+index 81eb756d..8b46d5f6 100644
+--- a/grimoire_elk/enriched/github2.py
++++ b/grimoire_elk/enriched/github2.py
+@@ -496,6 +496,27 @@ class GitHubEnrich2(Enrich):
+                 'assignee_geolocation': assignee.get('geolocation', None)
+             })
+ 
++        rich_pr['reviewer_data'] = list()
++        reviews_data = pull_request.get('reviews_data', list())
++        for review in reviews_data:
++            rich_pr['reviewer_data'].append({
++                'review_author_association': review.get('author_association', None),
++                'review_comment': review.get('body', None),
++                'review_commit_id': review.get('commit_id', None),
++                'review_state': review.get('state', None),
++                'review_submitted_at': review.get('submitted_at', None),
++                'review_html_url': review.get('html_url', None),
++                'review_user_login': review.get('user_data', {}).get('login'),
++                'review_user_id': review.get('user_data', {}).get('id', None),
++                'review_user_avatar_url': review.get('user_data', {}).get('avatar_url', None),
++                'review_user_html_url': review.get('user_data', {}).get('html_url', None),
++                'review_user_url': review.get('user_data', {}).get('url', None),
++                'review_user_location': review.get('user_data', {}).get('location', None),
++                'review_user_name': review.get('user_data', {}).get('name', None),
++                'review_user_company': review.get('user_data', {}).get('company', None),
++                'review_user_organizations': review.get('user_data', {}).get('organizations', None),
++            })
++
+         rich_pr['id'] = pull_request['id']
+         rich_pr['pull_id'] = pull_request['id']
+         rich_pr['pull_id_in_repo'] = pull_request['html_url'].split("/")[-1]

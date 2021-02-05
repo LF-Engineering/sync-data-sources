@@ -26,3 +26,31 @@ index 1631b686..5aae3bce 100644
          rich_pr['id'] = pull_request['id']
          rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
+diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
+index 284b353a..81eb756d 100644
+--- a/grimoire_elk/enriched/github2.py
++++ b/grimoire_elk/enriched/github2.py
+@@ -479,6 +479,23 @@ class GitHubEnrich2(Enrich):
+             rich_pr['merge_author_location'] = None
+             rich_pr['merge_author_geolocation'] = None
+ 
++        rich_pr['assignees_data'] = list()
++        assignees = pull_request.get('assignees_data', list())
++        for assignee in assignees:
++            rich_pr['assignees_data'].append({
++                'assignee_login': assignee.get('login', None),
++                'assignee_id': assignee.get('id', None),
++                'assignee_avatar_url': assignee.get('avatar_url', None),
++                'assignee_url': assignee.get('url', None),
++                'assignee_name': assignee.get('name', None),
++                'assignee_company': assignee.get('company', None),
++                'assignee_location': assignee.get('location', None),
++                'assignee_email': assignee.get('email', None),
++                'assignee_domain': self.get_email_domain(assignee['email']) if assignee.get('email') else None,
++                'assignee_org': [x['login'] for x in assignee.get('organizations', [])],
++                'assignee_geolocation': assignee.get('geolocation', None)
++            })
++
+         rich_pr['id'] = pull_request['id']
+         rich_pr['pull_id'] = pull_request['id']
+         rich_pr['pull_id_in_repo'] = pull_request['html_url'].split("/")[-1]
