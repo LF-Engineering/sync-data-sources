@@ -6700,7 +6700,7 @@ func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	return
 }
 
-func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
+func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][3]string) {
 	patt := make(map[string][2]string)
 	for _, ds := range m.DataSources {
 		hasIndices := false
@@ -6740,23 +6740,40 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 		key[1] = strings.Join(items, ",")
 		patt[ds.Name] = key
 	}
-	addQuery := func(dest [2]string, query string) {
+	addQuery := func(dest [2]string, op, query string) {
 		if dest[0] != "" {
-			result = append(result, [2]string{dest[0], query})
+			result = append(result, [3]string{op, dest[0], query})
 		}
 		if dest[1] != "" {
-			result = append(result, [2]string{dest[1], query})
+			result = append(result, [3]string{op, dest[1], query})
 		}
 	}
+	updateOp := "_update_by_query"
+	deleteOp := "_delete_by_query"
 	for _, wg := range m.WorkingGroups {
 		if len(wg.DataSources) == 0 {
 			continue
 		}
 		noOverwrite := wg.NoOverwrite
 		apply := map[string]string{"workinggroup": wg.Name}
+		formed := ""
 		for k, v := range wg.Meta {
 			apply["meta_"+k] = v
+			if formed == "" && strings.ToLower(k) == "formed" {
+				formed = v
+			} else if formed == "" && strings.ToLower(k) == "contributed" {
+				formed = v
+			}
 		}
+		var dtFormed time.Time
+		if formed != "" {
+			var e error
+			dtFormed, e = time.Parse("2006-01-02", formed)
+			if e != nil {
+				lib.Printf("cannot parse formed/contributed date: '%s': %v, from %+v\n", formed, e, wg.Meta)
+			}
+		}
+		hasFormed := !dtFormed.IsZero()
 		// {"script":{"inline":"ctx._source.field1=%s;ctx._source.field2=%s;"},
 		queryRoot := `{"script":{"inline":"`
 		ks := []string{}
@@ -6795,13 +6812,20 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 					lib.Printf("WARNING: working group data source '%s' has no origins and no filter, skipping: '%+v'\n", ds.Name, wg)
 					continue
 				}
-				// {"query":{"bool":{"should":[{"term":{"origin":"..."}},{"term":{"origin":"..."}}]}}}
 				query := queryRoot + `"query":{"bool":{"should":[`
 				for _, origin := range ds.Origins {
 					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
 				}
 				query = query[:len(query)-1] + `]}}}`
-				addQuery(dest, query)
+				addQuery(dest, updateOp, query)
+				if hasFormed {
+					query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
+					for _, origin := range ds.Origins {
+						query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					}
+					query = query[:len(query)-1] + `]}}}`
+					addQuery(dest, deleteOp, query)
+				}
 				continue
 			}
 			b, err := jsoniter.Marshal(ds.Filter)
@@ -6810,24 +6834,34 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 				continue
 			}
 			if len(ds.Origins) == 0 {
-				// {"query":{"bool":{"filter":{"term":{"ancestors_links":"..."}}}}}
 				query := queryRoot + `"query":{"bool":{"filter":` + string(b) + `}}}`
-				addQuery(dest, query)
+				addQuery(dest, updateOp, query)
+				if hasFormed {
+					query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"filter":` + string(b) + `}}}`
+					addQuery(dest, deleteOp, query)
+				}
 				continue
 			}
-			// {"query":{"bool":{"should":[{"term":{"origin":".."}},{"term":{"origin":"..."}}],"filter":{"term":{"ancestors_links":"..."}}}}}
 			query := queryRoot + `"query":{"bool":{"should":[`
 			for _, origin := range ds.Origins {
 				query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
 			}
 			query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
-			addQuery(dest, query)
+			addQuery(dest, updateOp, query)
+			if hasFormed {
+				query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
+				for _, origin := range ds.Origins {
+					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+				}
+				query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
+				addQuery(dest, deleteOp, query)
+			}
 		}
 	}
 	return
 }
 
-func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
+func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [3]string) {
 	if ch != nil {
 		defer func() {
 			ch <- struct{}{}
@@ -6836,13 +6870,14 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 	if ctx.Debug > 0 {
 		lib.Printf("Processing %v\n", cfg)
 	}
-	pattern := cfg[0]
-	data := cfg[1]
+	op := cfg[0]
+	pattern := cfg[1]
+	data := cfg[2]
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, pattern)
-	rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", pattern)
+	url := fmt.Sprintf("%s/%s/%s?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, pattern, op)
+	rurl := fmt.Sprintf("/%s/%s?conflicts=proceed&refresh=true&timeout=20m", pattern, op)
 	req, err := http.NewRequest(method, url, payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
@@ -6866,7 +6901,7 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 		return
 	}
-	payload := lib.EsUpdateByQueryPayload{}
+	payload := lib.EsByQueryPayload{}
 	err = json.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err2 := ioutil.ReadAll(resp.Body)
@@ -6878,9 +6913,9 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 		return
 	}
 	if ctx.Debug >= 0 {
-		lib.Printf("%s/%s updated: %d\n", pattern, data, payload.Updated)
+		lib.Printf("%s/%s updated: %d, deleted: %d\n", pattern, data, payload.Updated, payload.Deleted)
 	} else {
-		lib.Printf("metadata updated: %d\n", payload.Updated)
+		lib.Printf("metadata updated: %d, deleted: %d\n", payload.Updated, payload.Deleted)
 	}
 }
 
@@ -6890,7 +6925,7 @@ func processFixturesMetadata(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	fixtures := *pfixtures
 	lib.Printf("Processing %d fixtures metadata\n", len(fixtures))
-	md := make(map[[2]string]struct{})
+	md := make(map[[3]string]struct{})
 	for _, fixture := range fixtures {
 		m := fixture.Metadata
 		if len(m.DataSources) == 0 || len(m.WorkingGroups) == 0 {
