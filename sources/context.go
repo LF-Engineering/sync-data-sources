@@ -49,6 +49,7 @@ type Ctx struct {
 	DryRunAllowRename               bool           // From SDS_DRY_RUN_ALLOW_RENAME, if set it will allow handling ES index renaming in dry run mode
 	DryRunAllowOrigins              bool           // From SDS_DRY_RUN_ALLOW_ORIGINS, if set it will allow fetching external indices origins list in dry run mode
 	DryRunAllowDedup                bool           // From SDS_DRY_RUN_ALLOW_DEDUP, if set it will allow dedup bitergia data by deleting origins shared with existing SDS indices
+	DryRunAllowFAliases             bool           // From SDS_DRY_RUN_ALLOW_F_ALIASES, if set it will allow creating/maintaining foundaion-f aliases in dry run mode
 	DryRunAllowProject              bool           // From SDS_DRY_RUN_ALLOW_PROJECT, if set it will allow running set project by SDS (on endpoints with project set and p2o mode set to false)
 	DryRunAllowSyncInfo             bool           // From SDS_DRY_RUN_ALLOW_SYNC_INFO, if set it will allow setting sync info in sds-sync-info index
 	DryRunAllowSortDuration         bool           // From SDS_DRY_RUN_ALLOW_SORT_DURATION, if set it will allow setting sync info in sds-sync-info index
@@ -73,6 +74,7 @@ type Ctx struct {
 	SkipEsData                      bool           // From SDS_SKIP_ES_DATA, will totally skip anything related to "sdsdata" index processing (storing SDS state)
 	SkipEsLog                       bool           // From SDS_SKIP_ES_LOG, will skip writing logs to "sdslog" index
 	SkipDedup                       bool           // From SDS_SKIP_DEDUP, will skip attemting to dedup data shared on existing SDS index and external bitergia index (by deleting shared origin data from the external Bitergia index)
+	SkipFAliases                    bool           // From SDS_SKIP_F_ALIASES, will skip attemting to create/maintain oundation-f aliases
 	SkipExternal                    bool           // From SDS_SKIP_EXTERNAL, will skip any external indices processing: enrichments, deduplication, affiliations etc.
 	SkipProject                     bool           // From SDS_SKIP_PROJECT, will skip adding column "project": "project name" on all documents where origin = endpoint name, will also add timestamp column "project_ts", so next run can start on documents newer than that
 	SkipProjectTS                   bool           // From SDS_SKIP_PROJECT_TS, will add project column as described above, without using "project_ts" column to determine from which document to start
@@ -240,6 +242,7 @@ func (ctx *Ctx) Init() {
 	ctx.DryRunAllowRename = os.Getenv("SDS_DRY_RUN_ALLOW_RENAME") != ""
 	ctx.DryRunAllowOrigins = os.Getenv("SDS_DRY_RUN_ALLOW_ORIGINS") != ""
 	ctx.DryRunAllowDedup = os.Getenv("SDS_DRY_RUN_ALLOW_DEDUP") != ""
+	ctx.DryRunAllowFAliases = os.Getenv("SDS_DRY_RUN_ALLOW_F_ALIASES") != ""
 	ctx.DryRunAllowProject = os.Getenv("SDS_DRY_RUN_ALLOW_PROJECT") != ""
 	ctx.DryRunCodeRandom = os.Getenv("SDS_DRY_RUN_CODE_RANDOM") != ""
 	ctx.DryRunSecondsRandom = os.Getenv("SDS_DRY_RUN_SECONDS_RANDOM") != ""
@@ -491,6 +494,9 @@ func (ctx *Ctx) Init() {
 
 	// Skip external
 	ctx.SkipExternal = os.Getenv("SDS_SKIP_EXTERNAL") != ""
+
+	// Skip creating/managing foudation-f aliases
+	ctx.SkipFAliases = os.Getenv("SDS_SKIP_F_ALIASES") != ""
 
 	// Skip project/TS settings
 	ctx.SkipProject = os.Getenv("SDS_SKIP_PROJECT") != ""
