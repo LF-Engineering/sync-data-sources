@@ -1719,13 +1719,6 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	if ctx.Debug > 0 {
 		lib.Printf("Fixtures: %+v\n", fixtures)
 	}
-	// IMPL
-	/*
-		generateFoundationFAliases(ctx, &fixtures)
-		if 1 == 1 {
-			os.Exit(1)
-		}
-	*/
 	if !ctx.SkipAliases && ctx.NoMultiAliases {
 		// Check if all aliases are unique
 		aliases := make(map[string]string)
@@ -1755,6 +1748,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
 	checkForSharedEndpoints(&fixtures)
+	// Foundation-f aliases
+	generateFoundationFAliases(ctx, &fixtures)
 	// Drop unused indexes, rename indexes if needed, drop unused aliases
 	didRenames := false
 	if !ctx.SkipDropUnused && !ctx.OnlyP2O {
