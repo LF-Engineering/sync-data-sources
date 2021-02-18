@@ -3,6 +3,7 @@ module github.com/LF-Engineering/sync-data-sources/sources
 go 1.15
 
 require (
+	github.com/LF-Engineering/dev-analytics-libraries v0.4.14
 	github.com/golang/protobuf v1.4.3 // indirect
 	github.com/google/go-github v17.0.0+incompatible
 	github.com/google/go-github/v32 v32.1.0 // indirect
