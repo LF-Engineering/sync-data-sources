@@ -1,4 +1,4 @@
-GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go hash.go task.go github.go es.go redacted.go string.go rocketchat.go gerrit.go slack.go
+GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go hash.go task.go github.go es.go redacted.go string.go rocketchat.go gerrit.go slack.go token.go
 GO_BIN_FILES=cmd/syncdatasources/syncdatasources.go cmd/sds-crontab/sds-crontab.go cmd/gen-regexp/gen-regexp.go
 GO_TEST_FILES=context_test.go time_test.go threads_test.go hash_test.go
 GO_LIBTEST_FILES=test/time.go
@@ -12,7 +12,6 @@ GO_INSTALL=go install -ldflags '-s'
 GO_FMT=gofmt -s -w
 GO_LINT=golint -set_exit_status
 GO_VET=go vet
-GO_CONST=goconst
 GO_IMPORTS=goimports -w
 GO_USEDEXPORTS=usedexports
 GO_ERRCHECK=errcheck -asserts -ignore '[FS]?[Pp]rint*' -ignoretests
@@ -43,9 +42,6 @@ vet: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 imports: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 	./for_each_go_file.sh "${GO_IMPORTS}"
 
-const: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
-	${GO_CONST} ./...
-
 usedexports: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 	${GO_USEDEXPORTS} ./...
 
@@ -55,7 +51,7 @@ errcheck: ${GO_BIN_FILES} ${GO_LIB_FILES} ${GO_TEST_FILES} ${GO_LIBTEST_FILES}
 test:
 	${GO_TEST} ${GO_TEST_FILES}
 
-check: fmt lint imports vet const usedexports errcheck
+check: fmt lint imports vet usedexports errcheck
 
 install: check ${BINARIES}
 	${GO_ENV} ${GO_INSTALL} ${GO_BIN_CMDS}

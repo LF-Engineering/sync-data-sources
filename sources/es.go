@@ -77,6 +77,12 @@ type EsUpdateByQueryPayload struct {
 	Updated int64 `json:"updated"`
 }
 
+// EsByQueryPayload - update/delete by query result payload
+type EsByQueryPayload struct {
+	Updated int64 `json:"updated"`
+	Deleted int64 `json:"deleted"`
+}
+
 // EsSearchScrollPayload - search scroll result payload
 type EsSearchScrollPayload struct {
 	ScrollID string `json:"_scroll_id"`

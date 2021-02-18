@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/csv"
-	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -42,7 +41,18 @@ var (
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
 	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
-	dadsTasks = map[string]bool{lib.Jira: false, lib.GroupsIO: false, lib.Git: false, lib.Gerrit: false, lib.Confluence: false, lib.RocketChat: false, lib.DockerHub: true, lib.Bugzilla: false, lib.BugzillaRest: false, lib.Jenkins: false}
+	dadsTasks = map[string]bool{
+		lib.Jira:         false,
+		lib.GroupsIO:     false,
+		lib.Git:          false,
+		lib.Gerrit:       false,
+		lib.Confluence:   false,
+		lib.RocketChat:   false,
+		lib.DockerHub:    false,
+		lib.Bugzilla:     false,
+		lib.BugzillaRest: false,
+		lib.Jenkins:      false,
+	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
 		lib.Jira: {
@@ -1152,13 +1162,503 @@ func processFixtureFile(gctx context.Context, gc []*github.Client, ch chan lib.F
 
 // todo: move it from here
 func getFlagByName(name string, flags []lib.Config) string {
-
 	for _, flag := range flags {
 		if flag.Name == name {
 			return flag.Value
 		}
 	}
 	return ""
+}
+
+func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
+	// - skip */shared, */common ? - NO? just include only datasources where there are at least one endpoints
+	// - earned_media ? - NO problem? - it always has no endpoints
+	// - skip DS es without endpoints? - YES?
+	// - detect alias2alias cases
+	// - The LF foundation-f - lf? - Assumed lf-f
+	// - maintain (entire f-f - add/delete/update), subproject (add/delete/update) - YES
+	// - dockerhub sds- -> postprocess-sds- - YES
+	// - github/pull_request -> github/issue - YES
+	// - index sufixes (possibly different)
+	if ctx.OnlyP2O || ctx.SkipFAliases || (ctx.DryRun && !ctx.DryRunAllowFAliases) {
+		return
+	}
+	fixtures := *pfixtures
+	// The Linux Foundation foundation slug
+	lff := "lf"
+	// Foundation-f aliases will look like aliasprefix-founation-f-datasource
+	// IMPL
+	aliasPrefix := "ff-sds-"
+	// aliasPrefix := "sds-"
+	// It will ook for data in dataprefix-foundation-project-datasurce-index-prefix
+	dataPrefix := "sds-"
+	maxThreads := 10
+	// m[foundation][project][ds] = [full_ds]
+	m := map[string]map[string]map[string]string{}
+	adsm := map[string]struct{}{}
+	var (
+		f    string
+		p    string
+		fpds string
+	)
+	for _, fixture := range fixtures {
+		slug := fixture.Slug
+		ary := strings.Split(slug, "/")
+		if len(ary) < 2 {
+			f = lff
+			p = strings.TrimSpace(ary[0])
+		} else {
+			f = strings.TrimSpace(ary[0])
+			p = strings.TrimSpace(ary[1])
+		}
+		_, ok := m[f]
+		if !ok {
+			m[f] = map[string]map[string]string{}
+		}
+		_, ok = m[f][p]
+		if !ok {
+			m[f][p] = map[string]string{}
+		}
+		for _, ds := range fixture.DataSources {
+			s := strings.Replace(ds.Slug, "/", "-", -1)
+			fs := ds.FullSlug
+			if s == "github-pull_request" {
+				s = "github-issue"
+				fs = strings.Replace(fs, "github-pull_request", "github-issue", -1)
+			}
+			if len(ds.Endpoints) > 0 {
+				m[f][p][s] = fs
+				adsm[strings.Replace(s, "/", "-", -1)] = struct{}{}
+			}
+		}
+	}
+	ads := []string{}
+	for ds := range adsm {
+		ads = append(ads, ds)
+	}
+	sort.Slice(ads, func(i, j int) bool {
+		return len(ads[i]) > len(ads[j])
+	})
+	lib.Printf("Foundation-f all data source types: %+v\n", ads)
+	for _, fixture := range fixtures {
+		slug := fixture.Slug
+		ary := strings.Split(slug, "/")
+		if len(ary) < 2 {
+			f = lff
+			p = strings.TrimSpace(ary[0])
+		} else {
+			f = strings.TrimSpace(ary[0])
+			p = strings.TrimSpace(ary[1])
+		}
+		for _, alias := range fixture.Aliases {
+			for _, to := range alias.To {
+				if to == "" || strings.HasSuffix(to, "-raw") {
+					continue
+				}
+				an := strings.Replace(to, "/", "-", -1)
+				found := false
+				for _, ds := range ads {
+					if strings.Contains(an, ds) && (f == lff || strings.Contains(an, f)) {
+						m[f][p][ds] = "!" + an
+						if ctx.Debug > 0 {
+							lib.Printf("Foundation-f deduced %s,%s,%s -> %s from %s\n", f, p, ds, an, to)
+						}
+						found = true
+						break
+					}
+				}
+				if !found {
+					lib.Printf("Foundation-f cannot deduce data source type from alias name %s in %s/%s, skipping\n", to, f, p)
+				}
+			}
+		}
+	}
+	ks := []string{}
+	config := map[string][]string{}
+	dst := map[string]struct{}{}
+	src := map[string]struct{}{}
+	for f, ps := range m {
+		if len(ps) == 0 {
+			lib.Printf("foundation: %s has no projects\n", f)
+			continue
+		}
+		dss := map[string]struct{}{}
+		for _, d := range ps {
+			for s := range d {
+				dss[s] = struct{}{}
+			}
+		}
+		if len(dss) == 0 {
+			lib.Printf("foundation: %s has no data sources\n", f)
+			continue
+		}
+		for ds := range dss {
+			aliases := []string{}
+			for p, d := range ps {
+				fs, ok := d[ds]
+				if !ok {
+					continue
+				}
+				if strings.HasPrefix(fs, "!") {
+					fs = fs[1:]
+					if strings.HasPrefix(fs, dataPrefix) {
+						fpds = fs
+					} else {
+						fpds = dataPrefix + fs
+					}
+				} else {
+					if f == lff {
+						fpds = dataPrefix + p + "-" + fs
+					} else {
+						fpds = dataPrefix + f + "-" + p + "-" + fs
+					}
+				}
+				if ds == "dockerhub" {
+					fpds = "postprocess-" + fpds
+				}
+				aliases = append(aliases, fpds)
+				src[fpds] = struct{}{}
+			}
+			nAliases := len(aliases)
+			if nAliases == 0 {
+				lib.Printf("foundation: %s, data source: %s has no data sources\n", f, ds)
+				continue
+			}
+			if nAliases > 1 {
+				sort.Strings(aliases)
+			}
+			k := aliasPrefix + f + "-f-" + ds
+			ks = append(ks, k)
+			config[k] = aliases
+			dst[k] = struct{}{}
+		}
+	}
+	nKs := len(ks)
+	if nKs > 1 {
+		sort.Strings(ks)
+	}
+	for _, k := range ks {
+		aliases, ok := config[k]
+		if !ok {
+			lib.Printf("key not found: %s, should not happen\n", k)
+			continue
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Foundation-f alias/indices %s: %+v\n", k, aliases)
+		}
+	}
+	lib.Printf("Foundation-f aliasing needs %d aliases that point to %d indices\n", len(dst), len(src))
+	gotI := make(map[string]struct{})
+	gotA := make(map[string]struct{})
+	checkIndicesAndAliases := func() (err error) {
+		missing := []string{}
+		extra := []string{}
+		method := lib.Get
+		url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
+		rurl := "/_cat/indices?format=json"
+		var req *http.Request
+		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		var resp *http.Response
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			var body []byte
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+			return
+		}
+		indices := []lib.EsIndex{}
+		err = jsoniter.NewDecoder(resp.Body).Decode(&indices)
+		if err != nil {
+			lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		for _, index := range indices {
+			sIndex := index.Index
+			if !strings.HasPrefix(sIndex, dataPrefix) && !strings.HasPrefix(sIndex, aliasPrefix) {
+				continue
+			}
+			gotI[sIndex] = struct{}{}
+		}
+		method = lib.Get
+		url = fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
+		rurl = "/_cat/aliases?format=json"
+		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			var body []byte
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+			return
+		}
+		aliases := []lib.EsAlias{}
+		err = jsoniter.NewDecoder(resp.Body).Decode(&aliases)
+		if err != nil {
+			lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		for _, alias := range aliases {
+			sAlias := alias.Alias
+			if !strings.HasPrefix(sAlias, dataPrefix) && !strings.HasPrefix(sAlias, aliasPrefix) {
+				continue
+			}
+			gotA[sAlias] = struct{}{}
+		}
+		lib.Printf("Detected %d indices and %d aliases with matching data/index prefix\n", len(gotI), len(gotA))
+		for alias := range dst {
+			_, ok := gotA[alias]
+			if !ok {
+				missing = append(missing, alias)
+			}
+		}
+		for alias := range gotA {
+			if !strings.Contains(alias, "-f-") || !strings.HasPrefix(alias, aliasPrefix) {
+				continue
+			}
+			_, ok := dst[alias]
+			if !ok {
+				extra = append(extra, alias)
+			}
+		}
+		sort.Strings(missing)
+		sort.Strings(extra)
+		if len(missing) > 0 {
+			lib.Printf("Foundation-f missing the following aliases %d: %s\n", len(missing), strings.Join(missing, ", "))
+		}
+		if len(extra) == 0 {
+			lib.Printf("No foundation-f aliases to drop, environment clean\n")
+			return
+		}
+		lib.Printf("Foundation-f aliases that should probably be dropped (%d): %s\n", len(extra), strings.Join(extra, ", "))
+		return
+	}
+	err := checkIndicesAndAliases()
+	if err != nil {
+		lib.Printf("WARNING: maintain foundation-f indices retrned error: %+v, continuying anyway\n", err)
+	}
+	map2SortedString := func(mp map[string]struct{}) string {
+		out := []string{}
+		for m := range mp {
+			out = append(out, m)
+		}
+		if len(out) > 1 {
+			sort.Strings(out)
+		}
+		return strings.Join(out, ", ")
+	}
+	getAliasItems := func(alias string) (items map[string]struct{}, err error) {
+		method := lib.Get
+		url := fmt.Sprintf("%s/_cat/aliases/%s?format=json", ctx.ElasticURL, alias)
+		rurl := "/_cat/aliases/" + alias + "?format=json"
+		var req *http.Request
+		req, err = http.NewRequest(method, url, nil)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		var resp *http.Response
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			// There is no alias yet, no problem, so it has no items
+			if resp.StatusCode == 404 {
+				err = nil
+				return
+			}
+			var body []byte
+			body, err = ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s\n", err, method, rurl)
+				return
+			}
+			lib.Printf("Method:%s url:%s status:%d\n%s\n", method, rurl, resp.StatusCode, body)
+			return
+		}
+		itms := []lib.EsAlias{}
+		err = jsoniter.NewDecoder(resp.Body).Decode(&itms)
+		if err != nil {
+			lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
+			return
+		}
+		items = make(map[string]struct{})
+		for _, itm := range itms {
+			sIndex := itm.Index
+			items[sIndex] = struct{}{}
+		}
+		return
+	}
+	processFFAlias := func(ch chan struct{}, alias string, itemsAry []string) {
+		if ch != nil {
+			defer func() {
+				ch <- struct{}{}
+			}()
+		}
+		got, err := getAliasItems(alias)
+		if err != nil {
+			lib.Printf("Foundation-f failed to get alias indices for %s: %v, continuying\n", alias, err)
+		}
+		if ctx.Debug > 0 && len(got) > 0 {
+			fmt.Printf("Foundation-f current alias %s points to %+v\n", alias, got)
+		}
+		items := map[string]struct{}{}
+		for _, item := range itemsAry {
+			_, isAlias := gotA[item]
+			_, isIndex := gotI[item]
+			if !isAlias && !isIndex {
+				if ctx.Debug > 0 {
+					lib.Printf("Foundation-f %s item %s is neither an index or an alias, skipping\n", alias, item)
+				}
+				continue
+			}
+			if isAlias {
+				gotItems, err := getAliasItems(item)
+				if err != nil {
+					lib.Printf("Foundation-f failed to get alias %s item %s indices: %v, continuying\n", alias, item, err)
+				}
+				if ctx.Debug > 0 {
+					lib.Printf("Foundation-f %s item %s is an alias that points to %s\n", alias, item, map2SortedString(gotItems))
+				}
+				for itm := range gotItems {
+					items[itm] = struct{}{}
+				}
+				continue
+			}
+			items[item] = struct{}{}
+		}
+		if ctx.Debug > 0 && len(itemsAry) != len(items) {
+			fmt.Printf("Foundation-f after processing items of %s, number of items changed from %d to %d\n", alias, len(itemsAry), len(items))
+		}
+		missing := []string{}
+		extra := []string{}
+		for alias := range items {
+			_, ok := got[alias]
+			if !ok {
+				missing = append(missing, alias)
+			}
+		}
+		for alias := range got {
+			_, ok := items[alias]
+			if !ok {
+				extra = append(extra, alias)
+			}
+		}
+		sort.Strings(missing)
+		sort.Strings(extra)
+		nMissing := len(missing)
+		nExtra := len(extra)
+		if nMissing > 0 {
+			lib.Printf("Foundation-f alias %s missing %d indices: %s\n", alias, len(missing), strings.Join(missing, ", "))
+		}
+		if nExtra > 0 {
+			lib.Printf("Foundation-f alias %s has extra %d indices: %s\n", alias, len(extra), strings.Join(extra, ", "))
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("===== %s =====>\ngot:   %s\nneeds: %s\nmiss:  %s\nextra: %s\n", alias, map2SortedString(got), map2SortedString(items), strings.Join(missing, ", "), strings.Join(extra, ", "))
+		}
+		if nMissing == 0 && nExtra == 0 {
+			return
+		}
+		payload := `{"actions":[`
+		for _, index := range extra {
+			payload += `{"remove":{"index":"` + index + `","alias":"` + alias + `"}},`
+		}
+		for _, index := range missing {
+			payload += `{"add":{"index":"` + index + `","alias":"` + alias + `"}},`
+		}
+		payload = payload[:len(payload)-1] + `]}`
+		method := lib.Post
+		url := fmt.Sprintf("%s/_aliases", ctx.ElasticURL)
+		rurl := "/_aliases"
+		payloadBytes := []byte(payload)
+		payloadBody := bytes.NewReader(payloadBytes)
+		req, err := http.NewRequest(method, url, payloadBody)
+		if err != nil {
+			lib.Printf("New request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, payload)
+			return
+		}
+		req.Header.Set("Content-Type", "application/json")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			lib.Printf("Do request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, payload)
+			return
+		}
+		defer func() {
+			_ = resp.Body.Close()
+		}()
+		if resp.StatusCode != 200 {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				lib.Printf("ReadAll request error: %+v for %s url: %s, payload: %s\n", err, method, rurl, payload)
+				return
+			}
+			lib.Printf("Method:%s url:%s payload:%s status:%d\n%s\n", method, rurl, payload, resp.StatusCode, body)
+		}
+		if ctx.Debug > 0 {
+			lib.Printf("Foundation-f: alias configuration changed: %s\n", payload)
+		}
+		return
+	}
+	thrN := lib.GetThreadsNum(ctx)
+	if thrN > maxThreads {
+		thrN = maxThreads
+	}
+	lib.Printf("%d foundation-f aiases to process using %d threads\n", len(config), thrN)
+	if thrN > 1 {
+		ch := make(chan struct{})
+		nThreads := 0
+		for alias, items := range config {
+			go processFFAlias(ch, alias, items[:])
+			nThreads++
+			if nThreads == thrN {
+				<-ch
+				nThreads--
+			}
+		}
+		for nThreads > 0 {
+			<-ch
+			nThreads--
+		}
+	} else {
+		for alias, items := range config {
+			processFFAlias(nil, alias, items[:])
+		}
+	}
+	fmt.Printf("Finished generatig foundation-f aliases\n")
 }
 
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
@@ -1248,6 +1748,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	}
 	// Check for duplicated endpoints, they may be moved to a shared.yaml file
 	checkForSharedEndpoints(&fixtures)
+	// Foundation-f aliases
+	generateFoundationFAliases(ctx, &fixtures)
 	// Drop unused indexes, rename indexes if needed, drop unused aliases
 	didRenames := false
 	if !ctx.SkipDropUnused && !ctx.OnlyP2O {
@@ -2361,7 +2863,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err := ioutil.ReadAll(resp.Body)
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
@@ -2866,7 +3368,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		return
 	}
 	indices := []lib.EsIndex{}
-	err = json.NewDecoder(resp.Body).Decode(&indices)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&indices)
 	if err != nil {
 		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
 		return
@@ -3071,7 +3573,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		return
 	}
 	aliases := []lib.EsAlias{}
-	err = json.NewDecoder(resp.Body).Decode(&aliases)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&aliases)
 	if err != nil {
 		lib.Printf("JSON decode error: %+v for %s url: %s\n", err, method, rurl)
 		return
@@ -4407,11 +4909,9 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 			ESIndex    string
 		}
 		repos := make([]repository, 1)
-
 		// fill repos
 		repos[0] = repository{e[0], e[1], project, idxSlug}
-
-		data, err := json.Marshal(&repos)
+		data, err := jsoniter.Marshal(&repos)
 		if err != nil {
 			lib.Fatalf("p2oEndpoint2dadsEndpoint: Error in dockerhub reposiories: DS%s", ds)
 		}
@@ -4543,7 +5043,7 @@ func searchByQueryFirstID(ctx *lib.Ctx, index, esQuery string) (id string) {
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err := ioutil.ReadAll(resp.Body)
 		lib.Printf("JSON decode error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
@@ -4592,7 +5092,7 @@ func searchByQuery(ctx *lib.Ctx, index, esQuery string) (dt time.Time, ok, found
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err := ioutil.ReadAll(resp.Body)
 		lib.Printf("JSON decode error: %+v for %s url: %s, query: %s\n", err, method, rurl, esQuery)
@@ -4855,7 +5355,7 @@ func lastProjectDate(ctx *lib.Ctx, index, origin, must, mustNot string, silent b
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err := ioutil.ReadAll(resp.Body)
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
@@ -5167,7 +5667,7 @@ func setProject(ctx *lib.Ctx, index string, projects []lib.EndpointProject) {
 			return
 		}
 		payload := lib.EsUpdateByQueryPayload{}
-		err = json.NewDecoder(resp.Body).Decode(&payload)
+		err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 		if err != nil {
 			body, err2 := ioutil.ReadAll(resp.Body)
 			if err2 != nil {
@@ -5236,7 +5736,7 @@ func lastDataDate(ctx *lib.Ctx, index, must, mustNot string, silent bool) (epoch
 		return
 	}
 	payload := lib.EsSearchResultPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		lib.Printf("JSON decode error: %+v for %s url: %s, data: %s\n", err, method, rurl, data)
 		body, err := ioutil.ReadAll(resp.Body)
@@ -5399,7 +5899,7 @@ func copyMapping(ctx *lib.Ctx, pattern, index string) (err error) {
 		result interface{}
 		field  interface{}
 	)
-	err = json.NewDecoder(resp.Body).Decode(&result)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&result)
 	if err != nil {
 		var body []byte
 		body, err = ioutil.ReadAll(resp.Body)
@@ -5832,7 +6332,7 @@ func handleCopyFrom(ctx *lib.Ctx, index string, task *lib.Task) (err error) {
 				lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 				return
 			}
-			err = json.NewDecoder(resp.Body).Decode(&result)
+			err = jsoniter.NewDecoder(resp.Body).Decode(&result)
 		}
 		if err != nil {
 			var body []byte
@@ -6516,7 +7016,7 @@ func getToken(ctx *lib.Ctx) (err error) {
 	var rdata struct {
 		Token string `json:"access_token"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&rdata)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&rdata)
 	if err != nil {
 		return
 	}
@@ -6564,7 +7064,7 @@ func executeMetricsAPICall(ctx *lib.Ctx, path string) (err error) {
 	var rdata struct {
 		Text string `json:"status"`
 	}
-	err = json.NewDecoder(resp.Body).Decode(&rdata)
+	err = jsoniter.NewDecoder(resp.Body).Decode(&rdata)
 	_ = resp.Body.Close()
 	if err != nil {
 		return
@@ -6583,7 +7083,8 @@ func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 	}
 	if gToken == "" {
 		lib.Printf("Obtaining API token\n")
-		err = getToken(ctx)
+		// err = getToken(ctx)
+		gToken, err = lib.GetAPIToken()
 		if err != nil {
 			return
 		}
@@ -6606,7 +7107,8 @@ func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 		if i == 0 && resp.StatusCode == 401 {
 			_ = resp.Body.Close()
 			lib.Printf("Token is invalid, trying to generate another one\n")
-			err = getToken(ctx)
+			// err = getToken(ctx)
+			gToken, err = lib.GetAPIToken()
 			if err != nil {
 				return
 			}
@@ -6625,7 +7127,7 @@ func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 		var rdata struct {
 			Text string `json:"text"`
 		}
-		err = json.NewDecoder(resp.Body).Decode(&rdata)
+		err = jsoniter.NewDecoder(resp.Body).Decode(&rdata)
 		_ = resp.Body.Close()
 		if err != nil {
 			return
@@ -6689,7 +7191,7 @@ func metricsEnrich(ctx *lib.Ctx, slug, ds string) {
 	return
 }
 
-func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
+func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][3]string) {
 	patt := make(map[string][2]string)
 	for _, ds := range m.DataSources {
 		hasIndices := false
@@ -6729,23 +7231,40 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 		key[1] = strings.Join(items, ",")
 		patt[ds.Name] = key
 	}
-	addQuery := func(dest [2]string, query string) {
+	addQuery := func(dest [2]string, op, query string) {
 		if dest[0] != "" {
-			result = append(result, [2]string{dest[0], query})
+			result = append(result, [3]string{op, dest[0], query})
 		}
 		if dest[1] != "" {
-			result = append(result, [2]string{dest[1], query})
+			result = append(result, [3]string{op, dest[1], query})
 		}
 	}
+	updateOp := "_update_by_query"
+	deleteOp := "_delete_by_query"
 	for _, wg := range m.WorkingGroups {
 		if len(wg.DataSources) == 0 {
 			continue
 		}
 		noOverwrite := wg.NoOverwrite
 		apply := map[string]string{"workinggroup": wg.Name}
+		formed := ""
 		for k, v := range wg.Meta {
 			apply["meta_"+k] = v
+			if formed == "" && strings.ToLower(k) == "formed" {
+				formed = v
+			} else if formed == "" && strings.ToLower(k) == "contributed" {
+				formed = v
+			}
 		}
+		var dtFormed time.Time
+		if formed != "" {
+			var e error
+			dtFormed, e = time.Parse("2006-01-02", formed)
+			if e != nil {
+				lib.Printf("cannot parse formed/contributed date: '%s': %v, from %+v\n", formed, e, wg.Meta)
+			}
+		}
+		hasFormed := !dtFormed.IsZero()
 		// {"script":{"inline":"ctx._source.field1=%s;ctx._source.field2=%s;"},
 		queryRoot := `{"script":{"inline":"`
 		ks := []string{}
@@ -6784,13 +7303,20 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 					lib.Printf("WARNING: working group data source '%s' has no origins and no filter, skipping: '%+v'\n", ds.Name, wg)
 					continue
 				}
-				// {"query":{"bool":{"should":[{"term":{"origin":"..."}},{"term":{"origin":"..."}}]}}}
 				query := queryRoot + `"query":{"bool":{"should":[`
 				for _, origin := range ds.Origins {
 					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
 				}
 				query = query[:len(query)-1] + `]}}}`
-				addQuery(dest, query)
+				addQuery(dest, updateOp, query)
+				if hasFormed {
+					query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
+					for _, origin := range ds.Origins {
+						query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					}
+					query = query[:len(query)-1] + `]}}}`
+					addQuery(dest, deleteOp, query)
+				}
 				continue
 			}
 			b, err := jsoniter.Marshal(ds.Filter)
@@ -6799,24 +7325,34 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][2]string) {
 				continue
 			}
 			if len(ds.Origins) == 0 {
-				// {"query":{"bool":{"filter":{"term":{"ancestors_links":"..."}}}}}
 				query := queryRoot + `"query":{"bool":{"filter":` + string(b) + `}}}`
-				addQuery(dest, query)
+				addQuery(dest, updateOp, query)
+				if hasFormed {
+					query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"filter":` + string(b) + `}}}`
+					addQuery(dest, deleteOp, query)
+				}
 				continue
 			}
-			// {"query":{"bool":{"should":[{"term":{"origin":".."}},{"term":{"origin":"..."}}],"filter":{"term":{"ancestors_links":"..."}}}}}
 			query := queryRoot + `"query":{"bool":{"should":[`
 			for _, origin := range ds.Origins {
 				query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
 			}
 			query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
-			addQuery(dest, query)
+			addQuery(dest, updateOp, query)
+			if hasFormed {
+				query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
+				for _, origin := range ds.Origins {
+					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+				}
+				query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
+				addQuery(dest, deleteOp, query)
+			}
 		}
 	}
 	return
 }
 
-func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
+func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [3]string) {
 	if ch != nil {
 		defer func() {
 			ch <- struct{}{}
@@ -6825,13 +7361,14 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 	if ctx.Debug > 0 {
 		lib.Printf("Processing %v\n", cfg)
 	}
-	pattern := cfg[0]
-	data := cfg[1]
+	op := cfg[0]
+	pattern := cfg[1]
+	data := cfg[2]
 	payloadBytes := []byte(data)
 	payloadBody := bytes.NewReader(payloadBytes)
 	method := lib.Post
-	url := fmt.Sprintf("%s/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, pattern)
-	rurl := fmt.Sprintf("/%s/_update_by_query?conflicts=proceed&refresh=true&timeout=20m", pattern)
+	url := fmt.Sprintf("%s/%s/%s?conflicts=proceed&refresh=true&timeout=20m", ctx.ElasticURL, pattern, op)
+	rurl := fmt.Sprintf("/%s/%s?conflicts=proceed&refresh=true&timeout=20m", pattern, op)
 	req, err := http.NewRequest(method, url, payloadBody)
 	if err != nil {
 		lib.Printf("new request error: %+v for %s url: %s, data: %+v", err, method, rurl, data)
@@ -6855,8 +7392,8 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v\n%s", method, rurl, resp.StatusCode, data, body)
 		return
 	}
-	payload := lib.EsUpdateByQueryPayload{}
-	err = json.NewDecoder(resp.Body).Decode(&payload)
+	payload := lib.EsByQueryPayload{}
+	err = jsoniter.NewDecoder(resp.Body).Decode(&payload)
 	if err != nil {
 		body, err2 := ioutil.ReadAll(resp.Body)
 		if err2 != nil {
@@ -6867,9 +7404,9 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [2]string) {
 		return
 	}
 	if ctx.Debug >= 0 {
-		lib.Printf("%s/%s updated: %d\n", pattern, data, payload.Updated)
+		lib.Printf("%s/%s updated: %d, deleted: %d\n", pattern, data, payload.Updated, payload.Deleted)
 	} else {
-		lib.Printf("metadata updated: %d\n", payload.Updated)
+		lib.Printf("metadata updated: %d, deleted: %d\n", payload.Updated, payload.Deleted)
 	}
 }
 
@@ -6879,7 +7416,7 @@ func processFixturesMetadata(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	}
 	fixtures := *pfixtures
 	lib.Printf("Processing %d fixtures metadata\n", len(fixtures))
-	md := make(map[[2]string]struct{})
+	md := make(map[[3]string]struct{})
 	for _, fixture := range fixtures {
 		m := fixture.Metadata
 		if len(m.DataSources) == 0 || len(m.WorkingGroups) == 0 {
@@ -6925,6 +7462,13 @@ func main() {
 	var ctx lib.Ctx
 	dtStart := time.Now()
 	ctx.Init()
+	// IMPL
+	/*
+		processFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
+		if 1 == 1 {
+			os.Exit(1)
+		}
+	*/
 	if ctx.DryRun {
 		lib.Printf("Running in dry-run mode\n")
 	}
