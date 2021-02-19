@@ -176,6 +176,10 @@
           "value": "${SDS_DRY_RUN_ALLOW_COPY_FROM}"
         },
         {
+          "name": "SDS_DRY_RUN_ALLOW_F_ALIASES",
+          "value": "${SDS_DRY_RUN_ALLOW_F_ALIASES}"
+        },
+        {
           "name": "SDS_TIMEOUT_SECONDS",
           "value": "${SDS_TIMEOUT_SECONDS}"
         },
@@ -274,6 +278,10 @@
         {
           "name": "SDS_SKIP_P2O",
           "value": "${SDS_SKIP_P2O}"
+        },
+        {
+          "name": "SDS_SKIP_F_ALIASES",
+          "value": "${SDS_SKIP_F_ALIASES}"
         },
         {
           "name": "SDS_SKIP_VALIDATE_GITHUB_API",
