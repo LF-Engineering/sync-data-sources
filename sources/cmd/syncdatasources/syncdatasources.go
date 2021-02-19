@@ -1660,7 +1660,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if thrN > maxThreads {
 		thrN = maxThreads
 	}
-	lib.Printf("%d foundation-f aiases to process using %d threads\n", len(config), thrN)
+	lib.Printf("%d foundation-f aliases to process using %d threads\n", len(config), thrN)
 	if thrN > 1 {
 		ch := make(chan struct{})
 		nThreads := 0
