@@ -1,5 +1,5 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index 5aae3bce..27a92655 100644
+index 5aae3bce..f28da00e 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
 @@ -493,6 +493,27 @@ class GitHubEnrich(Enrich):
@@ -24,14 +24,14 @@ index 5aae3bce..27a92655 100644
 +                'review_user_location': review.get('user_data', {}).get('location', None),
 +                'review_user_name': review.get('user_data', {}).get('name', None),
 +                'review_user_company': review.get('user_data', {}).get('company', None),
-+                'review_user_organizations': review.get('user_data', {}).get('organizations', None),
++                'review_user_organizations': [x['login'] for x in review.get('user_data', {}).get('organizations', [])],
 +            })
 +
          rich_pr['id'] = pull_request['id']
          rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
 diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
-index 81eb756d..8b46d5f6 100644
+index 81eb756d..9e6381c2 100644
 --- a/grimoire_elk/enriched/github2.py
 +++ b/grimoire_elk/enriched/github2.py
 @@ -496,6 +496,27 @@ class GitHubEnrich2(Enrich):
@@ -56,7 +56,7 @@ index 81eb756d..8b46d5f6 100644
 +                'review_user_location': review.get('user_data', {}).get('location', None),
 +                'review_user_name': review.get('user_data', {}).get('name', None),
 +                'review_user_company': review.get('user_data', {}).get('company', None),
-+                'review_user_organizations': review.get('user_data', {}).get('organizations', None),
++                'review_user_organizations': [x['login'] for x in review.get('user_data', {}).get('organizations', [])],
 +            })
 +
          rich_pr['id'] = pull_request['id']
