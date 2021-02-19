@@ -1186,6 +1186,8 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	fixtures := *pfixtures
 	// The Linux Foundation foundation slug
 	lff := "lf"
+	// DockerHub postprocessed index prefix (possibly others in the future)
+	ppPrefix := "postprocess-"
 	// Foundation-f aliases will look like aliasprefix-founation-f-datasource
 	// IMPL
 	aliasPrefix := "ff-sds-"
@@ -1294,6 +1296,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		}
 		for ds := range dss {
 			aliases := []string{}
+			ppAliases := []string{}
 			for p, d := range ps {
 				fs, ok := d[ds]
 				if !ok {
@@ -1313,11 +1316,13 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 						fpds = dataPrefix + f + "-" + p + "-" + fs
 					}
 				}
-				if ds == "dockerhub" {
-					fpds = "postprocess-" + fpds
-				}
 				aliases = append(aliases, fpds)
 				src[fpds] = struct{}{}
+				if ds == "dockerhub" {
+					fpds = "postprocess-" + fpds
+					ppAliases = append(ppAliases, fpds)
+					src[fpds] = struct{}{}
+				}
 			}
 			nAliases := len(aliases)
 			if nAliases == 0 {
@@ -1330,6 +1335,18 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			k := aliasPrefix + f + "-f-" + ds
 			ks = append(ks, k)
 			config[k] = aliases
+			dst[k] = struct{}{}
+			// postprocess- aliases only for dockerhub)
+			nPPAliases := len(ppAliases)
+			if nPPAliases == 0 {
+				continue
+			}
+			if nPPAliases > 1 {
+				sort.Strings(ppAliases)
+			}
+			k = ppPrefix + aliasPrefix + f + "-f-" + ds
+			ks = append(ks, k)
+			config[k] = ppAliases
 			dst[k] = struct{}{}
 		}
 	}
@@ -1389,10 +1406,13 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		}
 		for _, index := range indices {
 			sIndex := index.Index
+			if strings.HasPrefix(sIndex, ppPrefix) {
+				sIndex = sIndex[len(ppPrefix):]
+			}
 			if !strings.HasPrefix(sIndex, dataPrefix) && !strings.HasPrefix(sIndex, aliasPrefix) {
 				continue
 			}
-			gotI[sIndex] = struct{}{}
+			gotI[index.Index] = struct{}{}
 		}
 		method = lib.Get
 		url = fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
@@ -1428,10 +1448,13 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		}
 		for _, alias := range aliases {
 			sAlias := alias.Alias
+			if strings.HasPrefix(sAlias, ppPrefix) {
+				sAlias = sAlias[len(ppPrefix):]
+			}
 			if !strings.HasPrefix(sAlias, dataPrefix) && !strings.HasPrefix(sAlias, aliasPrefix) {
 				continue
 			}
-			gotA[sAlias] = struct{}{}
+			gotA[alias.Alias] = struct{}{}
 		}
 		lib.Printf("Detected %d indices and %d aliases with matching data/index prefix\n", len(gotI), len(gotA))
 		for alias := range dst {
@@ -1658,7 +1681,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			processFFAlias(nil, alias, items[:])
 		}
 	}
-	fmt.Printf("Finished generatig foundation-f aliases\n")
+	lib.Printf("Finished generatig foundation-f aliases\n")
 }
 
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
@@ -1750,6 +1773,12 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	checkForSharedEndpoints(&fixtures)
 	// Foundation-f aliases
 	generateFoundationFAliases(ctx, &fixtures)
+	// IMPL
+	/*
+		if 1 == 1 {
+			os.Exit(1)
+		}
+	*/
 	// Drop unused indexes, rename indexes if needed, drop unused aliases
 	didRenames := false
 	if !ctx.SkipDropUnused && !ctx.OnlyP2O {
