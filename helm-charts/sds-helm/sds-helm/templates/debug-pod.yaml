@@ -132,6 +132,8 @@ spec:
       value: '{{ $root.Values.skipCopyFrom }}'
     - name: SDS_SKIP_P2O
       value: '{{ $root.Values.skipP2O }}'
+    - name: SDS_SKIP_F_ALIASES
+      value: '{{ $root.Values.skipFAliases }}'
     - name: SDS_ONLY_VALIDATE
       value: '{{ $root.Values.onlyValidate }}'
     - name: SDS_ONLY_P2O
