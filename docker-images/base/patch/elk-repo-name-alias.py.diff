@@ -1,0 +1,116 @@
+diff --git a/grimoire_elk/enriched/gerrit.py b/grimoire_elk/enriched/gerrit.py
+index b6c9f272..f57e4e7e 100644
+--- a/grimoire_elk/enriched/gerrit.py
++++ b/grimoire_elk/enriched/gerrit.py
+@@ -299,6 +299,7 @@ class GerritEnrich(Enrich):
+             ecomment['url'] = eitem['url']
+             ecomment['summary'] = eitem['summary']
+             ecomment['repository'] = eitem['repository']
++            ecomment['repo_name'] = eitem['repository']
+             ecomment['branch'] = eitem['branch']
+             ecomment['changeset_number'] = eitem['changeset_number']
+ 
+@@ -371,6 +372,7 @@ class GerritEnrich(Enrich):
+             epatchset['url'] = eitem['url']
+             epatchset['summary'] = eitem['summary']
+             epatchset['repository'] = eitem['repository']
++            epatchset['repo_name'] = eitem['repository']
+             epatchset['branch'] = eitem['branch']
+             epatchset['changeset_number'] = eitem['changeset_number']
+             epatchset['changeset_status'] = eitem['changeset_status']
+@@ -457,6 +459,7 @@ class GerritEnrich(Enrich):
+             eapproval['url'] = epatchset['url']
+             eapproval['summary'] = epatchset['summary']
+             eapproval['repository'] = epatchset['repository']
++            eapproval['repo_name'] = epatchset['repository']
+             eapproval['branch'] = epatchset['branch']
+             eapproval['changeset_number'] = epatchset['changeset_number']
+             eapproval['changeset_status'] = epatchset['changeset_status']
+diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
+index f28da00e..8562aeb4 100644
+--- a/grimoire_elk/enriched/github.py
++++ b/grimoire_elk/enriched/github.py
+@@ -517,6 +517,7 @@ class GitHubEnrich(Enrich):
+         rich_pr['id'] = pull_request['id']
+         rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
+         rich_pr['repository'] = self.get_project_repository(rich_pr)
++        rich_pr['repo_name'] = self.get_project_repository(rich_pr)
+         rich_pr['title'] = pull_request['title']
+         rich_pr['title_analyzed'] = pull_request['title']
+         rich_pr['state'] = pull_request['state']
+@@ -621,6 +622,7 @@ class GitHubEnrich(Enrich):
+         rich_issue['id'] = issue['id']
+         rich_issue['id_in_repo'] = issue['html_url'].split("/")[-1]
+         rich_issue['repository'] = self.get_project_repository(rich_issue)
++        rich_issue['repo_name'] = self.get_project_repository(rich_issue)
+         rich_issue['title'] = issue['title']
+         rich_issue['title_analyzed'] = issue['title']
+         rich_issue['state'] = issue['state']
+diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
+index 9e6381c2..a83e52fb 100644
+--- a/grimoire_elk/enriched/github2.py
++++ b/grimoire_elk/enriched/github2.py
+@@ -264,6 +264,7 @@ class GitHubEnrich2(Enrich):
+             ecomment['issue_pull_request'] = eitem['issue_pull_request']
+             ecomment['github_repo'] = eitem['github_repo']
+             ecomment['repository'] = eitem['repository']
++            ecomment['repo_name'] = eitem['repository']
+             ecomment['item_type'] = COMMENT_TYPE
+             ecomment['sub_type'] = ISSUE_COMMENT_TYPE
+ 
+@@ -337,6 +338,7 @@ class GitHubEnrich2(Enrich):
+             ecomment['pull_state'] = eitem['pull_state']
+             ecomment['github_repo'] = eitem['github_repo']
+             ecomment['repository'] = eitem['repository']
++            ecomment['repo_name'] = eitem['repository']
+             ecomment['item_type'] = COMMENT_TYPE
+             ecomment['sub_type'] = REVIEW_COMMENT_TYPE
+ 
+@@ -522,6 +524,7 @@ class GitHubEnrich2(Enrich):
+         rich_pr['pull_id_in_repo'] = pull_request['html_url'].split("/")[-1]
+         rich_pr['issue_id_in_repo'] = pull_request['html_url'].split("/")[-1]
+         rich_pr['repository'] = self.get_project_repository(rich_pr)
++        rich_pr['repo_name'] = self.get_project_repository(rich_pr)
+         rich_pr['issue_title'] = pull_request['title']
+         rich_pr['issue_title_analyzed'] = pull_request['title']
+         rich_pr['pull_state'] = pull_request['state']
+@@ -630,6 +633,7 @@ class GitHubEnrich2(Enrich):
+         rich_issue['issue_id'] = issue['id']
+         rich_issue['issue_id_in_repo'] = issue['html_url'].split("/")[-1]
+         rich_issue['repository'] = self.get_project_repository(rich_issue)
++        rich_issue['repo_name'] = self.get_project_repository(rich_issue)
+         rich_issue['issue_title'] = issue['title']
+         rich_issue['issue_title_analyzed'] = issue['title']
+         rich_issue['issue_state'] = issue['state']
+diff --git a/grimoire_elk/enriched/githubql.py b/grimoire_elk/enriched/githubql.py
+index ea9548dd..21f92b62 100644
+--- a/grimoire_elk/enriched/githubql.py
++++ b/grimoire_elk/enriched/githubql.py
+@@ -171,6 +171,7 @@ class GitHubQLEnrich(Enrich):
+         rich_event['created_at'] = event['createdAt']
+         rich_event['actor_username'] = actor['login'] if actor else None
+         rich_event['repository'] = self.get_project_repository(rich_event)
++        rich_event['repo_name'] = self.get_project_repository(rich_event)
+         rich_event['pull_request'] = True
+         rich_event['item_type'] = 'pull request'
+         if 'head' not in issue.keys() and 'pull_request' not in issue.keys():
+diff --git a/grimoire_elk/enriched/gitlab.py b/grimoire_elk/enriched/gitlab.py
+index 5835894f..cf8662d8 100644
+--- a/grimoire_elk/enriched/gitlab.py
++++ b/grimoire_elk/enriched/gitlab.py
+@@ -210,6 +210,7 @@ class GitLabEnrich(Enrich):
+         rich_issue['id'] = issue['id']
+         rich_issue['id_in_repo'] = issue['iid']
+         rich_issue['repository'] = issue['web_url'].rsplit("/", 2)[0].split("/-")[0]
++        rich_issue['repo_name'] = issue['web_url'].rsplit("/", 2)[0].split("/-")[0]
+         rich_issue['title'] = issue['title']
+         rich_issue['title_analyzed'] = issue['title']
+         rich_issue['state'] = issue['state']
+@@ -303,6 +304,7 @@ class GitLabEnrich(Enrich):
+         rich_mr['id'] = merge_request['id']
+         rich_mr['id_in_repo'] = merge_request['iid']
+         rich_mr['repository'] = merge_request['web_url'].rsplit("/", 2)[0].split("/-")[0]
++        rich_mr['repo_name'] = merge_request['web_url'].rsplit("/", 2)[0].split("/-")[0]
+         rich_mr['title'] = merge_request['title']
+         rich_mr['title_analyzed'] = merge_request['title']
+         rich_mr['state'] = merge_request['state']

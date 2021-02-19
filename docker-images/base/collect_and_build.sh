@@ -23,6 +23,9 @@ git clone "https://github.com/AlDanial/cloc.git" --branch "1.88" --single-branch
 #vim --not-a-term -c "%s/'group_id': group_id/'group_id': group_id, 'start_msg_num': 0/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/groupsio.py
 #vim --not-a-term -c "%s/if entry is not None:/if entry is not None and 'sortKey' in entry:/g" -c 'wq!' grimoirelab-perceval/perceval/backends/core/gerrit.py
 #git diff > api.py.diff
+# revert slack api commit from perceval
+# cd grimoirelab-perceval && git fetch origin pull/680/head:slack-history-api-revert && git checkout slack-history-api-revert && git rebase master/slack-history-api-revert && cd .. || exit 22
+# cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-slack-revert-channel.py.diff && cd .. || exit 23
 # rocketchat support
 cd grimoirelab-elk && git fetch origin pull/906/head:reactions && git checkout reactions && git rebase "ecb00c9" && cd .. || exit 24
 #vim --not-a-term -c "%s/if '_id' in usr.keys():/if '_id' in usr.keys() and 'name' in usr.keys():/g" -c 'wq!' grimoirelab-elk/grimoire_elk/enriched/rocketchat.py
@@ -40,6 +43,7 @@ cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit-url.py.diff && cd .. || exit 18
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-assignees-data.py.diff && cd .. || exit 20
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-reviews-data.py.diff && cd .. || exit 21
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-repo-name-alias.py.diff && cd .. || exit 25
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
 echo 'All patching OK'
