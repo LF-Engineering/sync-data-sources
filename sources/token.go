@@ -4,8 +4,12 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/LF-Engineering/dev-analytics-libraries/auth0"
+	"github.com/LF-Engineering/dev-analytics-libraries/elastic"
+	"github.com/LF-Engineering/dev-analytics-libraries/http"
+	"github.com/LF-Engineering/dev-analytics-libraries/slack"
 	jsoniter "github.com/json-iterator/go"
 )
 
@@ -27,7 +31,6 @@ func InitializeAuth0() error {
 		Printf("decode base64 error: %+v\n", err)
 		return err
 	}
-	//fmt.Printf("auth0Data: %v\n", auth0Data)
 	var data map[string]string
 	err = jsoniter.Unmarshal([]byte(auth0Data), &data)
 	if err != nil {
@@ -41,6 +44,21 @@ func InitializeAuth0() error {
 	AddRedacted(data["client_secret"], false)
 	AddRedacted(data["audience"], false)
 	AddRedacted(data["url"], false)
+	AddRedacted(data["slack_webhook_url"], false)
+	AddRedacted(data["secret"], false)
+	// Providers
+	httpClientProvider := http.NewClientProvider(60 * time.Second)
+	esCacheClientProvider, err := elastic.NewClientProvider(
+		&elastic.Params{
+			URL:      data["es_url"],
+			Username: data["es_user"],
+			Password: data["es_pass"],
+		})
+	if err != nil {
+		Printf("ES client provider error: %+v\n", err)
+		return err
+	}
+	slackProvider := slack.New(data["slack_webhook_url"])
 	gAuth0Client, err = auth0.NewAuth0Client(
 		data["es_url"],
 		data["es_user"],
@@ -51,6 +69,10 @@ func InitializeAuth0() error {
 		data["client_secret"],
 		data["audience"],
 		data["url"],
+		data["secret"],
+		httpClientProvider,
+		esCacheClientProvider,
+		&slackProvider,
 	)
 	if err == nil {
 		gTokenEnv = data["env"]
@@ -72,7 +94,7 @@ func GetAPIToken() (string, error) {
 			return "", err
 		}
 	}
-	token, err := gAuth0Client.ValidateToken(gTokenEnv)
+	token, err := gAuth0Client.GetToken()
 	if err == nil && token != "" {
 		token = "Bearer " + token
 	}

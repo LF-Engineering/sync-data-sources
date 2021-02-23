@@ -9,7 +9,8 @@ import (
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
-	"github.com/google/go-github/v33/github"
+	// "github.com/google/go-github/v33/github" // with go mod enabled
+	"github.com/google/go-github/github" // with go mod disabled
 	yaml "gopkg.in/yaml.v2"
 )
 
