@@ -2,9 +2,14 @@ FROM golang:1.15 AS builder
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
 RUN go get -u gopkg.in/yaml.v2
 RUN go get -u github.com/json-iterator/go
-RUN go get -u github.com/LF-Engineering/da-ds
-RUN cd /go/src/github.com/LF-Engineering/da-ds
+# Without hack: starts
+# RUN go get -u github.com/LF-Engineering/da-ds
+# RUN cd /go/src/github.com/LF-Engineering/da-ds
+# Without hack: ends
 # Hack to build da-ds: starts
+WORKDIR /go/src/github.com/LF-Engineering
+RUN git clone https://github.com/LF-Engineering/da-ds
+WORKDIR /go/src/github.com/LF-Engineering/da-ds
 RUN git checkout lg-kh
 # Hack to build da-ds: ends
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
