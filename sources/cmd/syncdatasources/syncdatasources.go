@@ -22,8 +22,8 @@ import (
 	"time"
 
 	lib "github.com/LF-Engineering/sync-data-sources/sources"
-	// "github.com/google/go-github/v33/github"
-	"github.com/google/go-github/github"
+	// "github.com/google/go-github/v33/github" // with go mod enabled
+	"github.com/google/go-github/github" // with go mod disabled
 	jsoniter "github.com/json-iterator/go"
 	yaml "gopkg.in/yaml.v2"
 )
