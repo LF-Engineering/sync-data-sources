@@ -39,8 +39,7 @@ fi
 rm -rf "$cwd/sources/data" "$cwd/sources/data.zip" || exit 7
 cp -R app/services/lf/bootstrap/fixtures/ "$cwd/sources/data" || exit 8
 cd "${cwd}/sources" || exit 9
-# Hack to make da-ds build
-#git checkout "$BRANCH" || exit 16
+git checkout "$BRANCH" || exit 16
 zip data.zip -P "$pass" -r data >/dev/null || exit 10
 cd .. || exit 11
 if [ -z "$SKIP_BUILD" ]
