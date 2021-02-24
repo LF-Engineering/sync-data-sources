@@ -18,7 +18,6 @@ WORKDIR /go/src/github.com/LF-Engineering
 RUN git clone https://github.com/LF-Engineering/da-ds
 RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
-RUN git checkout lg-kh
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN make -f ./Makefile dockerinstall
