@@ -9,6 +9,10 @@ index 5aae3bce..f28da00e 100644
 +        rich_pr['reviewer_data'] = list()
 +        reviews_data = pull_request.get('reviews_data', list())
 +        for review in reviews_data:
++            user_login = review.get('user_data', {}).get('login')
++            if not user_login:
++               continue
++
 +            rich_pr['reviewer_data'].append({
 +                'review_author_association': review.get('author_association', None),
 +                'review_comment': review.get('body', None),
