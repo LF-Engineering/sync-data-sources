@@ -11,7 +11,8 @@ then
   exit 2
 fi
 cd /root/go/src/github.com/LF-Engineering/sync-data-sources/ || exit 3
-git pull || exit 4
+git checkout "$2" || exit 4
+git pull || exit 5
 lock_file="/tmp/$1.lock"
 function cleanup {
   rm -f "${lock_file}"
@@ -19,7 +20,7 @@ function cleanup {
 if [ -f "${lock_file}" ]
 then
   # echo "$0: another SDS instance \"$1\" is still running, exiting"
-  exit 4
+  exit 6
 fi
 > "${lock_file}"
 trap cleanup EXIT
