@@ -1,0 +1,126 @@
+diff --git a/grimoire_elk/enriched/enrich.py b/grimoire_elk/enriched/enrich.py
+index e764667f..09af80fc 100644
+--- a/grimoire_elk/enriched/enrich.py
++++ b/grimoire_elk/enriched/enrich.py
+@@ -720,8 +720,8 @@ class Enrich(ElasticItems):
+             rol + "_name": empty_field,
+             rol + "_user_name": empty_field,
+             rol + "_domain": empty_field,
+-            rol + "_gender": empty_field,
+-            rol + "_gender_acc": None,
++            # rol + "_gender": empty_field,
++            # rol + "_gender_acc": None,
+             rol + "_org_name": empty_field,
+             rol + "_bot": False,
+             rol + MULTI_ORG_NAMES: [empty_field]
+@@ -746,8 +746,8 @@ class Enrich(ElasticItems):
+             rol + "_name": name,
+             rol + "_user_name": username,
+             rol + "_domain": self.get_identity_domain(identity),
+-            rol + "_gender": self.unknown_gender,
+-            rol + "_gender_acc": None,
++            # rol + "_gender": self.unknown_gender,
++            # rol + "_gender_acc": None,
+             rol + "_org_name": self.unaffiliated_group,
+             rol + "_bot": False
+         }
+@@ -788,16 +788,16 @@ class Enrich(ElasticItems):
+             if email:
+                 eitem_sh[rol + "_domain"] = self.get_email_domain(email)
+ 
+-            eitem_sh[rol + "_gender"] = profile.get('gender', self.unknown_gender)
+-            eitem_sh[rol + "_gender_acc"] = profile.get('gender_acc', 0)
++            # eitem_sh[rol + "_gender"] = profile.get('gender', self.unknown_gender)
++            # eitem_sh[rol + "_gender_acc"] = profile.get('gender_acc', 0)
+ 
+         elif not profile and sh_id:
+             logger.warning("Can't find SH identity profile: {}".format(sh_id))
+ 
+         # Ensure we always write gender fields
+-        if not eitem_sh.get(rol + "_gender"):
+-            eitem_sh[rol + "_gender"] = self.unknown_gender
+-            eitem_sh[rol + "_gender_acc"] = 0
++        # if not eitem_sh.get(rol + "_gender"):
++            # eitem_sh[rol + "_gender"] = self.unknown_gender
++            # eitem_sh[rol + "_gender_acc"] = 0
+ 
+         eitem_sh[rol + "_org_name"] = self.get_enrollment(eitem_sh[rol + "_uuid"], item_date)
+         eitem_sh[rol + "_bot"] = self.is_bot(eitem_sh[rol + '_uuid'])
+@@ -812,8 +812,8 @@ class Enrich(ElasticItems):
+         if u.profile:
+             profile['name'] = u.profile.name
+             profile['email'] = u.profile.email
+-            profile['gender'] = u.profile.gender
+-            profile['gender_acc'] = u.profile.gender_acc
++            # profile['gender'] = u.profile.gender
++            # profile['gender_acc'] = u.profile.gender_acc
+ 
+         return profile
+ 
+diff --git a/grimoire_elk/enriched/gerrit.py b/grimoire_elk/enriched/gerrit.py
+index f57e4e7e..eedc08d8 100644
+--- a/grimoire_elk/enriched/gerrit.py
++++ b/grimoire_elk/enriched/gerrit.py
+@@ -331,8 +331,8 @@ class GerritEnrich(Enrich):
+                     ecomment['author_name'] = ecomment['reviewer_name']
+                     ecomment['author_user_name'] = ecomment['reviewer_user_name']
+                     ecomment['author_domain'] = ecomment['reviewer_domain']
+-                    ecomment['author_gender'] = ecomment['reviewer_gender']
+-                    ecomment['author_gender_acc'] = ecomment['reviewer_gender_acc']
++                    # ecomment['author_gender'] = ecomment['reviewer_gender']
++                    # ecomment['author_gender_acc'] = ecomment['reviewer_gender_acc']
+                     ecomment['author_org_name'] = ecomment['reviewer_org_name']
+                     ecomment['author_bot'] = ecomment['reviewer_bot']
+ 
+@@ -501,8 +501,8 @@ class GerritEnrich(Enrich):
+                 eapproval['author_name'] = eapproval.get('by_name', None)
+                 eapproval['author_user_name'] = eapproval.get('by_name', None)
+                 eapproval['author_domain'] = eapproval.get('by_domain', None)
+-                eapproval['author_gender'] = eapproval.get('by_gender', None)
+-                eapproval['author_gender_acc'] = eapproval.get('by_gender_acc', None)
++                # eapproval['author_gender'] = eapproval.get('by_gender', None)
++                # eapproval['author_gender_acc'] = eapproval.get('by_gender_acc', None)
+                 eapproval['author_org_name'] = eapproval.get('by_org_name', None)
+                 eapproval['author_bot'] = eapproval.get('by_bot', None)
+ 
+@@ -535,8 +535,8 @@ class GerritEnrich(Enrich):
+         target_eitem['changeset_author_name'] = source_eitem.get(rol + '_name', None)
+         target_eitem['changeset_author_user_name'] = source_eitem.get(rol + '_user_name', None)
+         target_eitem['changeset_author_domain'] = source_eitem.get(rol + '_domain', None)
+-        target_eitem['changeset_author_gender'] = source_eitem.get(rol + '_gender', None)
+-        target_eitem['changeset_author_gender_acc'] = source_eitem.get(rol + '_gender_acc', None)
++        # target_eitem['changeset_author_gender'] = source_eitem.get(rol + '_gender', None)
++        # target_eitem['changeset_author_gender_acc'] = source_eitem.get(rol + '_gender_acc', None)
+         target_eitem['changeset_author_org_name'] = source_eitem.get(rol + '_org_name', None)
+         target_eitem['changeset_author_bot'] = source_eitem.get(rol + '_bot', None)
+ 
+diff --git a/grimoire_elk/enriched/githubql.py b/grimoire_elk/enriched/githubql.py
+index 21f92b62..17e2a52b 100644
+--- a/grimoire_elk/enriched/githubql.py
++++ b/grimoire_elk/enriched/githubql.py
+@@ -279,8 +279,8 @@ class GitHubQLEnrich(Enrich):
+         rich_event['author_name'] = rich_event.get('actor_name', None)
+         rich_event['author_user_name'] = rich_event.get('actor_user_name', None)
+         rich_event['author_domain'] = rich_event.get('actor_domain', None)
+-        rich_event['author_gender'] = rich_event.get('actor_gender', None)
+-        rich_event['author_gender_acc'] = rich_event.get('actor_gender_acc', None)
++        # rich_event['author_gender'] = rich_event.get('actor_gender', None)
++        # rich_event['author_gender_acc'] = rich_event.get('actor_gender_acc', None)
+         rich_event['author_org_name'] = rich_event.get('actor_org_name', None)
+         rich_event['author_bot'] = rich_event.get('actor_bot', None)
+         rich_event['author_multi_org_names'] = rich_event.get('actor_multi_org_names', None)
+diff --git a/grimoire_elk/enriched/jira.py b/grimoire_elk/enriched/jira.py
+index 85e01956..8c978d30 100644
+--- a/grimoire_elk/enriched/jira.py
++++ b/grimoire_elk/enriched/jira.py
+@@ -348,8 +348,8 @@ class JiraEnrich(Enrich):
+             eitem['author_name'] = eitem[author_type + '_name']
+             eitem['author_user_name'] = eitem[author_type + '_user_name']
+             eitem['author_domain'] = eitem[author_type + '_domain']
+-            eitem['author_gender'] = eitem[author_type + '_gender']
+-            eitem['author_gender_acc'] = eitem[author_type + '_gender_acc']
++            # eitem['author_gender'] = eitem[author_type + '_gender']
++            # eitem['author_gender_acc'] = eitem[author_type + '_gender_acc']
+             eitem['author_org_name'] = eitem[author_type + '_org_name']
+             eitem['author_bot'] = eitem[author_type + '_bot']
+ 
