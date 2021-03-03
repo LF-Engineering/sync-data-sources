@@ -1191,8 +1191,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	// DockerHub postprocessed index prefix (possibly others in the future)
 	ppPrefix := "postprocess-"
 	// Foundation-f aliases will look like aliasprefix-founation-f-datasource
-	// IMPL
-	aliasPrefix := "ff-sds-"
+	aliasPrefix := "sds-"
 	// aliasPrefix := "sds-"
 	// It will ook for data in dataprefix-foundation-project-datasurce-index-prefix
 	dataPrefix := "sds-"
