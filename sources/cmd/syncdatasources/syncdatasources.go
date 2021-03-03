@@ -1182,6 +1182,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	// - github/pull_request -> github/issue - YES
 	// - index sufixes (possibly different)
 	if ctx.OnlyP2O || ctx.SkipFAliases || (ctx.DryRun && !ctx.DryRunAllowFAliases) {
+		lib.Printf("Skipping f-aliases generation\n")
 		return
 	}
 	fixtures := *pfixtures
@@ -1195,7 +1196,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	// aliasPrefix := "sds-"
 	// It will ook for data in dataprefix-foundation-project-datasurce-index-prefix
 	dataPrefix := "sds-"
-	maxThreads := 10
+	maxThreads := 12
 	// m[foundation][project][ds] = [full_ds]
 	m := map[string]map[string]map[string]string{}
 	adsm := map[string]struct{}{}
@@ -1937,6 +1938,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	rslt := processTasks(ctx, &tasks, dss)
 	if !ctx.OnlyP2O {
 		gAliasesFunc()
+		generateFoundationFAliases(ctx, &fixtures)
 		processFixturesMetadata(ctx, &fixtures)
 		<-ch
 	}

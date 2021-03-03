@@ -117,6 +117,9 @@ func crontabDeployments(ctx *lib.Ctx, deployEnv string, deps []deployment) (err 
 		command := strings.Replace(strings.TrimSpace(dep.Name), " ", "-", -1) + ".sh"
 		fullCommand := prefix + "sds-" + command
 		line := strings.TrimSpace(dep.Cron) + " " + strings.TrimSpace(dep.CronEnv) + " " + fullCommand
+		if dep.Disabled {
+			line = "# " + line
+		}
 		fmt.Printf("crontab entry: %s\n", line)
 		root += "\n" + line
 		err = createCommand(deployEnv, dep, fullCommand)
@@ -163,6 +166,7 @@ func deployCrontab(ctx *lib.Ctx, deployEnv string) (err error) {
 		hasMaster := false
 		for _, d := range env.Deployments {
 			if d.Disabled {
+				lib.Printf("%s will be added as disabled\n", d.Name)
 				continue
 			}
 			_, ok := m[d.Name]
