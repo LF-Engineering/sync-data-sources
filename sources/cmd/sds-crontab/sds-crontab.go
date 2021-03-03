@@ -167,7 +167,6 @@ func deployCrontab(ctx *lib.Ctx, deployEnv string) (err error) {
 		for _, d := range env.Deployments {
 			if d.Disabled {
 				lib.Printf("%s will be added as disabled\n", d.Name)
-				continue
 			}
 			_, ok := m[d.Name]
 			if ok {
