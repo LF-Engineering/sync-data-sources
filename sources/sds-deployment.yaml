@@ -53,6 +53,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^slack$'
       SDS_SKIP_SSAW: 1
   - name: prod-korg
+    disabled: true
     cron: '0 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
