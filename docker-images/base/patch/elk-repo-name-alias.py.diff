@@ -27,10 +27,10 @@ index b6c9f272..f57e4e7e 100644
              eapproval['changeset_number'] = epatchset['changeset_number']
              eapproval['changeset_status'] = epatchset['changeset_status']
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index f28da00e..8562aeb4 100644
+index cd1eed30..e6aac393 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
-@@ -517,6 +517,7 @@ class GitHubEnrich(Enrich):
+@@ -521,6 +521,7 @@ class GitHubEnrich(Enrich):
          rich_pr['id'] = pull_request['id']
          rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
@@ -38,7 +38,7 @@ index f28da00e..8562aeb4 100644
          rich_pr['title'] = pull_request['title']
          rich_pr['title_analyzed'] = pull_request['title']
          rich_pr['state'] = pull_request['state']
-@@ -621,6 +622,7 @@ class GitHubEnrich(Enrich):
+@@ -625,6 +626,7 @@ class GitHubEnrich(Enrich):
          rich_issue['id'] = issue['id']
          rich_issue['id_in_repo'] = issue['html_url'].split("/")[-1]
          rich_issue['repository'] = self.get_project_repository(rich_issue)
@@ -47,7 +47,7 @@ index f28da00e..8562aeb4 100644
          rich_issue['title_analyzed'] = issue['title']
          rich_issue['state'] = issue['state']
 diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
-index 9e6381c2..a83e52fb 100644
+index 9dbe0752..2f8f76e1 100644
 --- a/grimoire_elk/enriched/github2.py
 +++ b/grimoire_elk/enriched/github2.py
 @@ -264,6 +264,7 @@ class GitHubEnrich2(Enrich):
@@ -66,7 +66,7 @@ index 9e6381c2..a83e52fb 100644
              ecomment['item_type'] = COMMENT_TYPE
              ecomment['sub_type'] = REVIEW_COMMENT_TYPE
  
-@@ -522,6 +524,7 @@ class GitHubEnrich2(Enrich):
+@@ -526,6 +528,7 @@ class GitHubEnrich2(Enrich):
          rich_pr['pull_id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['issue_id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
@@ -74,7 +74,7 @@ index 9e6381c2..a83e52fb 100644
          rich_pr['issue_title'] = pull_request['title']
          rich_pr['issue_title_analyzed'] = pull_request['title']
          rich_pr['pull_state'] = pull_request['state']
-@@ -630,6 +633,7 @@ class GitHubEnrich2(Enrich):
+@@ -634,6 +637,7 @@ class GitHubEnrich2(Enrich):
          rich_issue['issue_id'] = issue['id']
          rich_issue['issue_id_in_repo'] = issue['html_url'].split("/")[-1]
          rich_issue['repository'] = self.get_project_repository(rich_issue)
