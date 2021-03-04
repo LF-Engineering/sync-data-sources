@@ -37,7 +37,7 @@ var (
 	gRateMtx      *sync.Mutex
 	gToken        string
 	gHint         int
-	noDropPattern = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-slack)$`)
+	noDropPattern = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-slack|da-ds-gha)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
