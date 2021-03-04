@@ -1,14 +1,18 @@
 diff --git a/grimoire_elk/enriched/github.py b/grimoire_elk/enriched/github.py
-index 5aae3bce..f28da00e 100644
+index 5aae3bce..cd1eed30 100644
 --- a/grimoire_elk/enriched/github.py
 +++ b/grimoire_elk/enriched/github.py
-@@ -493,6 +493,27 @@ class GitHubEnrich(Enrich):
+@@ -493,6 +493,31 @@ class GitHubEnrich(Enrich):
                  'assignee_geolocation': assignee.get('geolocation', None)
              })
  
 +        rich_pr['reviewer_data'] = list()
 +        reviews_data = pull_request.get('reviews_data', list())
 +        for review in reviews_data:
++            user_data = review.get('user_data', None)
++            if user_data is None:
++                continue
++    
 +            rich_pr['reviewer_data'].append({
 +                'review_author_association': review.get('author_association', None),
 +                'review_comment': review.get('body', None),
@@ -16,7 +20,7 @@ index 5aae3bce..f28da00e 100644
 +                'review_state': review.get('state', None),
 +                'review_submitted_at': review.get('submitted_at', None),
 +                'review_html_url': review.get('html_url', None),
-+                'review_user_login': review.get('user_data', {}).get('login'),
++                'review_user_login': review.get('user_data', {}).get('login', None),
 +                'review_user_id': review.get('user_data', {}).get('id', None),
 +                'review_user_avatar_url': review.get('user_data', {}).get('avatar_url', None),
 +                'review_user_html_url': review.get('user_data', {}).get('html_url', None),
@@ -31,16 +35,20 @@ index 5aae3bce..f28da00e 100644
          rich_pr['id_in_repo'] = pull_request['html_url'].split("/")[-1]
          rich_pr['repository'] = self.get_project_repository(rich_pr)
 diff --git a/grimoire_elk/enriched/github2.py b/grimoire_elk/enriched/github2.py
-index 81eb756d..9e6381c2 100644
+index 81eb756d..9dbe0752 100644
 --- a/grimoire_elk/enriched/github2.py
 +++ b/grimoire_elk/enriched/github2.py
-@@ -496,6 +496,27 @@ class GitHubEnrich2(Enrich):
+@@ -496,6 +496,31 @@ class GitHubEnrich2(Enrich):
                  'assignee_geolocation': assignee.get('geolocation', None)
              })
  
 +        rich_pr['reviewer_data'] = list()
 +        reviews_data = pull_request.get('reviews_data', list())
 +        for review in reviews_data:
++            user_data = review.get('user_data', None)
++            if user_data is None:
++                continue
++
 +            rich_pr['reviewer_data'].append({
 +                'review_author_association': review.get('author_association', None),
 +                'review_comment': review.get('body', None),
@@ -48,7 +56,7 @@ index 81eb756d..9e6381c2 100644
 +                'review_state': review.get('state', None),
 +                'review_submitted_at': review.get('submitted_at', None),
 +                'review_html_url': review.get('html_url', None),
-+                'review_user_login': review.get('user_data', {}).get('login'),
++                'review_user_login': review.get('user_data', {}).get('login', None),
 +                'review_user_id': review.get('user_data', {}).get('id', None),
 +                'review_user_avatar_url': review.get('user_data', {}).get('avatar_url', None),
 +                'review_user_html_url': review.get('user_data', {}).get('html_url', None),
