@@ -3488,13 +3488,6 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 	} else {
 		lib.Printf("No indices to rename\n")
 	}
-	if len(extra) == 0 {
-		lib.Printf("No indices to drop, environment clean\n")
-		return
-	}
-	if partialRun(ctx) {
-		return
-	}
 	newExtra := []string{}
 	for _, idx := range extra {
 		if noDropPattern.MatchString(idx) {
@@ -3503,6 +3496,13 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		newExtra = append(newExtra, idx)
 	}
 	extra = newExtra
+	if len(extra) == 0 {
+		lib.Printf("No indices to drop, environment clean\n")
+		return
+	}
+	if partialRun(ctx) {
+		return
+	}
 	lib.Printf("Indices to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
@@ -3636,13 +3636,6 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	if len(missing) > 0 {
 		lib.Printf("NOTICE: Missing aliases %d: %s\n", len(missing), strings.Join(missing, ", "))
 	}
-	if len(extra) == 0 {
-		lib.Printf("No aliases to drop, environment clean\n")
-		return
-	}
-	if partialRun(ctx) {
-		return
-	}
 	newExtra := []string{}
 	for _, idx := range extra {
 		if noDropPattern.MatchString(idx) {
@@ -3651,6 +3644,13 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		newExtra = append(newExtra, idx)
 	}
 	extra = newExtra
+	if len(extra) == 0 {
+		lib.Printf("No aliases to drop, environment clean\n")
+		return
+	}
+	if partialRun(ctx) {
+		return
+	}
 	lib.Printf("Aliases to delete (%d): %s\n", len(extra), strings.Join(extra, ", "))
 	method = lib.Delete
 	extras := []string{}
