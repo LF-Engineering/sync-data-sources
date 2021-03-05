@@ -1461,7 +1461,10 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		for alias := range dst {
 			_, ok := gotA[alias]
 			if !ok {
-				missing = append(missing, alias)
+				// Note: Skip PRs
+				if !strings.Contains(alias, "pull_request") {
+					missing = append(missing, alias)
+				}
 			}
 		}
 		for alias := range gotA {
@@ -1587,6 +1590,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		if ctx.Debug > 0 && len(itemsAry) != len(items) {
 			fmt.Printf("Foundation-f after processing items of %s, number of items changed from %d to %d\n", alias, len(itemsAry), len(items))
 		}
+		// Note: Consider skipping PRs
 		missing := []string{}
 		extra := []string{}
 		for alias := range items {
@@ -3423,7 +3427,10 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			if ok {
 				rename[index] = fullIndex
 			} else {
-				missing = append(missing, fullIndex)
+				// Note: Skip PRs
+				if !strings.Contains(fullIndex, "pull_request") {
+					missing = append(missing, fullIndex)
+				}
 			}
 		}
 	}
@@ -3622,7 +3629,10 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	for alias := range should {
 		_, ok := got[alias]
 		if !ok {
-			missing = append(missing, alias)
+			// Note: Skip PRs
+			if !strings.Contains(alias, "pull_request") {
+				missing = append(missing, alias)
+			}
 		}
 	}
 	for alias := range got {
