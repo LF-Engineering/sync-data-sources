@@ -37,7 +37,7 @@ var (
 	gRateMtx          *sync.Mutex
 	gToken            string
 	gHint             int
-	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|da-ds-gha-.+|.+-social_media)$`)
+	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|da-ds-gha-.+|.+-social_media|.+-last-action-date-cache)$`)
 	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request.*|.+-github-issue-raw.*|.+-github-repository-raw.*)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
@@ -3353,9 +3353,8 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			}
 			idxSlug := "sds-" + slug + "-" + ds.FullSlug
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
-			// IMPL
 			if idxSlug == "sds-" {
-				lib.Printf("WARNING: empty index generated for fixture %s, data source: %s\n", fixture.Slug, ds.Slug)
+				lib.Printf("WARNING: empty index generated for fixture %s, datasource: %+v\n", fixture.Slug, ds.Slug)
 			}
 			should[idxSlug] = struct{}{}
 			should[idxSlug+"-raw"] = struct{}{}
@@ -3373,6 +3372,9 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			if strings.HasPrefix(alias.From, "pattern:") || strings.HasPrefix(alias.From, "bitergia-") {
 				continue
 			}
+			if idxSlug == "sds-" {
+				lib.Printf("WARNING: empty index generated for fixture %s, alias: %+v\n", fixture.Slug, alias)
+			}
 			should[idxSlug] = struct{}{}
 			// should[idxSlug+"-raw"] = struct{}{}
 		}
@@ -3382,7 +3384,6 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		lib.Printf("fromFull: %+v\n", fromFull)
 		lib.Printf("toFull: %+v\n", toFull)
 	}
-	// IMPL
 	if ctx.Debug == 1 {
 		lib.Printf("should have indices: %+v\n", should)
 	}
@@ -3594,7 +3595,6 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			}
 		}
 	}
-	// IMPL
 	if ctx.Debug > 0 {
 		lib.Printf("should have aliases: %+v\n", should)
 	}
