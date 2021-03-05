@@ -7457,10 +7457,12 @@ func processMetadataItem(ch chan struct{}, ctx *lib.Ctx, cfg [3]string) {
 		lib.Printf("Method:%s url:%s status:%d data:%+v err:%+v\n%s", method, rurl, resp.StatusCode, data, err, body)
 		return
 	}
-	if ctx.Debug >= 0 {
+	if ctx.Debug > 0 {
 		lib.Printf("%s/%s updated: %d, deleted: %d\n", pattern, data, payload.Updated, payload.Deleted)
 	} else {
-		lib.Printf("metadata updated: %d, deleted: %d\n", payload.Updated, payload.Deleted)
+		if payload.Updated > 0 || payload.Deleted > 0 {
+			lib.Printf("metadata updated: %d, deleted: %d\n", payload.Updated, payload.Deleted)
+		}
 	}
 }
 
