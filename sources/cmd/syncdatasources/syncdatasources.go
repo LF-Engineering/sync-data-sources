@@ -29,15 +29,16 @@ import (
 )
 
 var (
-	randInitOnce  sync.Once
-	gInfoExternal func()
-	gAliasesFunc  func()
-	gAliasesMtx   *sync.Mutex
-	gCSVMtx       *sync.Mutex
-	gRateMtx      *sync.Mutex
-	gToken        string
-	gHint         int
-	noDropPattern = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-slack|da-ds-gha)$`)
+	randInitOnce      sync.Once
+	gInfoExternal     func()
+	gAliasesFunc      func()
+	gAliasesMtx       *sync.Mutex
+	gCSVMtx           *sync.Mutex
+	gRateMtx          *sync.Mutex
+	gToken            string
+	gHint             int
+	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|da-ds-gha-.+|.+-social_media)$`)
+	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request|.+-github-pull_request-raw|.+-github-issue-raw|.+-github-repository-raw)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
@@ -1462,7 +1463,7 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			_, ok := gotA[alias]
 			if !ok {
 				// Note: Skip PRs
-				if !strings.Contains(alias, "pull_request") {
+				if !notMissingPattern.MatchString(alias) {
 					missing = append(missing, alias)
 				}
 			}
@@ -3377,6 +3378,8 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		lib.Printf("fromFull: %+v\n", fromFull)
 		lib.Printf("toFull: %+v\n", toFull)
 	}
+	// IMPL
+	lib.Printf("should have indices: %+v\n", should)
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
 	rurl := "/_cat/indices?format=json"
@@ -3428,7 +3431,7 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 				rename[index] = fullIndex
 			} else {
 				// Note: Skip PRs
-				if !strings.Contains(fullIndex, "pull_request") {
+				if !notMissingPattern.MatchString(fullIndex) {
 					missing = append(missing, fullIndex)
 				}
 			}
@@ -3585,6 +3588,8 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 			}
 		}
 	}
+	// IMPL
+	lib.Printf("should have aliases: %+v\n", should)
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
 	rurl := "/_cat/aliases?format=json"
@@ -3630,7 +3635,7 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		_, ok := got[alias]
 		if !ok {
 			// Note: Skip PRs
-			if !strings.Contains(alias, "pull_request") {
+			if !notMissingPattern.MatchString(alias) {
 				missing = append(missing, alias)
 			}
 		}
