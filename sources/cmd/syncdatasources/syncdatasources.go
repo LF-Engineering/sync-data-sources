@@ -38,7 +38,7 @@ var (
 	gToken            string
 	gHint             int
 	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|da-ds-gha-.+|.+-social_media)$`)
-	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request|.+-github-pull_request-raw|.+-github-issue-raw|.+-github-repository-raw)$`)
+	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request.*|.+-github-issue-raw.*|.+-github-repository-raw.*)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
@@ -3353,6 +3353,10 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 			}
 			idxSlug := "sds-" + slug + "-" + ds.FullSlug
 			idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+			// IMPL
+			if idxSlug == "sds-" {
+				lib.Printf("WARNING: empty index generated for fixture %s, data source: %s\n", fixture.Slug, ds.Slug)
+			}
 			should[idxSlug] = struct{}{}
 			should[idxSlug+"-raw"] = struct{}{}
 			if ds.Slug != ds.FullSlug {
@@ -3379,7 +3383,9 @@ func processIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture) (didRenames bool) {
 		lib.Printf("toFull: %+v\n", toFull)
 	}
 	// IMPL
-	lib.Printf("should have indices: %+v\n", should)
+	if ctx.Debug == 1 {
+		lib.Printf("should have indices: %+v\n", should)
+	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/indices?format=json", ctx.ElasticURL)
 	rurl := "/_cat/indices?format=json"
@@ -3589,7 +3595,9 @@ func dropUnusedAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 		}
 	}
 	// IMPL
-	lib.Printf("should have aliases: %+v\n", should)
+	if ctx.Debug > 0 {
+		lib.Printf("should have aliases: %+v\n", should)
+	}
 	method := lib.Get
 	url := fmt.Sprintf("%s/_cat/aliases?format=json", ctx.ElasticURL)
 	rurl := "/_cat/aliases?format=json"
