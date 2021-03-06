@@ -37,7 +37,7 @@ var (
 	gRateMtx          *sync.Mutex
 	gToken            string
 	gHint             int
-	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|da-ds-gha-.+|.+-social_media|.+-last-action-date-cache)$`)
+	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|.+-da-ds-gha-.+|.+-social_media|.+-last-action-date-cache)$`)
 	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request.*|.+-github-issue-raw.*|.+-github-repository-raw.*)$`)
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
