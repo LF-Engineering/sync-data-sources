@@ -106,7 +106,7 @@ environments:
       #SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
   - name: test-main
-    cron: '0 * * * *'
+    cron: '7 * * * *'
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
