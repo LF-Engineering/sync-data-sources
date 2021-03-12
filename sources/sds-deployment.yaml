@@ -36,7 +36,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^slack$'
       SDS_SKIP_SSAW: 1
   - name: prod-cncf
-    cron: '0 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
+    cron: '2 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -53,7 +53,7 @@ environments:
       SDS_SKIP_SSAW: 1
   - name: prod-korg
     #disabled: true
-    cron: '0 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
+    cron: '4 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -70,7 +70,7 @@ environments:
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
       SDS_SKIP_SSAW: 1
   - name: prod-others
-    cron: '0 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
+    cron: '6 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
