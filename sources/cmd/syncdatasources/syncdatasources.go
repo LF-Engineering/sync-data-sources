@@ -856,6 +856,10 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					handleNoData()
 				}
 			case lib.GitHubOrg:
+				includeForksStr, includeForks := rawEndpoint.Flags["include_forks"]
+				if includeForks {
+					includeForks = lib.StringToBool(includeForksStr)
+				}
 				// fmt.Printf("github_org called for %v\n", fixture.Native)
 				var aHint int
 				if gRateMtx != nil {
@@ -916,10 +920,15 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							break
 						}
 						for _, repo := range repositories {
-							if repo.Name != nil {
-								name := root + "/" + org + "/" + *(repo.Name)
-								repos = append(repos, name)
+							if repo.Name == nil {
+								continue
 							}
+							if !includeForks && repo.Fork != nil && *repo.Fork {
+								lib.Printf("Skipping fork: org:%s, repo:%s\n", org, *repo.Name)
+								continue
+							}
+							name := root + "/" + org + "/" + *(repo.Name)
+							repos = append(repos, name)
 						}
 						if response.NextPage == 0 {
 							break
@@ -959,6 +968,10 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					handleNoData()
 				}
 			case lib.GitHubUser:
+				includeForksStr, includeForks := rawEndpoint.Flags["include_forks"]
+				if includeForks {
+					includeForks = lib.StringToBool(includeForksStr)
+				}
 				var aHint int
 				if gRateMtx != nil {
 					gRateMtx.Lock()
@@ -1017,10 +1030,15 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							break
 						}
 						for _, repo := range repositories {
-							if repo.Name != nil {
-								name := root + "/" + user + "/" + *(repo.Name)
-								repos = append(repos, name)
+							if repo.Name == nil {
+								continue
 							}
+							if !includeForks && repo.Fork != nil && *repo.Fork {
+								lib.Printf("Skipping fork: user:%s, repo:%s\n", user, *repo.Name)
+								continue
+							}
+							name := root + "/" + user + "/" + *(repo.Name)
+							repos = append(repos, name)
 						}
 						if response.NextPage == 0 {
 							break
