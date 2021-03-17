@@ -30,6 +30,7 @@ COPY --from=builder /go/bin/dads /usr/bin/
 COPY sources/data.zip /data.zip
 COPY sources/uuid.py /usr/bin/
 COPY sources/gitops.py /usr/bin/
+COPY sources/detect-removed-commits.sh /usr/bin/
 #COPY sources/sds.yaml /data/sds.txt
 COPY docker-images/.vimrc /root/.vimrc
 CMD /bin/bash

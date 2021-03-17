@@ -45,12 +45,10 @@ cd .. || exit 11
 if [ -z "$SKIP_BUILD" ]
 then
   echo "Building"
-  cp ../da-ds/uuid.py ./sources/ || exit 14
-  cp ../da-ds/gitops.py ./sources/ || exit 15
+  cp ../da-ds/uuid.py ../da-ds/gitops.py ../da-ds/detect-removed-commits.sh ./sources/ || exit 14
   docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" .
   bs=$?
-  rm -f ./sources/uuid.py
-  rm -f ./sources/gitops.py
+  rm -f ./sources/uuid.py ./sources/gitops.py ./sources/detect-removed-commits.sh
   if [ ! "$bs" = "0" ]
   then
     exit 12
