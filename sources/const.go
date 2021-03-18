@@ -153,3 +153,6 @@ const CopyFromDateField = "metadata__enriched_on" // Date when the item was enri
 // const CopyFromDateField = "grimoire_creation_date" // Date when the item was created upstream. Used by default to represent data in time series on the dashboards.
 // const CopyFromDateField = "metadata__timestamp"    // Date when the item was retrieved from the original data source and stored in the index with raw documents.
 // const CopyFromDateField = "metadata__updated_on"   // Date when the item was updated in its original data source.
+
+// GoogleGroups data source
+const GoogleGroups string = "googlegroups"

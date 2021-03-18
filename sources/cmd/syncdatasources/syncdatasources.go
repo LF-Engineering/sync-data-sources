@@ -54,6 +54,7 @@ var (
 		lib.Bugzilla:     false,
 		lib.BugzillaRest: false,
 		lib.Jenkins:      false,
+		lib.GoogleGroups: false,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -118,6 +119,10 @@ var (
 		lib.Jenkins: {
 			"DA_JENKINS_HTTP_TIMEOUT":   "60s",
 			"DA_JENKINS_NO_INCREMENTAL": "1",
+		},
+		lib.GoogleGroups: {
+			"DA_GOOGLEGROUPS_HTTP_TIMEOUT":   "60s",
+			"DA_GOOGLEGROUPS_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -1872,13 +1877,26 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						fixture.Slug,
 					)
 				}
-				flags := map[string]string{
-					"--bugzilla-origin":      name,
-					"--bugzilla-do-fetch":    getFlagByName("dofetch", dataSource.Config),
-					"--bugzilla-do-enrich":   getFlagByName("doenrich", dataSource.Config),
-					"--bugzilla-project":     endpoint.Project,
-					"--bugzilla-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
-					"--bugzilla-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+
+				flags := make(map[string]string, 0)
+				switch dataSource.Slug {
+				case lib.GoogleGroups:
+					flags = map[string]string{
+						"--googlegroups-do-fetch":    getFlagByName("dofetch", dataSource.Config),
+						"--googlegroups-do-enrich":   getFlagByName("doenrich", dataSource.Config),
+						"--googlegroups-groupname":   endpoint.Project,
+						"--googlegroups-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
+						"--googlegroups-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+					}
+				default:
+					flags = map[string]string{
+						"--bugzilla-origin":      name,
+						"--bugzilla-do-fetch":    getFlagByName("dofetch", dataSource.Config),
+						"--bugzilla-do-enrich":   getFlagByName("doenrich", dataSource.Config),
+						"--bugzilla-project":     endpoint.Project,
+						"--bugzilla-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
+						"--bugzilla-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+					}
 				}
 				tasks = append(
 					tasks,
