@@ -1885,6 +1885,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						"--googlegroups-do-fetch":    getFlagByName("dofetch", dataSource.Config),
 						"--googlegroups-do-enrich":   getFlagByName("doenrich", dataSource.Config),
 						"--googlegroups-groupname":   endpoint.Project,
+						"--googlegroups-slug":        dataSource.Slug,
 						"--googlegroups-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
 						"--googlegroups-enrich-size": getFlagByName("enrichsize", dataSource.Config),
 					}
