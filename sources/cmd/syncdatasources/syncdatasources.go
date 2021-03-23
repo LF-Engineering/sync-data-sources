@@ -260,6 +260,15 @@ func validateEndpoint(ctx *lib.Ctx, fixture *lib.Fixture, dataSource *lib.DataSo
 	}
 }
 
+func isLowercaseEndpointsNeeded(dsSlug string) bool {
+	ary := strings.Split(dsSlug, "/")
+	typ := strings.TrimSpace(ary[0])
+	if typ == "git" || typ == "github" || typ == "gerrit" {
+		return true
+	}
+	return false
+}
+
 func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSource *lib.DataSource) {
 	if dataSource.Slug == "" {
 		lib.Fatalf("Data source %s in fixture %+v has empty slug or no slug property, slug property must be non-empty\n", dataSource, fixture)
@@ -297,12 +306,20 @@ func validateDataSource(ctx *lib.Ctx, fixture *lib.Fixture, index int, dataSourc
 	for _, endpoint := range dataSource.Endpoints {
 		validateEndpoint(ctx, fixture, dataSource, &endpoint)
 	}
+	lowerCaseNeeded := isLowercaseEndpointsNeeded(dataSource.Slug)
 	ste := make(map[string]lib.Endpoint)
 	for _, endpoint := range dataSource.Endpoints {
 		name := endpoint.Name
+		if lowerCaseNeeded {
+			name = strings.ToLower(name)
+		}
 		endpoint2, ok := ste[name]
 		if ok {
-			lib.Fatalf("Duplicate name %s in endpoints: %+v and %+v, data source: %s, fixture: %+v\n", name, endpoint, endpoint2, dataSource, fixture)
+			if ctx.Debug == 0 {
+				lib.Fatalf("Duplicate name %s in the fixture %s, data source: %s\n", name, fixture.Slug, dataSource.Slug)
+			} else {
+				lib.Fatalf("Duplicate name %s in the fixture %s datasource %s, endpoints: %+v and %+v, data source: %s, fixture: %+v\n", name, fixture.Slug, dataSource.Slug, endpoint, endpoint2, dataSource, fixture)
+			}
 		}
 		ste[name] = endpoint
 	}
@@ -924,7 +941,9 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 								continue
 							}
 							if !includeForks && repo.Fork != nil && *repo.Fork {
-								lib.Printf("Skipping fork: org:%s, repo:%s\n", org, *repo.Name)
+								if ctx.Debug > 0 {
+									lib.Printf("Skipping fork: org:%s, repo:%s\n", org, *repo.Name)
+								}
 								continue
 							}
 							name := root + "/" + org + "/" + *(repo.Name)
