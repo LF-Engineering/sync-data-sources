@@ -53,7 +53,7 @@ var (
 		lib.DockerHub:    false,
 		lib.Bugzilla:     false,
 		lib.BugzillaRest: false,
-		lib.Jenkins:      false,
+		lib.Jenkins:      true,
 		lib.GoogleGroups: false,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
