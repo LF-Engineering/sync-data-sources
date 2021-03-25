@@ -1,4 +1,5 @@
 FROM golang:1.15 AS builder
+ARG BRANCH
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
 RUN go get -u gopkg.in/yaml.v2
 RUN go get -u golang.org/x/oauth2
@@ -20,6 +21,9 @@ RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
+RUN echo "building for branch ${BRANCH}"
+RUN git checkout ${BRANCH}
+RUN git pull
 RUN make -f ./Makefile dockerinstall
 # The final version should not use this base image, so it needs to have 'cloc' installed.
 FROM dajohn/dev-analytics-grimoire-docker-minimal

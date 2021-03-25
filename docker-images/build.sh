@@ -46,7 +46,7 @@ if [ -z "$SKIP_BUILD" ]
 then
   echo "Building"
   cp ../da-ds/uuid.py ../da-ds/gitops.py ../da-ds/detect-removed-commits.sh ./sources/ || exit 14
-  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" .
+  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" --build-arg BRANCH="${BRANCH}" .
   bs=$?
   rm -f ./sources/uuid.py ./sources/gitops.py ./sources/detect-removed-commits.sh
   if [ ! "$bs" = "0" ]
