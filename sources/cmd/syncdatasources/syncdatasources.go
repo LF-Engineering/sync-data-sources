@@ -5047,7 +5047,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		// wrap JSON with single quote for da-ds Unmarshal
 		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("%s", string(data))
 	default:
-		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
+		// lib.Fatalf("ERROR: p2oEndpoint2dadsEndpoint: DS %s not (yet) supported", ds)
+		lib.Printf("ERROR(non fatal): p2oEndpoint2dadsEndpoint: DS %s not (yet) supported", ds)
 	}
 	// fmt.Printf("%+v --> %+v\n", e, env)
 	return
