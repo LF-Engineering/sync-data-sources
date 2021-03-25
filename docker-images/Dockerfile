@@ -21,7 +21,7 @@ RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
-RUN echo "building for branch ${BRANCH}"
+RUN echo "Building for branch ${BRANCH}"
 RUN git checkout ${BRANCH}
 RUN git pull
 RUN make -f ./Makefile dockerinstall
