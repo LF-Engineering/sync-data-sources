@@ -10,7 +10,7 @@ fi
 #export SDS_ST=1
 #export SDS_NCPUS=16
 #export SDS_NCPUS_SCALE=4
-#export SDS_DEBUG=1
+export SDS_DEBUG=1
 #export SDS_FIXTURES_RE=''
 #export SDS_DATASOURCES_RE=''
 #export SDS_PROJECTS_RE=''
@@ -47,7 +47,7 @@ export SDS_SKIP_CACHE_TOP_CONTRIBUTORS=1
 export SDS_SKIP_ORG_MAP=1
 export SDS_SKIP_ENRICH_DS=1
 export SDS_SKIP_COPY_FROM=1
-export SDS_SKIP_P2O=1
+#export SDS_SKIP_P2O=1
 export SDS_DRY_RUN=1
 #export SDS_RUN_DET_AFF_RANGE=1
 #export SDS_DRY_RUN_CODE=3
@@ -73,7 +73,7 @@ export SDS_DRY_RUN=1
 #export SDS_DRY_RUN_ALLOW_DET_AFF_RANGE=1
 #export SDS_DRY_RUN_ALLOW_COPY_FROM=1
 #export SDS_ONLY_VALIDATE=1
-#export SDS_ONLY_P2O=1
+export SDS_ONLY_P2O=1
 if [ -z "${SDS_ES_URL}" ]
 then
   export SDS_ES_URL=`cat ../helm-charts/sds-helm/sds-helm/secrets/ES_URL.$1.secret`
