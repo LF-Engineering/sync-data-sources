@@ -7587,6 +7587,7 @@ func main() {
 	if ctx.OnlyValidate {
 		validateFixtureFiles(&ctx, lib.GetFixtures(&ctx, ""))
 	} else {
+		lib.Printf("da-ds configuration: %+v\n", dadsTasks)
 		err := ensureGrimoireStackAvail(&ctx)
 		if err != nil {
 			lib.Fatalf("Grimoire stack not available: %+v\n", err)
