@@ -22,7 +22,7 @@ WORKDIR /go/src/github.com/LF-Engineering/da-ds
 RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN echo "Building for branch ${BRANCH}"
-RUN git checkout ${BRANCH}
+RUN git checkout -b ${BRANCH} "origin/${BRANCH}"
 RUN git pull
 RUN make -f ./Makefile dockerinstall
 # The final version should not use this base image, so it needs to have 'cloc' installed.
