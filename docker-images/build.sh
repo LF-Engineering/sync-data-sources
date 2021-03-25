@@ -44,7 +44,7 @@ zip data.zip -P "$pass" -r data >/dev/null || exit 10
 cd .. || exit 11
 if [ -z "$SKIP_BUILD" ]
 then
-  echo "Building"
+  echo "Building for branch ${BRANCH}"
   cp ../da-ds/uuid.py ../da-ds/gitops.py ../da-ds/detect-removed-commits.sh ./sources/ || exit 14
   docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" --build-arg BRANCH="${BRANCH}" .
   bs=$?
