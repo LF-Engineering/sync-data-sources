@@ -113,6 +113,7 @@ type Ctx struct {
 	Auth0Audience                   string         // From AUTH0_AUDIENCE
 	Auth0ClientID                   string         // From AUTH0_CLIENT_ID
 	Auth0ClientSecret               string         // From AUTH0_CLIENT_SECRET
+	Auth0GrantType                  string         // From AUTH0_GRANT_TYPE
 	ShUser                          string         // From SH_USER: Sorting Hat database parameters
 	ShHost                          string         // From SH_HOST
 	ShPort                          string         // From SH_PORT
@@ -123,6 +124,10 @@ type Ctx struct {
 	GapURL                          string         // Data gab handelar api url
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
+	ESCacheURL                      string         // From ES_CACHE_URL
+	ESCacheUsername                 string         // From ES_CACHE_USERNAME
+	ESCachePassword                 string         // From ES_CACHE_PASSWORD
+	Environment                     string         // From Environment
 }
 
 // Init - get context from environment variables
@@ -294,11 +299,22 @@ func (ctx *Ctx) Init() {
 	ctx.Retries = os.Getenv("RETRIES")
 	ctx.Delay = os.Getenv("DELAY")
 
+	// ES Cache
+	ctx.ESCacheURL = os.Getenv("ES_CACHE_URL")
+	ctx.ESCacheUsername = os.Getenv("ES_CACHE_USERNAME")
+	ctx.ESCachePassword = os.Getenv("ES_CACHE_PASSWORD")
+	AddRedacted(ctx.ESCacheUsername, false)
+	AddRedacted(ctx.ESCachePassword, false)
+
+	// Environment
+	ctx.Environment = os.Getenv("ENVIRONMENT")
+
 	// Auth0 parameters for obtaining DA-affiliation API token
 	ctx.Auth0URL = os.Getenv("AUTH0_URL")
 	ctx.Auth0Audience = os.Getenv("AUTH0_AUDIENCE")
 	ctx.Auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
 	ctx.Auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+	ctx.Auth0GrantType = os.Getenv("AUTH0_GRANT_TYPE")
 	AddRedacted(ctx.Auth0URL, false)
 	AddRedacted(ctx.Auth0Audience, false)
 	AddRedacted(ctx.Auth0ClientID, false)
@@ -436,7 +452,7 @@ func (ctx *Ctx) Init() {
 	// CSV logs prefix
 	ctx.CSVPrefix = os.Getenv("SDS_CSV_PREFIX")
 	if ctx.CSVPrefix == "" {
-		ctx.CSVPrefix = "/root/.perceval/jobs"
+		ctx.CSVPrefix = " /Users/code/.perceval/jobs"
 	}
 
 	// Scroll wait p2o.py --scroll-wait 2700

@@ -1884,8 +1884,8 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					flags = map[string]string{
 						"--googlegroups-do-fetch":    getFlagByName("dofetch", dataSource.Config),
 						"--googlegroups-do-enrich":   getFlagByName("doenrich", dataSource.Config),
-						"--googlegroups-groupname":   endpoint.Project,
-						"--googlegroups-slug":        dataSource.Slug,
+						"--googlegroups-groupname":   endpoint.Name,
+						"--googlegroups-slug":        fixture.Native.Slug,
 						"--googlegroups-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
 						"--googlegroups-enrich-size": getFlagByName("enrichsize", dataSource.Config),
 					}
@@ -4107,6 +4107,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					n = nDur
 				}
 				for i, dur := range dursAry[0:n] {
+					lib.Printf("\n\n %+v \n\n", tasks[durs[dur]].ShortString())
 					lib.Printf("#%d) %+v: %+v\n", i+1, dur, tasks[durs[dur]].ShortString())
 				}
 			}
@@ -4507,6 +4508,7 @@ func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, proj
 		lib.BugzillaRest: {},
 		lib.MeetUp:       {},
 		lib.RocketChat:   {},
+		lib.GoogleGroups: {},
 	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -4959,6 +4961,18 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 		if !ok {
 			c = append(c, lib.MultiConfig{Name: "no-ssl-verify", Value: []string{}, RedactedValue: []string{}})
 		}
+	} else if ds == lib.GoogleGroups {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
+				redactedValue = lib.Redacted
+			}
+			m[name] = struct{}{}
+			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
+		}
 	} else {
 		fail = true
 	}
@@ -5027,6 +5041,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		}
 		// wrap JSON with single quote for da-ds Unmarshal
 		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("%s", string(data))
+	case lib.GoogleGroups:
+
 	default:
 		lib.Fatalf("p2oEndpoint2dadsEndpoint: DS%s not (yet) supported", ds)
 	}
@@ -6693,7 +6709,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if dads {
 		commandLine = []string{"dads"}
 		// add dads arguments
-		if task.DsSlug == lib.Bugzilla || task.DsSlug == lib.BugzillaRest {
+		if task.DsSlug == lib.Bugzilla || task.DsSlug == lib.BugzillaRest || task.DsSlug == lib.GoogleGroups {
 			for k, v := range task.Flags {
 				commandLine = append(commandLine, k)
 				commandLine = append(commandLine, v)
