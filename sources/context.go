@@ -124,9 +124,6 @@ type Ctx struct {
 	GapURL                          string         // Data gab handelar api url
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
-	ESCacheURL                      string         // From ES_CACHE_URL
-	ESCacheUsername                 string         // From ES_CACHE_USERNAME
-	ESCachePassword                 string         // From ES_CACHE_PASSWORD
 	Environment                     string         // From Environment
 }
 
@@ -298,13 +295,6 @@ func (ctx *Ctx) Init() {
 	ctx.GapURL = os.Getenv("GAP_URL")
 	ctx.Retries = os.Getenv("RETRIES")
 	ctx.Delay = os.Getenv("DELAY")
-
-	// ES Cache
-	ctx.ESCacheURL = os.Getenv("ES_CACHE_URL")
-	ctx.ESCacheUsername = os.Getenv("ES_CACHE_USERNAME")
-	ctx.ESCachePassword = os.Getenv("ES_CACHE_PASSWORD")
-	AddRedacted(ctx.ESCacheUsername, false)
-	AddRedacted(ctx.ESCachePassword, false)
 
 	// Environment
 	ctx.Environment = os.Getenv("ENVIRONMENT")
