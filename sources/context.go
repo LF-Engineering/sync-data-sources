@@ -125,6 +125,9 @@ type Ctx struct {
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
 	Environment                     string         // From Environment
+	AwsDefaultRegion                string         // From AWS_DEFAULT_REGION
+	AwsAccessKeyID                  string         // From AWS_ACCESS_KEY_ID
+	AwsSecretAccessKey              string         // From AWS_SECRET_ACCESS_KEY
 }
 
 // Init - get context from environment variables
@@ -298,6 +301,14 @@ func (ctx *Ctx) Init() {
 
 	// Environment
 	ctx.Environment = os.Getenv("ENVIRONMENT")
+
+	// AWS Credentials
+	ctx.AwsDefaultRegion = os.Getenv("AWS_DEFAULT_REGION")
+	ctx.AwsAccessKeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+	ctx.AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	AddRedacted(ctx.AwsDefaultRegion, false)
+	AddRedacted(ctx.AwsAccessKeyID, false)
+	AddRedacted(ctx.AwsSecretAccessKey, false)
 
 	// Auth0 parameters for obtaining DA-affiliation API token
 	ctx.Auth0URL = os.Getenv("AUTH0_URL")
