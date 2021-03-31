@@ -54,7 +54,7 @@ var (
 		lib.Bugzilla:     false,
 		lib.BugzillaRest: false,
 		lib.Jenkins:      false,
-		lib.GoogleGroups: false,
+		lib.GoogleGroups: true,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
