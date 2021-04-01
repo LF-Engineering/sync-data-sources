@@ -453,7 +453,7 @@ func (ctx *Ctx) Init() {
 	// CSV logs prefix
 	ctx.CSVPrefix = os.Getenv("SDS_CSV_PREFIX")
 	if ctx.CSVPrefix == "" {
-		ctx.CSVPrefix = " /root/.perceval/jobs"
+		ctx.CSVPrefix = "/root/.perceval/jobs"
 	}
 
 	// Scroll wait p2o.py --scroll-wait 2700
