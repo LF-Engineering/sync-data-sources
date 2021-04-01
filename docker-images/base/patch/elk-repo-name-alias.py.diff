@@ -95,7 +95,7 @@ index ea9548dd..21f92b62 100644
          rich_event['item_type'] = 'pull request'
          if 'head' not in issue.keys() and 'pull_request' not in issue.keys():
 diff --git a/grimoire_elk/enriched/gitlab.py b/grimoire_elk/enriched/gitlab.py
-index 5835894f..cf8662d8 100644
+index e17ffc90..3cbdf19f 100644
 --- a/grimoire_elk/enriched/gitlab.py
 +++ b/grimoire_elk/enriched/gitlab.py
 @@ -210,6 +210,7 @@ class GitLabEnrich(Enrich):
