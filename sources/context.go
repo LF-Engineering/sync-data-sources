@@ -113,6 +113,7 @@ type Ctx struct {
 	Auth0Audience                   string         // From AUTH0_AUDIENCE
 	Auth0ClientID                   string         // From AUTH0_CLIENT_ID
 	Auth0ClientSecret               string         // From AUTH0_CLIENT_SECRET
+	Auth0GrantType                  string         // From AUTH0_GRANT_TYPE
 	ShUser                          string         // From SH_USER: Sorting Hat database parameters
 	ShHost                          string         // From SH_HOST
 	ShPort                          string         // From SH_PORT
@@ -123,6 +124,10 @@ type Ctx struct {
 	GapURL                          string         // Data gab handelar api url
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
+	Environment                     string         // From Environment
+	AwsDefaultRegion                string         // From AWS_DEFAULT_REGION
+	AwsAccessKeyID                  string         // From AWS_ACCESS_KEY_ID
+	AwsSecretAccessKey              string         // From AWS_SECRET_ACCESS_KEY
 }
 
 // Init - get context from environment variables
@@ -294,11 +299,23 @@ func (ctx *Ctx) Init() {
 	ctx.Retries = os.Getenv("RETRIES")
 	ctx.Delay = os.Getenv("DELAY")
 
+	// Environment
+	ctx.Environment = os.Getenv("ENVIRONMENT")
+
+	// AWS Credentials
+	ctx.AwsDefaultRegion = os.Getenv("AWS_DEFAULT_REGION")
+	ctx.AwsAccessKeyID = os.Getenv("AWS_ACCESS_KEY_ID")
+	ctx.AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
+	AddRedacted(ctx.AwsDefaultRegion, false)
+	AddRedacted(ctx.AwsAccessKeyID, false)
+	AddRedacted(ctx.AwsSecretAccessKey, false)
+
 	// Auth0 parameters for obtaining DA-affiliation API token
 	ctx.Auth0URL = os.Getenv("AUTH0_URL")
 	ctx.Auth0Audience = os.Getenv("AUTH0_AUDIENCE")
 	ctx.Auth0ClientID = os.Getenv("AUTH0_CLIENT_ID")
 	ctx.Auth0ClientSecret = os.Getenv("AUTH0_CLIENT_SECRET")
+	ctx.Auth0GrantType = os.Getenv("AUTH0_GRANT_TYPE")
 	AddRedacted(ctx.Auth0URL, false)
 	AddRedacted(ctx.Auth0Audience, false)
 	AddRedacted(ctx.Auth0ClientID, false)
