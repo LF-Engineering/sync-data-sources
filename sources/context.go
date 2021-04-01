@@ -124,7 +124,7 @@ type Ctx struct {
 	GapURL                          string         // Data gab handelar api url
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
-	Environment                     string         // From Environment
+	Environment                     string         // From ENVIRONMENT
 	AwsDefaultRegion                string         // From AWS_DEFAULT_REGION
 	AwsAccessKeyID                  string         // From AWS_ACCESS_KEY_ID
 	AwsSecretAccessKey              string         // From AWS_SECRET_ACCESS_KEY
