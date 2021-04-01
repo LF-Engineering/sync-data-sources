@@ -4575,6 +4575,15 @@ func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, proj
 		} else {
 			e = append(e, endpoint)
 		}
+	} else if ds == lib.GoogleGroups {
+		// google groups endpoint should be a valid email address.
+		emailRegex := regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
+		if len(endpoint) < 3 || len(endpoint) > 254 {
+			return
+		}
+		if ok := emailRegex.MatchString(endpoint); ok {
+			e = append(e, endpoint)
+		}
 	} else {
 		_, ok := defaults[ds]
 		if ok {
