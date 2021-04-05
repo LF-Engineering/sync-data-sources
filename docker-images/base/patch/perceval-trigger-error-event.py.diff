@@ -1,0 +1,435 @@
+diff --git a/perceval/backends/core/gerrit.py b/perceval/backends/core/gerrit.py
+index 400ebdd..3d75156 100644
+--- a/perceval/backends/core/gerrit.py
++++ b/perceval/backends/core/gerrit.py
+@@ -38,6 +38,7 @@ from ...backend import (Backend,
+                         OriginUniqueField)
+ from ...errors import BackendError
+ from ...utils import DEFAULT_DATETIME
++from ...log_events import get_smtp_handler, SDSSMTPHandler
+ 
+ CATEGORY_REVIEW = "review"
+ 
+@@ -45,6 +46,10 @@ MAX_REVIEWS = 500  # Maximum number of reviews per query
+ PORT = '29418'
+ 
+ logger = logging.getLogger(__name__)
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ 
+ class Gerrit(Backend):
+@@ -448,7 +453,7 @@ class GerritClient():
+                 result = subprocess.check_output(cmd, shell=True)
+                 break
+             except subprocess.CalledProcessError as ex:
+-                logger.error("gerrit cmd %s failed: %s", cmd, ex)
++                logger.error("gerrit cmd %s failed: %s", cmd, ex, exc_info=True)
+                 time.sleep(self.RETRY_WAIT * retries)
+                 retries += 1
+ 
+diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
+index 19bf8e4..7f32d2f 100644
+--- a/perceval/backends/core/git.py
++++ b/perceval/backends/core/git.py
+@@ -44,10 +44,15 @@ from ...backend import (Backend,
+                         BackendCommandArgumentParser)
+ from ...errors import RepositoryError, ParseError
+ from ...utils import DEFAULT_DATETIME, DEFAULT_LAST_DATETIME, GitLOC
++from ...log_events import get_smtp_handler, SDSSMTPHandler
+ 
+ CATEGORY_COMMIT = 'commit'
+ 
+ logger = logging.getLogger(__name__)
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ 
+ class Git(Backend):
+@@ -857,18 +862,21 @@ class GitRepository:
+         :raises RepositoryError: when an error occurs cloning the given
+             repository
+         """
+-        cmd = ['git', 'clone', '--bare', uri, dirpath]
+-        env = {
+-            'LANG': 'C',
+-            'HOME': os.getenv('HOME', '')
+-        }
++        try:
++            cmd = ['git', 'clone', '--bare', uri, dirpath]
++            env = {
++                'LANG': 'C',
++                'HOME': os.getenv('HOME', '')
++            }
+ 
+-        cls._exec(cmd, env=env)
++            cls._exec(cmd, env=env)
+ 
+-        logger.debug("Git %s repository cloned into %s",
+-                     uri, dirpath)
++            logger.debug("Git %s repository cloned into %s", uri, dirpath)
+ 
+-        return cls(uri, dirpath)
++            return cls(uri, dirpath)
++        except (Exception, RuntimeError, RepositoryError) as re:
++            logger.error("Git %s repository cloned", str(re), exc_info=True)
++            raise re
+ 
+     def count_objects(self):
+         """Count the objects of a repository.
+@@ -945,11 +953,15 @@ class GitRepository:
+         :raises RepositoryError: when an error occurs updating the
+             repository
+         """
+-        cmd_update = ['git', 'fetch', 'origin', '+refs/heads/*:refs/heads/*', '--prune']
+-        self._exec(cmd_update, cwd=self.dirpath, env=self.gitenv)
+-
+-        logger.debug("Git %s repository updated into %s",
+-                     self.uri, self.dirpath)
++        try:
++            cmd_update = ['git', 'fetch', 'origin',
++                          '+refs/heads/*:refs/heads/*', '--prune']
++            self._exec(cmd_update, cwd=self.dirpath, env=self.gitenv)
++            logger.debug("Git %s repository updated into %s",
++                         self.uri, self.dirpath)
++        except (RuntimeError, Exception, RepositoryError) as re:
++            logger.error("Git %s repository update", str(re), exc_info=True)
++            raise re
+ 
+     def sync(self):
+         """Keep the repository in sync.
+diff --git a/perceval/backends/core/github.py b/perceval/backends/core/github.py
+index 628a756..c6dedfe 100644
+--- a/perceval/backends/core/github.py
++++ b/perceval/backends/core/github.py
+@@ -47,6 +47,7 @@ from ...backend import (Backend,
+                         DEFAULT_SEARCH_FIELD)
+ from ...client import HttpClient, RateLimitHandler
+ from ...utils import DEFAULT_DATETIME, DEFAULT_LAST_DATETIME
++from ...log_events import get_smtp_handler, SDSSMTPHandler
+ 
+ CATEGORY_ISSUE = "issue"
+ CATEGORY_PULL_REQUEST = "pull_request"
+@@ -74,6 +75,10 @@ TARGET_ISSUE_FIELDS = ['user', 'assignee', 'assignees', 'comments', 'reactions']
+ TARGET_PULL_FIELDS = ['user', 'review_comments', 'requested_reviewers', 'merged_by', 'commits', 'assignee', 'assignees']
+ 
+ logger = logging.getLogger(__name__)
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ 
+ class GitHub(Backend):
+@@ -859,7 +864,7 @@ class GitHubClient(HttpClient, RateLimitHandler):
+         except requests.exceptions.HTTPError as error:
+             # 404 not found is wrongly received sometimes
+             if error.response.status_code == 404:
+-                logger.error("Can't get github login orgs: %s", error)
++                logger.error("Can't get github login orgs: %s", error, exc_info=True)
+                 orgs = '[]'
+             else:
+                 raise error
+diff --git a/perceval/backends/core/githubql.py b/perceval/backends/core/githubql.py
+index c0d7f12..43a3910 100644
+--- a/perceval/backends/core/githubql.py
++++ b/perceval/backends/core/githubql.py
+@@ -36,6 +36,7 @@ from perceval.backends.core.github import (GitHub,
+                                            MAX_CATEGORY_ITEMS_PER_PAGE)
+ from ...client import HttpClient
+ from ...utils import DEFAULT_DATETIME, DEFAULT_LAST_DATETIME
++from ...log_events import get_smtp_handler, SDSSMTPHandler
+ 
+ CATEGORY_EVENT = "event"
+ 
+@@ -229,6 +230,10 @@ QUERY_TEMPLATE = """
+     """
+ 
+ logger = logging.getLogger(__name__)
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ 
+ class GitHubQL(GitHub):
+@@ -479,7 +484,7 @@ class GitHubQLClient(GitHubClient):
+             items = response.json()
+             if 'errors' in items:
+                 logger.error("Events not collected for issue %s in %s/%s due to: %s" %
+-                             (issue_number, self.owner, self.repository, items['errors'][0]['message']))
++                             (issue_number, self.owner, self.repository, items['errors'][0]['message']), exc_info=True)
+                 return []
+ 
+             timelines = items['data']['repository'][node_type]['timelineItems']
+diff --git a/perceval/backends/core/gitlab.py b/perceval/backends/core/gitlab.py
+index dd723a5..b52872b 100644
+--- a/perceval/backends/core/gitlab.py
++++ b/perceval/backends/core/gitlab.py
+@@ -44,6 +44,7 @@ from ...backend import (Backend,
+ from ...client import HttpClient, RateLimitHandler
+ from ...utils import DEFAULT_DATETIME
+ from ...errors import BackendError, HttpClientError
++from ...utils import get_smtp_handler, SDSSMTPHandler
+ 
+ CATEGORY_ISSUE = "issue"
+ CATEGORY_MERGE_REQUEST = "merge_request"
+@@ -64,6 +65,10 @@ DEFAULT_RETRY_AFTER_STATUS_CODES = [500, 502]
+ TARGET_ISSUE_FIELDS = ['user_notes_count', 'award_emoji']
+ 
+ logger = logging.getLogger(__name__)
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ 
+ class GitLab(Backend):
+diff --git a/perceval/log_events.py b/perceval/log_events.py
+new file mode 100644
+index 0000000..f5a4b0f
+--- /dev/null
++++ b/perceval/log_events.py
+@@ -0,0 +1,79 @@
++import logging
++from logging.handlers import SMTPHandler
++
++
++"""
++Thanks to: https://stackoverflow.com/questions/9235997/is-there-a-way-how-to-configure-smtphandler-in-python-to-do-more-advanced-stuff/20801330
++"""
++
++
++class SDSSMTPHandler(SMTPHandler):
++
++    @classmethod
++    def get_log_level(cls, level=None):
++        if level == 10:
++            return logging.DEBUG
++        elif level == 20:
++            return logging.INFO
++        elif level == 30:
++            return logging.WARNING
++        elif level == 40:
++            return logging.ERROR
++        else:
++            return logging.ERROR
++
++    @classmethod
++    def get_log_format(cls):
++        format = logging.Formatter(
++            'Time:- %(asctime)s\n'
++            'File:- %(filename)s\n'
++            'Module:- %(module)s\n'
++            'Function:- %(funcName)s\n'
++            'Line:- %(lineno)d\n'
++            'Level:- %(levelname)s\n'
++            'Message: %(message)s\n'
++            'Traceback: %(exc_text)s\n')
++        return format
++
++    def getSubject(self, record):
++        return 'SDS | Error from {0}'.format(record.module)
++
++    def emit(self, record):
++        """
++        Overwrite the logging.handlers.SMTPHandler.emit function with SMTP_SSL.
++        Emit a record.
++        Format the record and send it to the specified addressees.
++        """
++        try:
++            import smtplib
++            from email.utils import formatdate
++            port = self.mailport
++            if not port:
++                port = smtplib.SMTP_PORT
++            smtp = smtplib.SMTP_SSL(self.mailhost, port, timeout=5.0)
++            msg = self.format(record)
++            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
++            self.fromaddr, ", ".join(self.toaddrs), self.getSubject(record),
++            formatdate(), msg)
++            if self.username:
++                smtp.ehlo()
++                smtp.login(self.username, self.password)
++            smtp.sendmail(self.fromaddr, self.toaddrs, msg)
++            smtp.quit()
++        except (KeyboardInterrupt, SystemExit):
++            raise
++        except Exception as e:
++            self.handleError(record)
++
++
++def get_smtp_handler():
++    return SDSSMTPHandler(
++        mailhost=('smtp.gmail.com', 465),
++        fromaddr='dev.analytics.error.bot@gmail.com',
++        toaddrs=['pratikk@proximabiz.com', 'sgupta@linuxfoundation.org',
++                 'fghiasy@linuxfoundation.org'],
++        subject='SDS Error - log',
++        credentials=('dev.analytics.error.bot@gmail.com', 'Mobile@311!'),
++        timeout=5.0,
++        secure=None
++    )
+diff --git a/perceval/utils.py b/perceval/utils.py
+index 8390c17..7bc0dd2 100644
+--- a/perceval/utils.py
++++ b/perceval/utils.py
+@@ -28,11 +28,14 @@ import datetime
+ import email
+ import json
+ import logging
++import logging.handlers
+ import mailbox
+ import re
+ import sys
+ import os
+ import subprocess
++import time
++from functools import partial, wraps
+ 
+ import xml.etree.ElementTree
+ 
+@@ -43,10 +46,14 @@ import requests
+ 
+ from urllib.parse import urlparse
+ from .errors import ParseError, RepositoryError
++from .log_events import get_smtp_handler, SDSSMTPHandler
+ 
+ 
+ logger = logging.getLogger(__name__)
+-
++smtp_handler = get_smtp_handler()
++smtp_handler.setLevel(SDSSMTPHandler.get_log_level())
++smtp_handler.setFormatter(SDSSMTPHandler.get_log_format())
++logger.addHandler(smtp_handler)
+ 
+ DEFAULT_DATETIME = datetime.datetime(1970, 1, 1, 0, 0, 0,
+                                      tzinfo=dateutil.tz.tzutc())
+@@ -497,7 +504,7 @@ class GitLOC:
+                                 'code': smry_result[4]
+                             })
+             except (Exception, RuntimeError) as re:
+-                logger.error('Extract program language summary %s ', str(re))
++                logger.error('Extract program language summary %s ', str(re), exc_info=True)
+             finally:
+                 return stats
+ 
+@@ -513,7 +520,7 @@ class GitLOC:
+                 if len(value) > 0 and ('SUM:' in value or force):
+                     loc_value = int((value.split('\n')[-3]).split(' ')[-1])
+             except (Exception, RuntimeError) as re:
+-                logger.error('Extract lines of code %s ', str(re))
++                logger.error('Extract lines of code %s ', str(re), exc_info=True)
+             finally:
+                 return loc_value
+ 
+@@ -544,8 +551,9 @@ class GitLOC:
+             self._exec(cmd, env=env)
+             logger.debug('Git %s repository cloned into %s',
+                          self.git_url, self.repo_path)
+-        except (RuntimeError, Exception) as cloe:
+-            logger.error('Git clone error %s ', str(cloe))
++        except (RuntimeError, Exception, RepositoryError) as cloe:
++            logger.error('Git clone error %s ', str(cloe), exc_info=True)
++            raise cloe
+ 
+     def _clean(self, force=False):
+         cmd = ['rm', '-rf', self.repo_path]
+@@ -563,7 +571,8 @@ class GitLOC:
+             else:
+                 logger.debug("Git %s repository clean skip", self.repo_path)
+         except (RuntimeError, Exception) as cle:
+-            logger.error('Git clone error %s', str(cle))
++            logger.error('Git clone error %s', str(cle), exc_info=True)
++            raise cle
+ 
+     def _pull(self):
+         os.chdir(os.path.abspath(self.repo_path))
+@@ -583,8 +592,9 @@ class GitLOC:
+             branch = result.replace('origin/', '').strip()
+             logger.debug('Git %s repository active branch is: %s',
+                          self.repo_path, branch)
+-        except (RuntimeError, Exception) as be:
+-            logger.error('Git find active branch error %s', str(be))
++        except (RuntimeError, Exception, RepositoryError) as be:
++            logger.error('Git find active branch error %s', str(be), exc_info=True)
++            raise be
+ 
+         try:
+             if branch:
+@@ -593,8 +603,9 @@ class GitLOC:
+                 logger.debug('Git %s repository '
+                              'checkout with following branch %s',
+                              self.repo_path, branch)
+-        except (RuntimeError, Exception) as gce:
+-            logger.error('Git checkout error %s', str(gce))
++        except (RuntimeError, Exception, RepositoryError) as gce:
++            logger.error('Git checkout error %s', str(gce), exc_info=True)
++            raise gce
+ 
+         try:
+             if branch:
+@@ -609,8 +620,9 @@ class GitLOC:
+                 logger.debug('Git repository active branch missing')
+                 logger.debug('Git %s repository pull request skip ',
+                              self.repo_path)
+-        except (RuntimeError, Exception) as pe:
+-            logger.error('Git pull error %s', str(pe))
++        except (RuntimeError, Exception, RepositoryError) as pe:
++            logger.error('Git pull error %s', str(pe), exc_info=True)
++            raise pe
+ 
+         return status
+ 
+@@ -628,14 +640,16 @@ class GitLOC:
+         try:
+             self._exec(cmd_fetch, env=env)
+             logger.debug('Git %s fetch updated code', self.repo_path)
+-        except (RuntimeError, Exception) as fe:
+-            logger.error('Git fetch purge error %s', str(fe))
++        except (RuntimeError, Exception, RepositoryError) as fe:
++            logger.error('Git fetch purge error %s', str(fe), exc_info=True)
++            raise fe
+ 
+         try:
+             self._exec(cmd_fetch_p, env=env)
+             logger.debug('Git %s fetch purge code', self.repo_path)
+-        except (RuntimeError, Exception) as fpe:
+-            logger.error('Git fetch purge error %s', str(fpe))
++        except (RuntimeError, Exception, RepositoryError) as fpe:
++            logger.error('Git fetch purge error %s', str(fpe), exc_info=True)
++            raise fpe
+ 
+     def _build_empty_stats_data(self):
+         stats_data = {
+@@ -654,7 +668,7 @@ class GitLOC:
+                 f.write(json.dumps(data, indent=4))
+             f.close()
+         except Exception as je:
+-            logger.error('cache file write error %s', str(je))
++            logger.error('cache file write error %s', str(je), exc_info=True)
+         finally:
+             pass
+ 
+@@ -667,7 +681,7 @@ class GitLOC:
+             f.close()
+             return json.loads(data)
+         except Exception as je:
+-            logger.error('cache file write error %s', str(je))
++            logger.error('cache file write error %s', str(je), exc_info=True)
+             error = True
+         finally:
+             if error:
+@@ -758,7 +772,7 @@ class GitLOC:
+                                       path=self.__get_cache_path(),
+                                       filename=self.cache_file_name)
+         except Exception as se:
+-            logger.error('LOC error %s', str(se))
++            logger.error('LOC error %s', str(se), exc_info=True)
+             logger.debug('LOC value set from old cache')
+             # Set cache_loc value if cloc fails
+             loc = cache_loc
