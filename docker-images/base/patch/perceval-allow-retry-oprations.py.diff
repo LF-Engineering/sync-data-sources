@@ -1,5 +1,5 @@
 diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
-index 7f32d2f..d732918 100644
+index 7f32d2f..5ca68e4 100644
 --- a/perceval/backends/core/git.py
 +++ b/perceval/backends/core/git.py
 @@ -43,7 +43,7 @@ from ...backend import (Backend,
@@ -15,7 +15,7 @@ index 7f32d2f..d732918 100644
          }
  
      @classmethod
-+    @retry(logger=True)
++    @retry(logger=True, exception=RepositoryError)
      def clone(cls, uri, dirpath):
          """Clone a Git repository.
  
@@ -23,12 +23,12 @@ index 7f32d2f..d732918 100644
          """
          return self.count_objects() == 0
  
-+    @retry(logger=True)
++    @retry(logger=True, exception=RepositoryError)
      def update(self):
          """Update repository from its remote.
  
 diff --git a/perceval/utils.py b/perceval/utils.py
-index 7bc0dd2..0a8b0ab 100644
+index 7bc0dd2..ae9b83b 100644
 --- a/perceval/utils.py
 +++ b/perceval/utils.py
 @@ -284,6 +284,77 @@ def xml_to_dict(raw_xml):
@@ -113,7 +113,7 @@ index 7bc0dd2..0a8b0ab 100644
  
          return extract_lines_of_code(self.sanitize_os_output(result), force)
  
-+    @retry(logger=True)
++    @retry(logger=True, exception=RepositoryError)
      def _clone(self):
          """
          Clone a Git repository.
@@ -121,7 +121,7 @@ index 7bc0dd2..0a8b0ab 100644
              logger.error('Git clone error %s', str(cle), exc_info=True)
              raise cle
  
-+    @retry(logger=True)
++    @retry(logger=True, exception=RepositoryError)
      def _pull(self):
          os.chdir(os.path.abspath(self.repo_path))
          env = {
@@ -129,7 +129,7 @@ index 7bc0dd2..0a8b0ab 100644
  
          return status
  
-+    @retry(logger=True)
++    @retry(logger=True, exception=RepositoryError)
      def _fetch(self):
          os.chdir(os.path.abspath(self.repo_path))
  
