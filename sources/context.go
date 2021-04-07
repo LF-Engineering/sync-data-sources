@@ -2,6 +2,7 @@ package syncdatasources
 
 import (
 	"fmt"
+	"github.com/LF-Engineering/dev-analytics-libraries/configuration"
 	"os"
 	"regexp"
 	"strconv"
@@ -137,6 +138,21 @@ func (ctx *Ctx) Init() {
 	ctx.ExecOutput = false
 	ctx.ExecOutputStderr = false
 
+	// Environment
+	ctx.Environment = os.Getenv("ENVIRONMENT")
+
+	var s configuration.ConfigStorage
+	if ctx.Environment == "local" {
+		s = configuration.NewLocalConfigStorage()
+	}else {
+		var err error
+		s, err = configuration.NewSSMConfigStorage()
+		if err!=nil {
+			FatalNoLog(fmt.Errorf("error creating new ssm configuration storage : %+v", err))
+		}
+	}
+
+	config := configuration.NewProvider(s)
 	// ElasticSearch
 	ctx.ElasticURL = os.Getenv("SDS_ES_URL")
 	if ctx.ElasticURL == "" {
@@ -295,12 +311,14 @@ func (ctx *Ctx) Init() {
 	AddRedacted(ctx.ShPass, false)
 	AddRedacted(ctx.ShDB, false)
 
-	ctx.GapURL = os.Getenv("GAP_URL")
 	ctx.Retries = os.Getenv("RETRIES")
 	ctx.Delay = os.Getenv("DELAY")
 
-	// Environment
-	ctx.Environment = os.Getenv("ENVIRONMENT")
+	gapURL, err := config.Get (configuration.GapURL)
+	if err !=nil {
+		FatalNoLog(fmt.Errorf("error getting GAP_URL environment variable  : %+v", err))
+	}
+	ctx.GapURL = gapURL
 
 	// AWS Credentials
 	ctx.AwsDefaultRegion = os.Getenv("AWS_DEFAULT_REGION")
