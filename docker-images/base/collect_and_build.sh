@@ -38,6 +38,7 @@ cd grimoirelab-elk && git apply ../../patch/enrich.py.diff && git apply ../../pa
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc.py.diff && cd .. || exit 15
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-git-loc-clean-up.py.diff && cd .. || exit 19
 cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-github-assignees-data.py.diff && cd .. || exit 23
+cd grimoirelab-perceval && git apply --ignore-space-change --ignore-whitespace ../../patch/perceval-trigger-error-event.py.diff && cd .. || exit 27
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-loc.py.diff && cd .. || exit 16
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-organize-repo.py.diff && cd .. || exit 17
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-git-commit-url.py.diff && cd .. || exit 18
