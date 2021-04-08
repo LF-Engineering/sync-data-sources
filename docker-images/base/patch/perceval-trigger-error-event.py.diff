@@ -191,10 +191,11 @@ index dd723a5..b52872b 100644
  class GitLab(Backend):
 diff --git a/perceval/log_events.py b/perceval/log_events.py
 new file mode 100644
-index 0000000..f5a4b0f
+index 0000000..497016a
 --- /dev/null
 +++ b/perceval/log_events.py
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,82 @@
++import os
 +import logging
 +from logging.handlers import SMTPHandler
 +
@@ -264,13 +265,15 @@ index 0000000..f5a4b0f
 +
 +
 +def get_smtp_handler():
++    fromaddr = os.environ.get('LE_FROMADDR')
++    access_me = os.environ.get('LE_PASSWORD')
++    toaddrs = os.environ.get('LE_TOADDRS').split(',')
 +    return SDSSMTPHandler(
 +        mailhost=('smtp.gmail.com', 465),
-+        fromaddr='dev.analytics.error.bot@gmail.com',
-+        toaddrs=['pratikk@proximabiz.com', 'sgupta@linuxfoundation.org',
-+                 'fghiasy@linuxfoundation.org'],
++        fromaddr=fromaddr,
++        toaddrs=toaddrs,
 +        subject='SDS Error - log',
-+        credentials=('dev.analytics.error.bot@gmail.com', 'Mobile@311!'),
++        credentials=(fromaddr, access_me),
 +        timeout=5.0,
 +        secure=None
 +    )
