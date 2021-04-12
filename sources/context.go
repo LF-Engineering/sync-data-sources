@@ -306,9 +306,9 @@ func (ctx *Ctx) Init() {
 	ctx.Environment = os.Getenv("ENVIRONMENT")
 
 	// Send error log events
-	ctx.LeFromAddr = os.Getenv('LE_FROMADDR')
-	ctx.LePassword = os.Getenv('LE_PASSWORD')
-	ctx.LeToAddrs = os.Getenv('LE_TOADDRS')
+	ctx.LeFromAddr = os.Getenv("LE_FROMADDR")
+	ctx.LePassword = os.Getenv("LE_PASSWORD")
+	ctx.LeToAddrs = os.Getenv("LE_TOADDRS")
 	AddRedacted(ctx.LeFromAddr, false)
 	AddRedacted(ctx.LePassword, false)
 	AddRedacted(ctx.LeToAddrs, false)
