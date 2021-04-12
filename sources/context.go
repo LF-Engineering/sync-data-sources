@@ -128,6 +128,9 @@ type Ctx struct {
 	AwsDefaultRegion                string         // From AWS_DEFAULT_REGION
 	AwsAccessKeyID                  string         // From AWS_ACCESS_KEY_ID
 	AwsSecretAccessKey              string         // From AWS_SECRET_ACCESS_KEY
+	LeFromAddr                      string         // FROM LE_FROMADDR
+	LePassword                      string         // FROM LE_PASSWORD
+	LeToAddrs                       string         // FROM LE_TOADDRS
 }
 
 // Init - get context from environment variables
@@ -301,6 +304,14 @@ func (ctx *Ctx) Init() {
 
 	// Environment
 	ctx.Environment = os.Getenv("ENVIRONMENT")
+
+	// Send error log events
+	ctx.LeFromAddr = os.Getenv('LE_FROMADDR')
+	ctx.LePassword = os.Getenv('LE_PASSWORD')
+	ctx.LeToAddrs = os.Getenv('LE_TOADDRS')
+	AddRedacted(ctx.LeFromAddr, false)
+	AddRedacted(ctx.LePassword, false)
+	AddRedacted(ctx.LeToAddrs, false)
 
 	// AWS Credentials
 	ctx.AwsDefaultRegion = os.Getenv("AWS_DEFAULT_REGION")
