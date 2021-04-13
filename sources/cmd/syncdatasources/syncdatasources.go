@@ -37,7 +37,7 @@ var (
 	gRateMtx          *sync.Mutex
 	gToken            string
 	gHint             int
-	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|.+-da-ds-gha-.+|.+-social_media|.+-last-action-date-cache)$`)
+	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|.+-da-ds-gha-.+|.+-social_media|.+-last-action-date-cache|.+-flat-.+|.+-flat)$`)
 	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request.*|.+-github-issue-raw.*|.+-github-repository-raw.*)$`)
 	emailRegex        = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
