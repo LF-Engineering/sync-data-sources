@@ -1,5 +1,5 @@
 diff --git a/perceval/backends/core/gerrit.py b/perceval/backends/core/gerrit.py
-index 400ebdd..3d75156 100644
+index 400ebdd..7f126ae 100644
 --- a/perceval/backends/core/gerrit.py
 +++ b/perceval/backends/core/gerrit.py
 @@ -38,6 +38,7 @@ from ...backend import (Backend,
@@ -21,7 +21,16 @@ index 400ebdd..3d75156 100644
  
  
  class Gerrit(Backend):
-@@ -448,7 +453,7 @@ class GerritClient():
+@@ -78,6 +83,8 @@ class Gerrit(Backend):
+                  disable_host_key_check=False, id_filepath=None,
+                  tag=None, archive=None, blacklist_ids=None):
+         origin = hostname
++        global smtp_handler
++        smtp_handler.SDS_SYNC_URL = origin
+ 
+         super().__init__(origin, tag=tag, archive=archive, blacklist_ids=blacklist_ids)
+         self.hostname = hostname
+@@ -448,7 +455,7 @@ class GerritClient():
                  result = subprocess.check_output(cmd, shell=True)
                  break
              except subprocess.CalledProcessError as ex:
@@ -31,7 +40,7 @@ index 400ebdd..3d75156 100644
                  retries += 1
  
 diff --git a/perceval/backends/core/git.py b/perceval/backends/core/git.py
-index 19bf8e4..7f32d2f 100644
+index 19bf8e4..01a3eb3 100644
 --- a/perceval/backends/core/git.py
 +++ b/perceval/backends/core/git.py
 @@ -44,10 +44,15 @@ from ...backend import (Backend,
@@ -50,7 +59,16 @@ index 19bf8e4..7f32d2f 100644
  
  
  class Git(Backend):
-@@ -857,18 +862,21 @@ class GitRepository:
+@@ -81,6 +86,8 @@ class Git(Backend):
+         self.uri = uri
+         self.gitpath = gitpath
+         self.git_loc = GitLOC(self.uri)
++        global smtp_handler
++        smtp_handler.SDS_SYNC_URL = uri
+ 
+     def fetch(self, category=CATEGORY_COMMIT, from_date=DEFAULT_DATETIME, to_date=DEFAULT_LAST_DATETIME,
+               branches=None, latest_items=False, no_update=False):
+@@ -857,18 +864,21 @@ class GitRepository:
          :raises RepositoryError: when an error occurs cloning the given
              repository
          """
@@ -81,7 +99,7 @@ index 19bf8e4..7f32d2f 100644
  
      def count_objects(self):
          """Count the objects of a repository.
-@@ -945,11 +953,15 @@ class GitRepository:
+@@ -945,11 +955,15 @@ class GitRepository:
          :raises RepositoryError: when an error occurs updating the
              repository
          """
@@ -103,7 +121,7 @@ index 19bf8e4..7f32d2f 100644
      def sync(self):
          """Keep the repository in sync.
 diff --git a/perceval/backends/core/github.py b/perceval/backends/core/github.py
-index 628a756..c6dedfe 100644
+index 628a756..95daa51 100644
 --- a/perceval/backends/core/github.py
 +++ b/perceval/backends/core/github.py
 @@ -47,6 +47,7 @@ from ...backend import (Backend,
@@ -125,7 +143,16 @@ index 628a756..c6dedfe 100644
  
  
  class GitHub(Backend):
-@@ -859,7 +864,7 @@ class GitHubClient(HttpClient, RateLimitHandler):
+@@ -138,6 +143,8 @@ class GitHub(Backend):
+             api_token = []
+         origin = base_url if base_url else GITHUB_URL
+         origin = urijoin(origin, owner, repository)
++        global smtp_handler
++        smtp_handler.SDS_SYNC_URL = origin
+ 
+         super().__init__(origin, tag=tag, archive=archive, ssl_verify=ssl_verify)
+ 
+@@ -859,7 +866,7 @@ class GitHubClient(HttpClient, RateLimitHandler):
          except requests.exceptions.HTTPError as error:
              # 404 not found is wrongly received sometimes
              if error.response.status_code == 404:
@@ -167,7 +194,7 @@ index c0d7f12..43a3910 100644
  
              timelines = items['data']['repository'][node_type]['timelineItems']
 diff --git a/perceval/backends/core/gitlab.py b/perceval/backends/core/gitlab.py
-index dd723a5..b52872b 100644
+index dd723a5..086e9ee 100644
 --- a/perceval/backends/core/gitlab.py
 +++ b/perceval/backends/core/gitlab.py
 @@ -44,6 +44,7 @@ from ...backend import (Backend,
@@ -189,12 +216,21 @@ index dd723a5..b52872b 100644
  
  
  class GitLab(Backend):
+@@ -105,6 +110,8 @@ class GitLab(Backend):
+                  blacklist_ids=None, extra_retry_after_status=None, ssl_verify=True):
+         origin = base_url if base_url else GITLAB_URL
+         origin = urijoin(origin, owner, repository)
++        global smtp_handler
++        smtp_handler.SDS_SYNC_URL = origin
+ 
+         if not api_token and is_oauth_token:
+             raise BackendError(cause="is_oauth_token is True but api_token is None")
 diff --git a/perceval/log_events.py b/perceval/log_events.py
 new file mode 100644
-index 0000000..497016a
+index 0000000..689552a
 --- /dev/null
 +++ b/perceval/log_events.py
-@@ -0,0 +1,82 @@
+@@ -0,0 +1,87 @@
 +import os
 +import logging
 +from logging.handlers import SMTPHandler
@@ -206,6 +242,8 @@ index 0000000..497016a
 +
 +
 +class SDSSMTPHandler(SMTPHandler):
++
++    SDS_SYNC_URL = None
 +
 +    @classmethod
 +    def get_log_level(cls, level=None):
@@ -223,6 +261,7 @@ index 0000000..497016a
 +    @classmethod
 +    def get_log_format(cls):
 +        format = logging.Formatter(
++            'SDS Sync Url: %(SDS_SYNC_URL)s\n'
 +            'Time:- %(asctime)s\n'
 +            'File:- %(filename)s\n'
 +            'Module:- %(module)s\n'
@@ -234,7 +273,8 @@ index 0000000..497016a
 +        return format
 +
 +    def getSubject(self, record):
-+        return 'SDS | Error from {0}'.format(record.module)
++        env = os.environ.get('ENVIRONMENT', 'Local')
++        return 'SDS {0} | Error from {1}'.format(env, record.module)
 +
 +    def emit(self, record):
 +        """
@@ -249,6 +289,7 @@ index 0000000..497016a
 +            if not port:
 +                port = smtplib.SMTP_PORT
 +            smtp = smtplib.SMTP_SSL(self.mailhost, port, timeout=5.0)
++            setattr(record, 'SDS_SYNC_URL', self.SDS_SYNC_URL)
 +            msg = self.format(record)
 +            msg = "From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s" % (
 +            self.fromaddr, ", ".join(self.toaddrs), self.getSubject(record),
