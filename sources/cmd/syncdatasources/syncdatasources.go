@@ -50,7 +50,7 @@ var (
 		lib.Git:          true,
 		lib.Gerrit:       false,
 		lib.Confluence:   false,
-		lib.RocketChat:   false,
+		lib.RocketChat:   true,
 		lib.DockerHub:    false,
 		lib.Bugzilla:     false,
 		lib.BugzillaRest: false,
