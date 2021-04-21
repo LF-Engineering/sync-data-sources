@@ -1,5 +1,6 @@
 FROM golang:1.15 AS builder
 ARG BRANCH
+ARG COMMIT_ID
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
 RUN go get -u gopkg.in/yaml.v2
 RUN go get -u golang.org/x/oauth2
@@ -19,7 +20,7 @@ WORKDIR /go/src/github.com/LF-Engineering
 RUN git clone https://github.com/LF-Engineering/da-ds
 RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
-RUN CGO_ENABLED=0 go install -ldflags '-s' github.com/LF-Engineering/da-ds/cmd/dads
+RUN CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static' -X build.GitCommit=${COMMIT_ID}" github.com/LF-Engineering/da-ds/cmd/dads
 WORKDIR /go/src/github.com/LF-Engineering/sync-data-sources/sources
 RUN echo "Building for branch ${BRANCH}"
 RUN git checkout -b ${BRANCH} "origin/${BRANCH}"
