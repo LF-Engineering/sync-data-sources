@@ -46,8 +46,7 @@ if [ -z "$SKIP_BUILD" ]
 then
   echo "Building for branch ${BRANCH}"
   cp ../da-ds/uuid.py ../da-ds/gitops.py ../da-ds/detect-removed-commits.sh ./sources/ || exit 14
-  COMMIT_ID=$(git rev-parse --verify HEAD)
-  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" --build-arg BRANCH="${BRANCH}" COMMIT_ID="${COMMIT_ID}" .
+  docker build -f ./docker-images/Dockerfile -t "${DOCKER_USER}/sync-data-sources-${BRANCH}" --build-arg BRANCH="${BRANCH}" .
   bs=$?
   rm -f ./sources/uuid.py ./sources/gitops.py ./sources/detect-removed-commits.sh
   if [ ! "$bs" = "0" ]
