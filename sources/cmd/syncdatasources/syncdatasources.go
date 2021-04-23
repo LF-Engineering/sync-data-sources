@@ -51,7 +51,7 @@ var (
 		lib.Gerrit:       false,
 		lib.Confluence:   false,
 		lib.RocketChat:   false,
-		lib.DockerHub:    true,
+		lib.DockerHub:    false,
 		lib.Bugzilla:     false,
 		lib.BugzillaRest: false,
 		lib.Jenkins:      true,
