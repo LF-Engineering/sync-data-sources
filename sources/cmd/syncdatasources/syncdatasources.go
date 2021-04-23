@@ -38,7 +38,7 @@ var (
 	gToken            string
 	gHint             int
 	noDropPattern     = regexp.MustCompile(`^(.+-f-.+|.+-earned_media|.+-dads-.+|.+-slack|.+-da-ds-gha-.+|.+-social_media|.+-last-action-date-cache|.+-flat-.+|.+-flat)$`)
-	notMissingPattern = regexp.MustCompile(`^(.+-github-pull_request.*|.+-github-issue-raw.*|.+-github-repository-raw.*)$`)
+	notMissingPattern = regexp.MustCompile(`^.+-github-pull_request.*$`)
 	emailRegex        = regexp.MustCompile("^[a-zA-Z0-9.!#$%&'*+\\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$")
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
@@ -48,6 +48,7 @@ var (
 		lib.Jira:         false,
 		lib.GroupsIO:     false,
 		lib.Git:          false,
+		lib.GitHub:       false,
 		lib.Gerrit:       false,
 		lib.Confluence:   false,
 		lib.RocketChat:   false,
@@ -85,6 +86,13 @@ var (
 			"DA_GIT_DEBUG":            "1",
 			"DA_GIT_RETRY":            "4",
 			"DA_GIT_PAIR_PROGRAMMING": "false",
+		},
+		lib.GitHub: {
+			///"DA_GITHUB_LEGACY_UUID":   "1",
+			// "DA_GITHUB_CATEGORY":      "repository || issue || pull_request",
+			"DA_GITHUB_NCPUS": "6",
+			"DA_GITHUB_DEBUG": "1",
+			"DA_GITHUB_RETRY": "3",
 		},
 		lib.Gerrit: {
 			//"DA_GERRIT_LEGACY_UUID":            "1",
@@ -5029,6 +5037,9 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 	switch ds {
 	case lib.Jira, lib.Git, lib.Gerrit, lib.Confluence:
 		env[prefix+"URL"] = e[0]
+	case lib.GitHub:
+		env[prefix+"ORG"] = e[0]
+		env[prefix+"REPO"] = e[1]
 	case lib.GroupsIO:
 		env[prefix+"GROUP_NAME"] = e[0]
 	case lib.RocketChat:
@@ -5114,7 +5125,11 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		case "-p":
 			opt = "password"
 		case "-t", "api-token":
-			opt = "token"
+			if ds == lib.GitHub {
+				opt = "tokens"
+			} else {
+				opt = "token"
+			}
 		case "from-date":
 			opt = "date-from"
 		case "to-date":
@@ -5126,7 +5141,12 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 			continue
 		}
 		envOpt := prefix + strings.ToUpper(strings.Replace(opt, "-", "_", -1))
-		envVal := strings.Join(i.Value, " ")
+		var envVal string
+		if ds == lib.GitHub {
+			envVal = strings.Join(i.Value, ",")
+		} else {
+			envVal = strings.Join(i.Value, " ")
+		}
 		if envVal == "" {
 			envVal = "1"
 		}
@@ -6700,6 +6720,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	fds := task.DsFullSlug
 	idxSlug := "sds-" + task.FxSlug + "-" + fds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+	if dads {
+		idxSlug = strings.Replace(idxSlug, "github-pull_request", "github-issue", -1)
+	}
 	result.Index = idxSlug
 	result.Endpoint = task.Endpoint
 	result.Ds = strings.Replace(task.DsSlug, "/", "-", -1)

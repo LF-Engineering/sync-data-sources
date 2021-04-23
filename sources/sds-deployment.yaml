@@ -117,7 +117,7 @@ environments:
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
-      SDS_DATASOURCES_SKIP_RE: '^(github.*|slack)'
+      SDS_DATASOURCES_SKIP_RE: '^slack'
       SDS_SKIP_SSAW: 1
   - name: test-slow
     cron: '*/10 * * * *'
@@ -130,5 +130,5 @@ environments:
       SDS_SILENT: 1
       SDS_ES_BULKSIZE: 100
       SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
-      SDS_DATASOURCES_SKIP_RE: '^(github.*|slack)'
+      SDS_DATASOURCES_SKIP_RE: '^slack'
       SDS_SKIP_SSAW: 1
