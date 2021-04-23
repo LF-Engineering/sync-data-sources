@@ -2756,7 +2756,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 				mainEnv[k] = v
 			}
 			// Handle DS project
-			if tsk.ProjectP2O && tsk.Project != "" {
+			if tsk.Project != "" {
 				mainEnv[envPrefix+"PROJECT"] = tsk.Project
 			}
 		} else {
@@ -6965,7 +6965,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			mainEnv[k] = v
 		}
 		// Handle DS project
-		if task.ProjectP2O && task.Project != "" {
+		if task.Project != "" {
 			mainEnv[envPrefix+"PROJECT"] = task.Project
 		}
 	} else {
