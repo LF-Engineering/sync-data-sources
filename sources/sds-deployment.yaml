@@ -116,7 +116,7 @@ environments:
       SDS_NCPUS_SCALE: 2
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
+      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|cncf-k8s-github)'
       SDS_DATASOURCES_SKIP_RE: '^slack'
       SDS_SKIP_SSAW: 1
   - name: test-slow
