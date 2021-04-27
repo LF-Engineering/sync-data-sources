@@ -61,8 +61,8 @@ type Ctx struct {
 	DryRunAllowDetAffRange          bool           // From SDS_DRY_RUN_ALLOW_DET_AFF_RANGE, if set it will allow calling DA-affiliation det_aff_range API in dry run mode
 	DryRunAllowCopyFrom             bool           // From SDS_DRY_RUN_ALLOW_COPY_FROM, if set it will allow copy index in dry run mode
 	DryRunAllowMetadata             bool           // From SDS_DRY_RUN_ALLOW_METADATA, if set it will allow processing fixture metadata in dry run mode
-	TimeoutSeconds                  int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 171900
-	TaskTimeoutSeconds              int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 36000s (10 hours)
+	TimeoutSeconds                  int            // From SDS_TIMEOUT_SECONDS, set entire program execution timeout, program will finish with return code 2 if anything still runs after this time, default 47 h 45 min = 258660
+	TaskTimeoutSeconds              int            // From SDS_TASK_TIMEOUT_SECONDS, set single p2o.py task execution timeout, default is 86400s (10 hours)
 	NLongest                        int            // From SDS_N_LONGEST, number of longest running tasks to display in stats, default 30
 	SkipSH                          bool           // From SDS_SKIP_SH, if set sorting hata database processing will be skipped
 	SkipData                        bool           // From SDS_SKIP_DATA, if set - it will not run incremental data sync
@@ -98,7 +98,7 @@ type Ctx struct {
 	NoMultiAliases                  bool           // From SDS_NO_MULTI_ALIASES, if set alias can only be defined for single index, so only one index maps to any alias, if not defined multiple input indexies can be accessed through a single alias (so it can have data from more than 1 p2o.py call)
 	CleanupAliases                  bool           // From SDS_CLEANUP_ALIASES, will delete all aliases before creating them (so it can delete old indexes that were pointed by given alias before adding new indexes to it (single or multiple))
 	ScrollWait                      int            // From SDS_SCROLL_WAIT, will pass 'p2o.py' '--scroll-wait=N' if set - this is to specify time to wait for available scrolls (in seconds), default 2700 (45 minutes)
-	ScrollSize                      int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 200
+	ScrollSize                      int            // From SDS_SCROLL_SIZE, ElasticSearch scroll size when enriching data, default 500
 	MaxDeleteTrials                 int            // From SDS_MAX_DELETE_TRIALS, default 10
 	MaxMtxWait                      int            // From SDS_MAX_MTX_WAIT, in seconds, default 900s
 	MaxMtxWaitFatal                 bool           // From SDS_MAX_MTX_WAIT_FATAL, exit with error when waiting for mutex is more than configured amount of time
@@ -401,27 +401,27 @@ func (ctx *Ctx) Init() {
 
 	// Timeout
 	if os.Getenv("SDS_TIMEOUT_SECONDS") == "" {
-		ctx.TimeoutSeconds = 171900
+		ctx.TimeoutSeconds = 258660
 	} else {
 		secs, err := strconv.Atoi(os.Getenv("SDS_TIMEOUT_SECONDS"))
 		FatalNoLog(err)
 		if secs > 0 {
 			ctx.TimeoutSeconds = secs
 		} else {
-			ctx.TimeoutSeconds = 171900
+			ctx.TimeoutSeconds = 258660
 		}
 	}
 
 	// Single task timeout
 	if os.Getenv("SDS_TASK_TIMEOUT_SECONDS") == "" {
-		ctx.TaskTimeoutSeconds = 36000
+		ctx.TaskTimeoutSeconds = 86400
 	} else {
 		secs, err := strconv.Atoi(os.Getenv("SDS_TASK_TIMEOUT_SECONDS"))
 		FatalNoLog(err)
 		if secs > 0 {
 			ctx.TaskTimeoutSeconds = secs
 		} else {
-			ctx.TaskTimeoutSeconds = 36000
+			ctx.TaskTimeoutSeconds = 86400
 		}
 	}
 
@@ -477,9 +477,9 @@ func (ctx *Ctx) Init() {
 			ctx.ScrollWait = scrollWait
 		}
 	}
-	// ES scroll size p2o.py --scroll-size 200
+	// ES scroll size p2o.py --scroll-size 500
 	if os.Getenv("SDS_SCROLL_SIZE") == "" {
-		ctx.ScrollSize = 200
+		ctx.ScrollSize = 500
 	} else {
 		scrollSize, err := strconv.Atoi(os.Getenv("SDS_SCROLL_SIZE"))
 		FatalNoLog(err)

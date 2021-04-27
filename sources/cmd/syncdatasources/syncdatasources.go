@@ -82,7 +82,7 @@ var (
 		lib.Git: {
 			///"DA_GIT_LEGACY_UUID":      "1",
 			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "4",
+			"DA_GIT_NCPUS":            "8",
 			"DA_GIT_DEBUG":            "1",
 			"DA_GIT_RETRY":            "4",
 			"DA_GIT_PAIR_PROGRAMMING": "false",
@@ -90,7 +90,7 @@ var (
 		lib.GitHub: {
 			///"DA_GITHUB_LEGACY_UUID":   "1",
 			// "DA_GITHUB_CATEGORY":      "repository || issue || pull_request",
-			"DA_GITHUB_NCPUS": "6",
+			"DA_GITHUB_NCPUS": "8",
 			"DA_GITHUB_DEBUG": "1",
 			"DA_GITHUB_RETRY": "3",
 		},
@@ -115,7 +115,7 @@ var (
 		lib.RocketChat: {
 			//"DA_ROCKETCHAT_LEGACY_UUID":   "1",
 			"DA_ROCKETCHAT_CATEGORY":      "message",
-			"DA_ROCKETCHAT_NCPUS":         "4",
+			"DA_ROCKETCHAT_NCPUS":         "6",
 			"DA_ROCKETCHAT_DEBUG":         "1",
 			"DA_ROCKETCHAT_RETRY":         "4",
 			"DA_ROCKETCHAT_NO_SSL_VERIFY": "1",
