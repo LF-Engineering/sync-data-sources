@@ -57,6 +57,7 @@ var (
 		lib.BugzillaRest: false,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
+		lib.Pipermail:    false, // we should enable da-ds
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
