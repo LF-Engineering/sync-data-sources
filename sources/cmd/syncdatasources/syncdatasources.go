@@ -57,6 +57,7 @@ var (
 		lib.BugzillaRest: false,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
+		lib.Pipermail:    false, // we should enable da-ds
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -153,58 +154,58 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 		ctx.ExecOutput = false
 	}()
 	/*
-		    info := ""
-			  dtStart := time.Now()
-				res, err := lib.ExecCommand(
-					ctx,
-					[]string{
-						"perceval",
-						"--version",
-					},
-					nil,
-					nil,
-				)
-				dtEnd := time.Now()
-				if err != nil {
-					lib.Printf("Error for perceval (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-					fmt.Fprintf(os.Stderr, "%v: Error for perceval (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-					return err
-				}
-				info = "perceval: " + res
-				res, err = lib.ExecCommand(
-					ctx,
-					[]string{
-						"p2o.py",
-						"--help",
-					},
-					nil,
-					nil,
-				)
-				dtEnd = time.Now()
-				if err != nil {
-					lib.Printf("Error for p2o.py (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-					fmt.Fprintf(os.Stderr, "%v: Error for p2o.py (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-					return err
-				}
-				res, err = lib.ExecCommand(
-					ctx,
-					[]string{
-						"sortinghat",
-						"--version",
-					},
-					nil,
-					nil,
-				)
-				dtEnd = time.Now()
-				if err != nil {
-					lib.Printf("Error for sortinghat (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-					fmt.Fprintf(os.Stderr, "%v: Error for sortinghat (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-					return err
-				}
-				info += "sortinghat: " + res
-				if ctx.Debug > 0 {
-					lib.Printf("Grimoire stack available\n%s\n", info)
-				}
+		dtStart := time.Now()
+		info := ""
+		res, err := lib.ExecCommand(
+			ctx,
+			[]string{
+				"perceval",
+				"--version",
+			},
+			nil,
+			nil,
+		)
+		dtEnd := time.Now()
+		if err != nil {
+			lib.Printf("Error for perceval (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+			fmt.Fprintf(os.Stderr, "%v: Error for perceval (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+			return err
+		}
+		info = "perceval: " + res
+		res, err = lib.ExecCommand(
+			ctx,
+			[]string{
+				"p2o.py",
+				"--help",
+			},
+			nil,
+			nil,
+		)
+		dtEnd = time.Now()
+		if err != nil {
+			lib.Printf("Error for p2o.py (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+			fmt.Fprintf(os.Stderr, "%v: Error for p2o.py (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+			return err
+		}
+		res, err = lib.ExecCommand(
+			ctx,
+			[]string{
+				"sortinghat",
+				"--version",
+			},
+			nil,
+			nil,
+		)
+		dtEnd = time.Now()
+		if err != nil {
+			lib.Printf("Error for sortinghat (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+			fmt.Fprintf(os.Stderr, "%v: Error for sortinghat (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+			return err
+		}
+		info += "sortinghat: " + res
+		if ctx.Debug > 0 {
+			lib.Printf("Grimoire stack available\n%s\n", info)
+		}
 	*/
 	return nil
 }
