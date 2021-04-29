@@ -141,7 +141,7 @@ then
     flg="${flg} -d"
   fi
 else
-  cmd="/bin/bash"
+  cmd="/bin/sh"
   flg="${flg} -it"
 fi
 cmd="docker run ${envstr} ${flg} --name ${cname} \"${DOCKER_USER}/sync-data-sources-${e}:latest\" \"${cmd}\""
