@@ -144,66 +144,68 @@ func ensureGrimoireStackAvail(ctx *lib.Ctx) error {
 	if ctx.Debug > 0 {
 		lib.Printf("Checking grimoire stack availability\n")
 	}
-	dtStart := time.Now()
 	ctx.ExecOutput = true
 	home := os.Getenv("HOME")
 	dir := home + "/.perceval"
 	cmd := exec.Command("mkdir", dir)
 	_ = cmd.Run()
-	info := ""
 	defer func() {
 		ctx.ExecOutput = false
 	}()
-	res, err := lib.ExecCommand(
-		ctx,
-		[]string{
-			"perceval",
-			"--version",
-		},
-		nil,
-		nil,
-	)
-	dtEnd := time.Now()
-	if err != nil {
-		lib.Printf("Error for perceval (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-		fmt.Fprintf(os.Stderr, "%v: Error for perceval (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-		return err
-	}
-	info = "perceval: " + res
-	res, err = lib.ExecCommand(
-		ctx,
-		[]string{
-			"p2o.py",
-			"--help",
-		},
-		nil,
-		nil,
-	)
-	dtEnd = time.Now()
-	if err != nil {
-		lib.Printf("Error for p2o.py (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-		fmt.Fprintf(os.Stderr, "%v: Error for p2o.py (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-		return err
-	}
-	res, err = lib.ExecCommand(
-		ctx,
-		[]string{
-			"sortinghat",
-			"--version",
-		},
-		nil,
-		nil,
-	)
-	dtEnd = time.Now()
-	if err != nil {
-		lib.Printf("Error for sortinghat (took %v): %+v\n", dtEnd.Sub(dtStart), err)
-		fmt.Fprintf(os.Stderr, "%v: Error for sortinghat (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
-		return err
-	}
-	info += "sortinghat: " + res
-	if ctx.Debug > 0 {
-		lib.Printf("Grimoire stack available\n%s\n", info)
-	}
+	/*
+		    info := ""
+			  dtStart := time.Now()
+				res, err := lib.ExecCommand(
+					ctx,
+					[]string{
+						"perceval",
+						"--version",
+					},
+					nil,
+					nil,
+				)
+				dtEnd := time.Now()
+				if err != nil {
+					lib.Printf("Error for perceval (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+					fmt.Fprintf(os.Stderr, "%v: Error for perceval (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+					return err
+				}
+				info = "perceval: " + res
+				res, err = lib.ExecCommand(
+					ctx,
+					[]string{
+						"p2o.py",
+						"--help",
+					},
+					nil,
+					nil,
+				)
+				dtEnd = time.Now()
+				if err != nil {
+					lib.Printf("Error for p2o.py (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+					fmt.Fprintf(os.Stderr, "%v: Error for p2o.py (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+					return err
+				}
+				res, err = lib.ExecCommand(
+					ctx,
+					[]string{
+						"sortinghat",
+						"--version",
+					},
+					nil,
+					nil,
+				)
+				dtEnd = time.Now()
+				if err != nil {
+					lib.Printf("Error for sortinghat (took %v): %+v\n", dtEnd.Sub(dtStart), err)
+					fmt.Fprintf(os.Stderr, "%v: Error for sortinghat (took %v): %+v\n", dtEnd, dtEnd.Sub(dtStart), res)
+					return err
+				}
+				info += "sortinghat: " + res
+				if ctx.Debug > 0 {
+					lib.Printf("Grimoire stack available\n%s\n", info)
+				}
+	*/
 	return nil
 }
 
