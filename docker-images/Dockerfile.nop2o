@@ -25,8 +25,8 @@ RUN echo "Building for branch ${BRANCH}"
 RUN git checkout -b ${BRANCH} "origin/${BRANCH}"
 RUN git pull
 RUN make -f ./Makefile dockerinstall
-# The final version should not use this base image, so it needs to have 'cloc' installed.
-FROM python:3
+FROM python:3-slim
+RUN apt-get update -y && apt-get upgrade -y && apt-get install -y git cloc
 COPY docker-images/.gitconfig /root/.gitconfig
 COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
