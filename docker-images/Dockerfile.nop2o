@@ -29,7 +29,7 @@ RUN git checkout -b ${BRANCH} "origin/${BRANCH}"
 RUN git pull
 RUN make -f ./Makefile dockerinstall
 FROM alpine
-RUN apk add bash cloc git
+RUN apk update && apk add bash cloc git ca-certificates openssh-client && rm -rf /var/cache/apk/*
 COPY docker-images/.gitconfig /root/.gitconfig
 COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
