@@ -121,6 +121,7 @@ type Ctx struct {
 	ShDB                            string         // From SH_DB
 	TestMode                        bool           // True when running tests
 	OAuthKeys                       []string       // GitHub oauth keys recevide from SDS_GITHUB_OAUTH configuration (initialized only when lib.GHClient() is called)
+	DynamicOAuth                    bool           // From SDS_DYNAMIC_OAUTH - instead of getting OAuth keys once, get the dynamically every time they're passed to subcommand da-ds/p2o.py
 	GapURL                          string         // Data gab handelar api url
 	Retries                         string         // number of retries to insert into elastic
 	Delay                           string         // duration between each retry
@@ -455,6 +456,7 @@ func (ctx *Ctx) Init() {
 	}
 
 	// GitHub OAuth
+	ctx.DynamicOAuth = os.Getenv("SDS_DYNAMIC_OAUTH") != ""
 	ctx.GitHubOAuth = os.Getenv("SDS_GITHUB_OAUTH")
 	AddRedacted(ctx.GitHubOAuth, false)
 
