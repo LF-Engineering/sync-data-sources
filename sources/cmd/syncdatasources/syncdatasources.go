@@ -48,7 +48,7 @@ var (
 		lib.Jira:         false,
 		lib.GroupsIO:     false,
 		lib.Git:          false,
-		lib.GitHub:       false,
+		lib.GitHub:       true,
 		lib.Gerrit:       false,
 		lib.Confluence:   false,
 		lib.RocketChat:   false,
