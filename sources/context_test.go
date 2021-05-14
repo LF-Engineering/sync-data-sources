@@ -72,7 +72,6 @@ func copyContext(in *lib.Ctx) *lib.Ctx {
 		EsBulkSize:                      in.EsBulkSize,
 		SkipSH:                          in.SkipSH,
 		GitHubOAuth:                     in.GitHubOAuth,
-		DynamicOAuth:                    in.DynamicOAuth,
 		SkipReenrich:                    in.SkipReenrich,
 		LatestItems:                     in.LatestItems,
 		ScrollWait:                      in.ScrollWait,
@@ -312,7 +311,6 @@ func TestInit(t *testing.T) {
 		ExecOutput:                      false,
 		ElasticURL:                      "http://127.0.0.1:9200",
 		GitHubOAuth:                     "",
-		DynamicOAuth:                    false,
 		SkipReenrich:                    "",
 		EsBulkSize:                      0,
 		ScrollWait:                      2700,
@@ -623,11 +621,11 @@ func TestInit(t *testing.T) {
 		},
 		{
 			"Set GitHubOAuth",
-			map[string]string{"SDS_GITHUB_OAUTH": "key1,key2", "SDS_DYNAMIC_OAUTH": "1"},
+			map[string]string{"SDS_GITHUB_OAUTH": "key1,key2"},
 			dynamicSetFields(
 				t,
 				copyContext(&defaultContext),
-				map[string]interface{}{"GitHubOAuth": "key1,key2", "DynamicOAuth": true},
+				map[string]interface{}{"GitHubOAuth": "key1,key2"},
 			),
 		},
 		{
