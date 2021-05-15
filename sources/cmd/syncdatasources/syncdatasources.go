@@ -4656,7 +4656,21 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				if ok {
 					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
 				} else {
-					c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+					if ctx.DynamicOAuth {
+						var dynamicKeys []string
+						envOAuths := os.Getenv("SDS_GITHUB_OAUTH")
+						if envOAuths != "" {
+							oAuths := strings.Split(envOAuths, ",")
+							for _, auth := range oAuths {
+								dynamicKeys = append(dynamicKeys, auth)
+							}
+						} else {
+							dynamicKeys = ctx.OAuthKeys
+						}
+						c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, dynamicKeys), RedactedValue: []string{lib.Redacted}})
+					} else {
+						c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+					}
 				}
 				// OAuthKeys
 			} else {
@@ -6952,6 +6966,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if task.MaxFreq != nilDur {
 			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
 			if !freqOK {
+				// Mark as not executed due to freq check
+				result.Code[1] = -3
 				return
 			}
 		}
