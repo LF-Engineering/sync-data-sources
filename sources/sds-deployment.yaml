@@ -37,6 +37,7 @@ environments:
       # SDS_DATASOURCES_RE: '^github'
       SDS_SKIP_AFFS: 1
       SDS_DYNAMIC_OAUTH: 1
+      SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
   - name: prod-cncf
     cron: '2 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
@@ -56,6 +57,7 @@ environments:
       # SDS_DATASOURCES_RE: '^github'
       SDS_SKIP_AFFS: 1
       SDS_DYNAMIC_OAUTH: 1
+      SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
   - name: prod-korg
     #disabled: true
@@ -93,6 +95,7 @@ environments:
       # SDS_DATASOURCES_RE: '^github'
       SDS_SKIP_AFFS: 1
       SDS_DYNAMIC_OAUTH: 1
+      SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
 - name: test                            # this will run on the 'test' env
   deployments:
