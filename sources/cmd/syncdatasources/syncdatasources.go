@@ -6737,6 +6737,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	fds := task.DsFullSlug
 	idxSlug := "sds-" + task.FxSlug + "-" + fds
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
+	origIdxSlug := idxSlug
 	if dads {
 		idxSlug = strings.Replace(idxSlug, "github-pull_request", "github-issue", -1)
 	}
@@ -6964,7 +6965,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if !ctx.SkipEsData && !ctx.SkipCheckFreq {
 		var nilDur time.Duration
 		if task.MaxFreq != nilDur {
-			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
+			freqOK := checkSyncFreq(ctx, tMtx, origIdxSlug, sEp, task.MaxFreq)
 			if !freqOK {
 				// Mark as not executed due to freq check
 				result.Code[1] = -3
@@ -7072,7 +7073,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 				}
 			}
 			if !ctx.SkipP2O && !ctx.SkipEsData && !affs {
-				_ = setLastRun(ctx, tMtx, idxSlug, sEp)
+				_ = setLastRun(ctx, tMtx, origIdxSlug, sEp)
 			}
 			return
 		}
@@ -7135,9 +7136,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		return
 	}
 	if !ctx.SkipP2O && !ctx.SkipEsData && !affs {
-		updated := setLastRun(ctx, tMtx, idxSlug, sEp)
+		updated := setLastRun(ctx, tMtx, origIdxSlug, sEp)
 		if !updated {
-			lib.Printf("failed to set last sync date for %s/%s\n", idxSlug, sEp)
+			lib.Printf("failed to set last sync date for %s/%s/%s\n", origIdxSlug, idxSlug, sEp)
 		}
 	}
 	result.Retries = retries
