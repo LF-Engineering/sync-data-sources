@@ -4251,6 +4251,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
+					// fmt.Printf("1 filtered out %+v\n", task)
 					skippedTasks++
 					processed++
 					continue
@@ -4320,6 +4321,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					}
 					setSyncInfo(ctx, &tMtx, &result, false)
 					if result.Err == nil && len(result.Projects) > 0 {
+						// fmt.Printf("1 will set project with %+v\n", result)
 						setProject(ctx, result.Index, result.Projects)
 					}
 					addEnrichCall(&result)
@@ -4331,6 +4333,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
+					// fmt.Printf("2 filtered out %+v\n", task)
 					skippedTasks++
 					processed++
 					continue
@@ -4380,6 +4383,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				}
 				setSyncInfo(ctx, nil, &result, false)
 				if result.Err == nil && len(result.Projects) > 0 {
+					// fmt.Printf("2 will set project with %+v\n", result)
 					setProject(ctx, result.Index, result.Projects)
 				}
 				addEnrichCall(&result)
@@ -4450,6 +4454,7 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			setSyncInfo(ctx, &tMtx, &result, false)
 			if result.Err == nil && len(result.Projects) > 0 {
+				// fmt.Printf("3 will set project with %+v\n", result)
 				setProject(ctx, result.Index, result.Projects)
 			}
 			addEnrichCall(&result)
@@ -6716,6 +6721,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.Affs = affs
 	if !affs && !task.ProjectP2O && (task.Project != "" || len(task.Projects) > 0) {
 		setTaskResultProjects(&result, &task)
+		// fmt.Printf("set task result projects: %+v for task %+v\n", result, task)
 	}
 	// Handle DS slug
 	dads := isDADS(&task)
@@ -6730,8 +6736,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.Endpoint = task.Endpoint
 	result.Ds = strings.Replace(task.DsSlug, "/", "-", -1)
 	result.Fx = strings.Replace(task.FxSlug, "/", "-", -1)
+	// fmt.Printf("task index is %s for task %+v\n", result.Index, task)
 	// Filter out by task / task skip RE
 	if taskFilteredOut(ctx, &task) {
+		// fmt.Printf("0 filtered out %+v\n", task)
 		result.Code[1] = -1
 		return
 	}
@@ -6751,6 +6759,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			return
 		}
 		if len(result.Projects) > 0 {
+			// fmt.Printf("4 will set project with %s %+v\n", idxSlug, result)
 			setProject(ctx, idxSlug, result.Projects)
 		}
 		result.Code[1] = -2
