@@ -73,10 +73,7 @@ environments:
       SDS_SCROLL_SIZE: 1000
       SDS_ES_BULKSIZE: 1000
       SDS_DATASOURCES_SKIP_RE: '^slack$'
-      SDS_DATASOURCES_RE: '^github'
-      SDS_DYNAMIC_OAUTH: 1
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
-      SDS_SKIP_AFFS: 1
       SDS_SKIP_SSAW: 1
   - name: prod-others
     cron: '6 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
