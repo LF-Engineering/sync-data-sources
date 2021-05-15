@@ -6966,6 +6966,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if task.MaxFreq != nilDur {
 			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
 			if !freqOK {
+				// Mark as not executed due to freq check
+				result.Code[1] = -3
 				return
 			}
 		}
