@@ -4251,7 +4251,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
-					// fmt.Printf("1 filtered out %+v\n", task)
 					skippedTasks++
 					processed++
 					continue
@@ -4321,7 +4320,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 					}
 					setSyncInfo(ctx, &tMtx, &result, false)
 					if result.Err == nil && len(result.Projects) > 0 {
-						// fmt.Printf("1 will set project with %+v\n", result)
 						setProject(ctx, result.Index, result.Projects)
 					}
 					addEnrichCall(&result)
@@ -4333,7 +4331,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			for idx, task := range tasks {
 				if taskFilteredOut(ctx, &task) {
-					// fmt.Printf("2 filtered out %+v\n", task)
 					skippedTasks++
 					processed++
 					continue
@@ -4383,7 +4380,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				}
 				setSyncInfo(ctx, nil, &result, false)
 				if result.Err == nil && len(result.Projects) > 0 {
-					// fmt.Printf("2 will set project with %+v\n", result)
 					setProject(ctx, result.Index, result.Projects)
 				}
 				addEnrichCall(&result)
@@ -4454,7 +4450,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 			}
 			setSyncInfo(ctx, &tMtx, &result, false)
 			if result.Err == nil && len(result.Projects) > 0 {
-				// fmt.Printf("3 will set project with %+v\n", result)
 				setProject(ctx, result.Index, result.Projects)
 			}
 			addEnrichCall(&result)
@@ -4661,7 +4656,21 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 				if ok {
 					c = append(c, lib.MultiConfig{Name: "-t", Value: vals, RedactedValue: []string{lib.Redacted}})
 				} else {
-					c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+					if ctx.DynamicOAuth {
+						var dynamicKeys []string
+						envOAuths := os.Getenv("SDS_GITHUB_OAUTH")
+						if envOAuths != "" {
+							oAuths := strings.Split(envOAuths, ",")
+							for _, auth := range oAuths {
+								dynamicKeys = append(dynamicKeys, auth)
+							}
+						} else {
+							dynamicKeys = ctx.OAuthKeys
+						}
+						c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, dynamicKeys), RedactedValue: []string{lib.Redacted}})
+					} else {
+						c = append(c, lib.MultiConfig{Name: "-t", Value: mergeTokens(ctx, inf, vals, ctx.OAuthKeys), RedactedValue: []string{lib.Redacted}})
+					}
 				}
 				// OAuthKeys
 			} else {
@@ -6721,7 +6730,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.Affs = affs
 	if !affs && !task.ProjectP2O && (task.Project != "" || len(task.Projects) > 0) {
 		setTaskResultProjects(&result, &task)
-		// fmt.Printf("set task result projects: %+v for task %+v\n", result, task)
 	}
 	// Handle DS slug
 	dads := isDADS(&task)
@@ -6736,10 +6744,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	result.Endpoint = task.Endpoint
 	result.Ds = strings.Replace(task.DsSlug, "/", "-", -1)
 	result.Fx = strings.Replace(task.FxSlug, "/", "-", -1)
-	// fmt.Printf("task index is %s for task %+v\n", result.Index, task)
 	// Filter out by task / task skip RE
 	if taskFilteredOut(ctx, &task) {
-		// fmt.Printf("0 filtered out %+v\n", task)
 		result.Code[1] = -1
 		return
 	}
@@ -6759,7 +6765,6 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			return
 		}
 		if len(result.Projects) > 0 {
-			// fmt.Printf("4 will set project with %s %+v\n", idxSlug, result)
 			setProject(ctx, idxSlug, result.Projects)
 		}
 		result.Code[1] = -2
@@ -6961,6 +6966,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if task.MaxFreq != nilDur {
 			freqOK := checkSyncFreq(ctx, tMtx, idxSlug, sEp, task.MaxFreq)
 			if !freqOK {
+				// Mark as not executed due to freq check
+				result.Code[1] = -3
 				return
 			}
 		}
