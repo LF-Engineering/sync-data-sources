@@ -36,7 +36,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^slack$'
       # SDS_DATASOURCES_RE: '^github'
       # SDS_SKIP_AFFS: 1
-      SDS_DYNAMIC_OAUTH: 1
+      # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
   - name: prod-cncf
@@ -56,7 +56,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^slack$'
       # SDS_DATASOURCES_RE: '^github'
       # SDS_SKIP_AFFS: 1
-      SDS_DYNAMIC_OAUTH: 1
+      # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
   - name: prod-korg
@@ -94,7 +94,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^slack$'
       # SDS_DATASOURCES_RE: '^github'
       # SDS_SKIP_AFFS: 1
-      SDS_DYNAMIC_OAUTH: 1
+      # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
 - name: test                            # this will run on the 'test' env
