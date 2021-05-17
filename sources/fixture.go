@@ -11,7 +11,7 @@ import (
 type Config struct {
 	Name  string            `yaml:"name"`
 	Value string            `yaml:"value"`
-	Flags map[string]string `yaml:"flags"` // can be no_default_tokens - it means: do not use default GitHub OAuth tokens
+	Flags map[string]string `yaml:"flags"`
 }
 
 // String - default string output for a config
