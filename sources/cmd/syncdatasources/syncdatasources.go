@@ -4303,9 +4303,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						extraInf += fmt.Sprintf(" (%d skipped)", skippedTasks)
 					}
 					lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, extraInf)
-					if res[1] < 0 {
-						continue
-					}
 					if !taffs && tMtx.OrderMtx != nil {
 						tMtx.TaskOrderMtx.Lock()
 						tmtx, ok := tMtx.OrderMtx[tIdx]
@@ -4317,6 +4314,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 						tMtx.OrderMtx[tIdx] = tmtx
 						// lib.Printf("mtx %d unlocked (data task finished)\n", tIdx)
 						tMtx.TaskOrderMtx.Unlock()
+					}
+					if res[1] < 0 {
+						continue
 					}
 					setSyncInfo(ctx, &tMtx, &result, false)
 					if result.Err == nil && len(result.Projects) > 0 {
@@ -4433,9 +4433,6 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				extraInf += fmt.Sprintf(" (%d skipped)", skippedTasks)
 			}
 			lib.ProgressInfo(processed, all, dtStart, &lastTime, time.Duration(1)*time.Minute, extraInf)
-			if res[1] < 0 {
-				continue
-			}
 			if !taffs && tMtx.OrderMtx != nil {
 				tMtx.TaskOrderMtx.Lock()
 				tmtx, ok := tMtx.OrderMtx[tIdx]
@@ -4447,6 +4444,9 @@ func processTasks(ctx *lib.Ctx, ptasks *[]lib.Task, dss []string) error {
 				tMtx.OrderMtx[tIdx] = tmtx
 				//lib.Printf("mtx %d unlocked (data task finished in final join)\n", tIdx)
 				tMtx.TaskOrderMtx.Unlock()
+			}
+			if res[1] < 0 {
+				continue
 			}
 			setSyncInfo(ctx, &tMtx, &result, false)
 			if result.Err == nil && len(result.Projects) > 0 {
