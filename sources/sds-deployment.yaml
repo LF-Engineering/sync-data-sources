@@ -128,7 +128,8 @@ environments:
       SDS_NCPUS_SCALE: 2
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
+      # SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
+      SDS_DATASOURCES_RE: '^git$'
       SDS_DATASOURCES_SKIP_RE: '^slack'
       SDS_SKIP_SSAW: 1
   - name: test-slow
@@ -141,6 +142,6 @@ environments:
       # SDS_SKIP_REENRICH: 'jira,gerrit,confluence,bugzilla' # passing incremental date from is now supported (after p2o patch), so this is no longer needed
       SDS_SILENT: 1
       SDS_ES_BULKSIZE: 100
-      SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
-      SDS_DATASOURCES_SKIP_RE: '^slack'
+      # SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
+      SDS_DATASOURCES_SKIP_RE: '^(slack|git$)'
       SDS_SKIP_SSAW: 1
