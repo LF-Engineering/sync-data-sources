@@ -57,7 +57,7 @@ var (
 		lib.BugzillaRest: false,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
-		lib.Pipermail:    false, // we should enable da-ds
+		lib.Pipermail:    true, // we should enable da-ds
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -133,6 +133,10 @@ var (
 		lib.GoogleGroups: {
 			"DA_GOOGLEGROUPS_HTTP_TIMEOUT":   "60s",
 			"DA_GOOGLEGROUPS_NO_INCREMENTAL": "1",
+		},
+		lib.Pipermail: {
+			"DA_PIPERMAIL_HTTP_TIMEOUT":   "60s",
+			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -1919,6 +1923,15 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						"--googlegroups-slug":        fixture.Native.Slug,
 						"--googlegroups-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
 						"--googlegroups-enrich-size": getFlagByName("enrichsize", dataSource.Config),
+					}
+				case lib.Pipermail:
+					flags = map[string]string{
+						"--pipermail-do-fetch":    getFlagByName("dofetch", dataSource.Config),
+						"--pipermail-do-enrich":   getFlagByName("doenrich", dataSource.Config),
+						"--pipermail-origin":   endpoint.Name,
+						"--pipermail-slug":        fixture.Native.Slug,
+						"--pipermail-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
+						"--pipermail-enrich-size": getFlagByName("enrichsize", dataSource.Config),
 					}
 				default:
 					flags = map[string]string{
@@ -5099,6 +5112,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("%s", string(data))
 	case lib.GoogleGroups:
 
+	case lib.Pipermail:
+
 	default:
 		// lib.Fatalf("ERROR: p2oEndpoint2dadsEndpoint: DS %s not (yet) supported", ds)
 		lib.Printf("ERROR(non fatal): p2oEndpoint2dadsEndpoint: DS %s not (yet) supported", ds)
@@ -6779,7 +6794,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if dads {
 		commandLine = []string{"dads"}
 		// add dads arguments
-		if task.DsSlug == lib.Bugzilla || task.DsSlug == lib.BugzillaRest || task.DsSlug == lib.GoogleGroups {
+		if task.DsSlug == lib.Bugzilla || task.DsSlug == lib.BugzillaRest || task.DsSlug == lib.GoogleGroups || task.DsSlug == lib.Pipermail {
 			for k, v := range task.Flags {
 				commandLine = append(commandLine, k)
 				commandLine = append(commandLine, v)
