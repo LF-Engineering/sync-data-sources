@@ -1928,8 +1928,9 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 					flags = map[string]string{
 						"--pipermail-do-fetch":    getFlagByName("dofetch", dataSource.Config),
 						"--pipermail-do-enrich":   getFlagByName("doenrich", dataSource.Config),
-						"--pipermail-origin":   endpoint.Name,
+						"--pipermail-origin":      endpoint.Name,
 						"--pipermail-slug":        fixture.Native.Slug,
+						"--pipermail-groupname":   getFlagByName("groupname", dataSource.Config),
 						"--pipermail-fetch-size":  getFlagByName("fetchsize", dataSource.Config),
 						"--pipermail-enrich-size": getFlagByName("enrichsize", dataSource.Config),
 					}
@@ -7090,6 +7091,8 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 			if !ctx.SkipP2O && !ctx.SkipEsData && !affs {
 				_ = setLastRun(ctx, tMtx, origIdxSlug, sEp)
 			}
+			str, err := lib.ExecCommand(ctx, commandLine, mainEnv, &task.Timeout)
+			fmt.Println(str, err)
 			return
 		}
 		setSyncInfo(ctx, tMtx, &result, true)
