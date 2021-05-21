@@ -117,7 +117,6 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       #SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
-      DA_GITA_EXAMPLE: 1
   - name: test-main
     cron: '7 * * * *'
     command_prefix: '/usr/bin'
@@ -132,6 +131,8 @@ environments:
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
       SDS_DATASOURCES_SKIP_RE: '^slack'
       SDS_SKIP_SSAW: 1
+      # DA_GIT_DROP_RICH: 1
+      # DA_GIT_DROP_RAW: 1
   - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
