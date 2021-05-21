@@ -125,6 +125,15 @@ do
   IFS=${OIFS}
   envstr="${envstr} -e ${a}=\"${!a}\""
 done
+envs=`env | grep '^DA_' | sort`
+for env in ${envs}
+do
+  OIFS=${IFS}
+  IFS='='
+  a=(${env})
+  IFS=${OIFS}
+  envstr="${envstr} -e ${a}=\"${!a}\""
+done
 if [ -z "${2}" ]
 then
   flg="-v /root/.perceval:/root/.perceval"
