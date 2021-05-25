@@ -57,7 +57,7 @@ var (
 		lib.BugzillaRest: true,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
-		lib.Pipermail:    true, // we should enable da-ds
+		lib.Pipermail:    true,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -5098,6 +5098,8 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 		// wrap JSON with single quote for da-ds Unmarshal
 		env[prefix+"JENKINS_JSON"] = fmt.Sprintf("%s", string(data))
 	case lib.GoogleGroups:
+
+	case lib.Pipermail:
 
 	default:
 		// lib.Fatalf("ERROR: p2oEndpoint2dadsEndpoint: DS %s not (yet) supported", ds)
