@@ -60,6 +60,9 @@ const PyException string = "Traceback (most recent call last)"
 // DadsException - string that identified dads exception
 const DadsException string = "DA_DS_ERROR(time="
 
+// DadsWarning - string that identified dads exception
+const DadsWarning string = "da-ds WARNING"
+
 // BackendUser - backend-user
 const BackendUser string = "backend-user"
 
