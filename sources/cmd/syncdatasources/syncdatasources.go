@@ -53,11 +53,11 @@ var (
 		lib.Confluence:   true,
 		lib.RocketChat:   true,
 		lib.DockerHub:    true,
-		lib.Bugzilla:     false,
-		lib.BugzillaRest: false,
+		lib.Bugzilla:     true,
+		lib.BugzillaRest: true,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
-		lib.Pipermail:    true, // we should enable da-ds
+		lib.Pipermail:    true,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -2206,6 +2206,13 @@ func isTimeoutError(err error) bool {
 	return strings.Contains(err.Error(), "killed by task timeout")
 }
 
+func checkProjectSlug(task *lib.Task) {
+	// Warning when running for foundation-f project slug.
+	if strings.HasSuffix(task.AffiliationSource, "-f") && !strings.Contains(task.AffiliationSource, "/") {
+		lib.Printf("SDS WARNING: running on foundation-f level detected: task affiliation source is %s, for task: %s\n", task.AffiliationSource, task.String())
+	}
+}
+
 func dropOrigins(ctx *lib.Ctx, index string, origins []string) (ok bool) {
 	nOrigins := len(origins)
 	bucketSize := 500
@@ -2788,6 +2795,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 		mainEnv["PROJECT_SLUG"] = tsk.AffiliationSource
 		mainEnv[envPrefix+"PROJECT_SLUG"] = tsk.AffiliationSource
+		checkProjectSlug(&tsk)
 		rcl := strings.Join(redactedCommandLine, " ")
 		redactedEnv := lib.FilterRedacted(fmt.Sprintf("%s", sortEnv(mainEnv)))
 		retries := 0
@@ -2839,6 +2847,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			if strings.Contains(str, lib.DadsException) {
 				pyE = true
 				err = fmt.Errorf("%s %s", redactedEnv, strippedStr)
+			}
+			if strings.Contains(str, lib.DadsWarning) {
+				lib.Printf("Command error for %s %+v: %s\n", redactedEnv, rcl, strippedStr)
 			}
 			if err == nil {
 				if ctx.Debug > 0 {
@@ -7014,6 +7025,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	mainEnv["PROJECT_SLUG"] = task.AffiliationSource
 	mainEnv[envPrefix+"PROJECT_SLUG"] = task.AffiliationSource
+	checkProjectSlug(&task)
 	result.CommandLine = strings.Join(commandLine, " ")
 	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
 	result.Env = mainEnv
@@ -7101,6 +7113,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		if strings.Contains(str, lib.DadsException) {
 			pyE = true
 			err = fmt.Errorf("%s %s", redactedEnv, strippedStr)
+		}
+		if strings.Contains(str, lib.DadsWarning) {
+			lib.Printf("Command error for %s %+v: %s\n", redactedEnv, redactedCommandLine, strippedStr)
 		}
 		if err == nil {
 			if ctx.Debug > 0 {
