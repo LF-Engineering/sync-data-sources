@@ -63,7 +63,7 @@ func (t Task) String() string {
 
 // ShortString - output quick endpoint info (usually used for non finished tasks)
 func (t Task) ShortString() string {
-	return fmt.Sprintf("%s:%s / %s:%s", t.FxSlug, t.DsFullSlug, t.Project, t.Endpoint)
+	return fmt.Sprintf("%s:%s / %s:%s:%s", t.FxSlug, t.DsFullSlug, t.Project, strings.Join(t.Groups, ","), t.Endpoint)
 }
 
 // ShortStringCmd - output quick endpoint info (with command line)
