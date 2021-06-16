@@ -129,7 +129,7 @@ environments:
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
-      SDS_DATASOURCES_SKIP_RE: '^slack'
+      SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       SDS_SKIP_SSAW: 1
       # DA_GIT_DROP_RICH: 1
       # DA_GIT_DROP_RAW: 1
@@ -144,5 +144,15 @@ environments:
       SDS_SILENT: 1
       SDS_ES_BULKSIZE: 100
       SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
-      SDS_DATASOURCES_SKIP_RE: '^slack'
+      SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
+      SDS_SKIP_SSAW: 1
+  - name: test-googlegroups
+    cron: '10 * * * *'
+    command_prefix: '/usr/bin'
+    csv_prefix: '/root'
+    cron_env: 'PATH=$PATH:/snap/bin'
+    temp_dir: '/tmp'
+    env:
+      SDS_SILENT: 1
+      SDS_DATASOURCES_RE: '^googlegroups'
       SDS_SKIP_SSAW: 1
