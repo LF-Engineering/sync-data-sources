@@ -91,6 +91,7 @@ type Endpoint struct {
 	Projects          []EndpointProject
 	PairProgramming   bool
 	Dummy             bool // used to mark that there is endpoint, but nothing should be done for it
+	Groups            []string
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
@@ -108,6 +109,7 @@ type RawEndpoint struct {
 	CopyFrom          CopyConfig        `yaml:"copy_from"`
 	AffiliationSource string            `yaml:"affiliation_source"`
 	PairProgramming   bool              `yaml:"pair_programming"`
+	Groups            []string          `yaml:"groups"`
 	SkipREs           []*regexp.Regexp  `yaml:"-"`
 	OnlyREs           []*regexp.Regexp  `yaml:"-"`
 }
