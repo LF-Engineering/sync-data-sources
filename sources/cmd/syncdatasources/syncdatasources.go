@@ -570,6 +570,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
 						PairProgramming:   rawEndpoint.PairProgramming,
+						Groups:            rawEndpoint.Groups[:],
 					},
 				)
 			}
@@ -613,6 +614,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
 						PairProgramming:   rawEndpoint.PairProgramming,
+						Groups:            rawEndpoint.Groups[:],
 					},
 				)
 				continue
@@ -725,6 +727,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -777,6 +780,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -823,6 +827,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -883,6 +888,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -997,6 +1003,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -1107,6 +1114,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 							CopyFrom:          rawEndpoint.CopyFrom,
 							AffiliationSource: rawEndpoint.AffiliationSource,
 							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
 						},
 					)
 				}
@@ -1131,6 +1139,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 						CopyFrom:          rawEndpoint.CopyFrom,
 						AffiliationSource: rawEndpoint.AffiliationSource,
 						PairProgramming:   rawEndpoint.PairProgramming,
+						Groups:            rawEndpoint.Groups[:],
 					},
 				)
 				continue
@@ -1948,6 +1957,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						FxFn:              fixture.Fn,
 						MaxFreq:           dataSource.MaxFreq,
 						AffiliationSource: affiliationSource,
+						Groups:            endpoint.Groups[:],
 						Dummy:             endpoint.Dummy,
 						Flags:             flags,
 					},
@@ -2795,6 +2805,7 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 		}
 		mainEnv["PROJECT_SLUG"] = tsk.AffiliationSource
 		mainEnv[envPrefix+"PROJECT_SLUG"] = tsk.AffiliationSource
+		mainEnv["GROUPS"] = makeTaskGroupsEnv(&tsk)
 		checkProjectSlug(&tsk)
 		rcl := strings.Join(redactedCommandLine, " ")
 		redactedEnv := lib.FilterRedacted(fmt.Sprintf("%s", sortEnv(mainEnv)))
@@ -6726,6 +6737,18 @@ func isDADS(task *lib.Task) bool {
 	return dads
 }
 
+func makeTaskGroupsEnv(task *lib.Task) string {
+	m := map[string]struct{}{task.AffiliationSource: {}}
+	for _, group := range task.Groups {
+		m[group] = struct{}{}
+	}
+	s := []string{}
+	for group := range m {
+		s = append(s, group)
+	}
+	return strings.Join(s, ";")
+}
+
 func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, affs bool, tMtx *lib.TaskMtx) (result lib.TaskResult) {
 	// Ensure to unlock thread when finishing
 	defer func() {
@@ -7025,6 +7048,7 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	}
 	mainEnv["PROJECT_SLUG"] = task.AffiliationSource
 	mainEnv[envPrefix+"PROJECT_SLUG"] = task.AffiliationSource
+	mainEnv["GROUPS"] = makeTaskGroupsEnv(&task)
 	checkProjectSlug(&task)
 	result.CommandLine = strings.Join(commandLine, " ")
 	result.RedactedCommandLine = strings.Join(redactedCommandLine, " ")
