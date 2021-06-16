@@ -147,7 +147,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       SDS_SKIP_SSAW: 1
   - name: test-googlegroups
-    cron: '10 * * * *'
+    cron: '11 * * * *'
     command_prefix: '/usr/bin'
     csv_prefix: '/root'
     cron_env: 'PATH=$PATH:/snap/bin'
@@ -155,4 +155,5 @@ environments:
     env:
       SDS_SILENT: 1
       SDS_DATASOURCES_RE: '^googlegroups'
+      SDS_NCPUS_SCALE: 0.5
       SDS_SKIP_SSAW: 1
