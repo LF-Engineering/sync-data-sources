@@ -1770,7 +1770,12 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 func calculateGroups(ctx *lib.Ctx, name string, groupsConfigs []lib.GroupConfig) (groups []string) {
 	for _, group := range groupsConfigs {
 		if lib.GroupIncluded(ctx, &group, name) {
-			groups = append(groups, group.Name)
+			if group.Name != "" {
+				groups = append(groups, group.Name)
+			}
+			if group.Self {
+				groups = append(groups, name)
+			}
 		}
 	}
 	return
