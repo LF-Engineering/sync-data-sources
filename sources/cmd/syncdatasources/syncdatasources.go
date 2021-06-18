@@ -631,6 +631,20 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				rawEndpoint.OnlyREs = append(rawEndpoint.OnlyREs, onlyRE)
 			}
 			fixture.DataSources[i].RawEndpoints[j].OnlyREs = rawEndpoint.OnlyREs
+			for k, group := range rawEndpoint.Groups {
+				for _, skip := range group.Skip {
+					skipRE, err := regexp.Compile(skip)
+					lib.FatalOnError(err)
+					group.SkipREs = append(group.SkipREs, skipRE)
+				}
+				fixture.DataSources[i].RawEndpoints[j].Groups[k].SkipREs = group.SkipREs
+				for _, only := range group.Only {
+					onlyRE, err := regexp.Compile(only)
+					lib.FatalOnError(err)
+					group.OnlyREs = append(group.OnlyREs, onlyRE)
+				}
+				fixture.DataSources[i].RawEndpoints[j].Groups[k].OnlyREs = group.OnlyREs
+			}
 			handleNoData := func() {
 				fixture.DataSources[i].Endpoints = append(fixture.DataSources[i].Endpoints, lib.Endpoint{Name: name, Dummy: true})
 			}
@@ -1753,6 +1767,15 @@ func generateFoundationFAliases(ctx *lib.Ctx, pfixtures *[]lib.Fixture) {
 	lib.Printf("Finished generatig foundation-f aliases\n")
 }
 
+func calculateGroups(ctx *lib.Ctx, name string, groupsConfigs []lib.GroupConfig) (groups []string) {
+	for _, group := range groupsConfigs {
+		if lib.GroupIncluded(ctx, &group, name) {
+			groups = append(groups, name)
+		}
+	}
+	return
+}
+
 func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 	// Connect to GitHub
 	gctx, gcs := lib.GHClient(ctx)
@@ -1957,7 +1980,7 @@ func processFixtureFiles(ctx *lib.Ctx, fixtureFiles []string) {
 						FxFn:              fixture.Fn,
 						MaxFreq:           dataSource.MaxFreq,
 						AffiliationSource: affiliationSource,
-						Groups:            endpoint.Groups[:],
+						Groups:            calculateGroups(ctx, name, endpoint.Groups),
 						Dummy:             endpoint.Dummy,
 						Flags:             flags,
 					},
