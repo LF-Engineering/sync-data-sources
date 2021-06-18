@@ -82,6 +82,7 @@ type GroupConfig struct {
 	Name    string           `yaml:"name"`
 	Skip    []string         `yaml:"skip"`
 	Only    []string         `yaml:"only"`
+	Self    bool             `yaml:"self"` // If true, then group name = endpoint origin will be added
 	SkipREs []*regexp.Regexp `yaml:"-"`
 	OnlyREs []*regexp.Regexp `yaml:"-"`
 }
