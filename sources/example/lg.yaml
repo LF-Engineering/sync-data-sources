@@ -1,0 +1,25 @@
+---
+native:
+  slug: lg
+data_sources:
+- slug: git
+  projects:
+  - name: LG
+    endpoints:
+    - name: https://github.com/lukaszgryglicki
+      flags:
+        type: github_user
+      groups:
+      - name: CSQ
+        only: ['(?i)csqconv']
+      - name: Test
+        only: ['(?i)test']
+      - name: 'TEST/CSQ'
+        only:
+        - '(?i)csqconv'
+        - '(?i)test'
+      - name: Others
+        skip: ['(?i)(csqconv|test)']
+  config:
+  - name: from-date
+    value: '2019-06-01'
