@@ -77,6 +77,45 @@ type CopyConfig struct {
 	MustNot []ColumnCondition `yaml:"must_not"`
 }
 
+// GroupConfig - holds repo group configuration (name + skip/only REGEXPs)
+type GroupConfig struct {
+	Name    string           `yaml:"name"`
+	Skip    []string         `yaml:"skip"`
+	Only    []string         `yaml:"only"`
+	SkipREs []*regexp.Regexp `yaml:"-"`
+	OnlyREs []*regexp.Regexp `yaml:"-"`
+}
+
+// GroupIncluded - checks if given endpoint's origin matches a given group configuration
+// Return value specifies if endpoint is included or not
+func GroupIncluded(ctx *Ctx, gc *GroupConfig, origin string) bool {
+	for _, skipRE := range gc.SkipREs {
+		if skipRE.MatchString(origin) {
+			if ctx.Debug > 0 {
+				fmt.Printf("%s: skipped %s (%v)\n", gc.Name, origin, skipRE)
+			}
+			return false
+		}
+	}
+	if len(gc.OnlyREs) == 0 {
+		if ctx.Debug > 0 {
+			fmt.Printf("%s: included all\n", gc.Name)
+		}
+		return true
+	}
+	included := false
+	for _, onlyRE := range gc.OnlyREs {
+		if onlyRE.MatchString(origin) {
+			if ctx.Debug > 0 {
+				fmt.Printf("%s: included %s (%v)\n", gc.Name, origin, onlyRE)
+			}
+			included = true
+			break
+		}
+	}
+	return included
+}
+
 // Endpoint holds data source endpoint (final endpoint generated from RawEndpoint)
 type Endpoint struct {
 	Name       string // Endpoint name
@@ -91,7 +130,7 @@ type Endpoint struct {
 	Projects          []EndpointProject
 	PairProgramming   bool
 	Dummy             bool // used to mark that there is endpoint, but nothing should be done for it
-	Groups            []string
+	Groups            []GroupConfig
 }
 
 // RawEndpoint holds data source endpoint with possible flags how to generate the final endpoints
@@ -109,7 +148,7 @@ type RawEndpoint struct {
 	CopyFrom          CopyConfig        `yaml:"copy_from"`
 	AffiliationSource string            `yaml:"affiliation_source"`
 	PairProgramming   bool              `yaml:"pair_programming"`
-	Groups            []string          `yaml:"groups"`
+	Groups            []GroupConfig     `yaml:"groups"`
 	SkipREs           []*regexp.Regexp  `yaml:"-"`
 	OnlyREs           []*regexp.Regexp  `yaml:"-"`
 }
