@@ -1773,6 +1773,9 @@ func calculateGroups(ctx *lib.Ctx, name string, groupsConfigs []lib.GroupConfig)
 		if group.Default && group.Name != "" {
 			def = group.Name
 		}
+		if group.Default {
+			continue
+		}
 		if lib.GroupIncluded(ctx, &group, name) {
 			if group.Name != "" {
 				groups = append(groups, group.Name)
