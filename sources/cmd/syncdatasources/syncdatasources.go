@@ -7027,6 +7027,15 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		for k, v := range epEnv {
 			mainEnv[k] = v
 		}
+		switch ctx.CmdDebug {
+		case 0:
+		case 1, 2:
+			mainEnv[envPrefix+"DEBUG"] = "1"
+		default:
+			if ctx.CmdDebug > 0 {
+				mainEnv[envPrefix+"DEBUG"] = strconv.Itoa(ctx.CmdDebug - 1)
+			}
+		}
 	} else {
 		for _, ep := range eps {
 			commandLine = append(commandLine, ep)
