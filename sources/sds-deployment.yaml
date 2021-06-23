@@ -140,7 +140,7 @@ environments:
       SDS_NCPUS_SCALE: 2
       SDS_SCROLL_SIZE: 500
       SDS_ES_BULKSIZE: 500
-      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|korg-git)'
+      SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       SDS_SKIP_SSAW: 1
       # DA_GIT_DROP_RICH: 1
@@ -157,7 +157,6 @@ environments:
       SDS_ES_BULKSIZE: 100
       SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
-      SDS_TASKS_SKIP_RE: 'korg-git'
       SDS_SKIP_SSAW: 1
   - name: test-googlegroups
     cron: '11 * * * *'
