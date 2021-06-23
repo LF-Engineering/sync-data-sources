@@ -82,11 +82,11 @@ var (
 		},
 		lib.Git: {
 			///"DA_GIT_LEGACY_UUID":      "1",
-			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "8",
-			"DA_GIT_DEBUG":            "1",
-			"DA_GIT_RETRY":            "4",
-			"DA_GIT_PAIR_PROGRAMMING": "false",
+			"DA_GIT_CATEGORY": "commit",
+			"DA_GIT_NCPUS":    "8",
+			"DA_GIT_DEBUG":    "1",
+			"DA_GIT_RETRY":    "4",
+			//"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 		lib.GitHub: {
 			///"DA_GITHUB_LEGACY_UUID":   "1",
@@ -7026,6 +7026,10 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 	if dads {
 		for k, v := range epEnv {
 			mainEnv[k] = v
+		}
+		// p2o doesn't have --pair-programming flag, so that would be overwritten by the default, so let's make sure its OK
+		if task.PairProgramming {
+			mainEnv[envPrefix+"PAIR_PROGRAMMING"] = "1"
 		}
 		switch ctx.CmdDebug {
 		case 0:
