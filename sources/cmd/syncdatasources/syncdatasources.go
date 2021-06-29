@@ -82,10 +82,10 @@ var (
 		},
 		lib.Git: {
 			///"DA_GIT_LEGACY_UUID":      "1",
-			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "8",
-			"DA_GIT_DEBUG":            "1",
-			"DA_GIT_RETRY":            "4",
+			"DA_GIT_CATEGORY": "commit",
+			"DA_GIT_NCPUS":    "8",
+			"DA_GIT_DEBUG":    "1",
+			"DA_GIT_RETRY":    "4",
 			//"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 		lib.GitHub: {
@@ -7573,14 +7573,26 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][3]string) {
 				}
 				query := queryRoot + `"query":{"bool":{"should":[`
 				for _, origin := range ds.Origins {
-					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					if ds.Name == "mbox" {
+						mboxGroupname := fmt.Sprintf("finos.org/%s", origin)
+						query += `{"term":{"group_name":"` + jsonEscape(mboxGroupname) + `"}},`
+					} else {
+						query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					}
+
 				}
 				query = query[:len(query)-1] + `]}}}`
 				addQuery(dest, updateOp, query)
 				if hasFormed {
 					query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
 					for _, origin := range ds.Origins {
-						query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+						if ds.Name == "mbox" {
+							mboxGroupname := fmt.Sprintf("finos.org/%s", origin)
+							query += `{"term":{"group_name":"` + jsonEscape(mboxGroupname) + `"}},`
+						} else {
+							query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+						}
+
 					}
 					query = query[:len(query)-1] + `]}}}`
 					addQuery(dest, deleteOp, query)
@@ -7610,7 +7622,13 @@ func getMetadataQueries(ctx *lib.Ctx, m *lib.Metadata) (result [][3]string) {
 			if hasFormed {
 				query := `{"query":{"bool":{"must":{"range":{"metadata__updated_on":{"lt":"` + formed + `"}}},"minimum_should_match":1,"should":[`
 				for _, origin := range ds.Origins {
-					query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					if ds.Name == "mbox" {
+						mboxGroupname := fmt.Sprintf("finos.org/%s", origin)
+						query += `{"term":{"group_name":"` + jsonEscape(mboxGroupname) + `"}},`
+					} else {
+						query += `{"term":{"origin":"` + jsonEscape(origin) + `"}},`
+					}
+
 				}
 				query = query[:len(query)-1] + `],"filter":` + string(b) + `}}}`
 				addQuery(dest, deleteOp, query)
