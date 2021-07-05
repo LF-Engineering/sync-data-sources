@@ -43,10 +43,10 @@ var (
 	// if a given source is not in dadsTasks - it only supports legacy p2o then
 	// if entry is true - all endpoints using this DS will use the new dads command
 	// if entry is false only items marked via 'dads: true' fixture option will use the new dads command
-	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-projetc in fixture files
+	// Currently we just have jira, groupsio, git, gerrit, confluence, rocketchat which must be enabled per-project in fixture files
 	dadsTasks = map[string]bool{
 		lib.Jira:         false,
-		lib.GroupsIO:     false,
+		lib.GroupsIO:     true,
 		lib.Git:          false,
 		lib.GitHub:       true,
 		lib.Gerrit:       false,
