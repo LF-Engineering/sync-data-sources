@@ -6,12 +6,13 @@ python3 -m pip install --upgrade setuptools
 python3 -m pip install --upgrade pip
 python3 -m pip install emoji
 python3 -m pip install --upgrade requests
+python3 -m pip install "numpy<=1.18.3"
 
 repos=(grimoirelab-elk grimoirelab-sortinghat grimoirelab-kingarthur grimoirelab-perceval)
 
 for r in "${repos[@]}"; do 
   echo "INSTALLING ${r}"
-  python3 -m pip install -e "${REPOS_DIR}/$r";
+  python3 -m pip install --force-reinstall --no-cache-dir -e "${REPOS_DIR}/$r";
   # pip3 install -e "${REPOS_DIR}/$r";
 done
 
