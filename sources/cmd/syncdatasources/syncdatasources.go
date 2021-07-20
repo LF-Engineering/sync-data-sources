@@ -82,10 +82,10 @@ var (
 		},
 		lib.Git: {
 			///"DA_GIT_LEGACY_UUID":      "1",
-			"DA_GIT_CATEGORY":         "commit",
-			"DA_GIT_NCPUS":            "8",
-			"DA_GIT_DEBUG":            "1",
-			"DA_GIT_RETRY":            "4",
+			"DA_GIT_CATEGORY": "commit",
+			"DA_GIT_NCPUS":    "8",
+			"DA_GIT_DEBUG":    "1",
+			"DA_GIT_RETRY":    "4",
 			//"DA_GIT_PAIR_PROGRAMMING": "false",
 		},
 		lib.GitHub: {
@@ -2831,6 +2831,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			// Handle DS project
 			if tsk.Project != "" {
 				mainEnv[envPrefix+"PROJECT"] = tsk.Project
+			}
+			if tsk.ProjectP2O {
+				mainEnv[envPrefix+"PROJECT_FILTER"] = "1"
 			}
 		} else {
 			for _, mcfg := range multiConfig {
@@ -7086,6 +7089,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		// Handle DS project
 		if task.Project != "" {
 			mainEnv[envPrefix+"PROJECT"] = task.Project
+		}
+		if task.ProjectP2O {
+			mainEnv[envPrefix+"PROJECT_FILTER"] = "1"
 		}
 	} else {
 		for _, mcfg := range multiConfig {
