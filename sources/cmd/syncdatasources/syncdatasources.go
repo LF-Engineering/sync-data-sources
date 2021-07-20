@@ -2832,6 +2832,9 @@ func enrichAndDedupExternalIndexes(ctx *lib.Ctx, pfixtures *[]lib.Fixture, ptask
 			if tsk.Project != "" {
 				mainEnv[envPrefix+"PROJECT"] = tsk.Project
 			}
+			if tsk.ProjectP2O {
+				mainEnv[envPrefix+"PROJECT_FILTER"] = "1"
+			}
 		} else {
 			for _, mcfg := range multiConfig {
 				if strings.HasPrefix(mcfg.Name, "-") {
@@ -7086,6 +7089,9 @@ func processTask(ch chan lib.TaskResult, ctx *lib.Ctx, idx int, task lib.Task, a
 		// Handle DS project
 		if task.Project != "" {
 			mainEnv[envPrefix+"PROJECT"] = task.Project
+		}
+		if task.ProjectP2O {
+			mainEnv[envPrefix+"PROJECT_FILTER"] = "1"
 		}
 	} else {
 		for _, mcfg := range multiConfig {
