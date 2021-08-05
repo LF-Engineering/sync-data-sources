@@ -127,7 +127,7 @@ environments:
       SDS_SKIP_PROJECT: 1
       SDS_SKIP_PROJECT_TS: 1
       SDS_SKIP_SORT_DURATION: 1
-      #SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
+      #SDS_NO_INDEX_DROP: 1             # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
   - name: test-main
     cron: '7 * * * *'
@@ -143,6 +143,7 @@ environments:
       SDS_TASKS_SKIP_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat)'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups|pipermail)'
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
       # DA_GIT_DROP_RICH: 1
       # DA_GIT_DROP_RAW: 1
   - name: test-slow
@@ -158,6 +159,7 @@ environments:
       SDS_TASKS_RE: '(project1-bugzilla|project1-gerrit|project1-rocketchat|academy-software-foundation-openshadinglanguage-github)'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroupsi|pipermail)'
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
   - name: test-googlegroups
     cron: '11 * * * *'
     command_prefix: '/usr/bin'
@@ -169,6 +171,7 @@ environments:
       SDS_DATASOURCES_RE: '^googlegroups'
       SDS_NCPUS_SCALE: 0.5
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
   - name: test-pipermail
     cron: '12 * * * *'
     command_prefix: '/usr/bin'
@@ -180,3 +183,4 @@ environments:
       SDS_DATASOURCES_RE: '^pipermail'
       SDS_NCPUS_SCALE: 0.5
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
