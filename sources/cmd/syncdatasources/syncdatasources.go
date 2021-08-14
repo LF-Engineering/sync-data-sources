@@ -47,10 +47,10 @@ var (
 	dadsTasks = map[string]bool{
 		lib.Jira:         false,
 		lib.GroupsIO:     true,
-		lib.Git:          false,
+		lib.Git:          true,
 		lib.GitHub:       true,
-		lib.Gerrit:       false,
-		lib.Confluence:   false,
+		lib.Gerrit:       true,
+		lib.Confluence:   true,
 		lib.RocketChat:   false,
 		lib.DockerHub:    true,
 		lib.Bugzilla:     false,
