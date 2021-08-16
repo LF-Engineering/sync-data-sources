@@ -16,6 +16,9 @@ RUN go get -u github.com/avast/retry-go
 RUN go get -u github.com/dgrijalva/jwt-go
 RUN go get -u github.com/google/uuid
 WORKDIR /go/src/github.com/LF-Engineering
+RUN git clone https://github.com/LF-Engineering/gitops
+WORKDIR /go/src/github.com/LF-Engineering/gitops
+RUN CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static'" github.com/LF-Engineering/gitops
 RUN git clone https://github.com/LF-Engineering/da-ds
 RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
@@ -31,6 +34,7 @@ COPY docker-images/.gitconfig /root/.gitconfig
 COPY docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY --from=builder /go/bin/dads /usr/bin/
+COPY --from=builder /go/bin/gitops /usr/bin/
 COPY sources/data.zip /data.zip
 COPY sources/uuid.py /usr/bin/
 COPY sources/gitops.py /usr/bin/
