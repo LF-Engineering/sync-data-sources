@@ -7363,6 +7363,8 @@ func executeMetricsAPICall(ctx *lib.Ctx, path string) (err error) {
 }
 
 func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
+	// DEBUG:
+	fmt.Printf("DEBUG: executeAffiliationsAPICall gToken = %s\n", gToken)
 	if ctx.AffiliationAPIURL == "" {
 		err = fmt.Errorf("Cannot execute DA affiliation API calls, no API URL specified")
 		return
@@ -7374,6 +7376,8 @@ func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 		lib.Printf("Obtaining API token\n")
 		// err = getToken(ctx)
 		gToken, err = lib.GetAPIToken()
+		// DEBUG:
+		fmt.Printf("DEBUG: GetAPIToken(1) returned ('%s',%+v)\n", gToken, err)
 		if err != nil {
 			return
 		}
@@ -7393,11 +7397,15 @@ func executeAffiliationsAPICall(ctx *lib.Ctx, path string) (err error) {
 			err = fmt.Errorf("do request error: %+v for %s url: %s", e, method, rurl)
 			return
 		}
+		// DEBUG:
+		fmt.Printf("DEBUG: request %s token '%s'\n", url, gToken)
 		if i == 0 && resp.StatusCode == 401 {
 			_ = resp.Body.Close()
 			lib.Printf("Token is invalid, trying to generate another one\n")
 			// err = getToken(ctx)
 			gToken, err = lib.GetAPIToken()
+			// DEBUG:
+			fmt.Printf("DEBUG: GetAPIToken(2) returned ('%s',%+v)\n", gToken, err)
 			if err != nil {
 				return
 			}
