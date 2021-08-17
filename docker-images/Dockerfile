@@ -1,20 +1,6 @@
 FROM golang:1.15 AS builder
 ARG BRANCH
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
-RUN go get -u gopkg.in/yaml.v2
-RUN go get -u golang.org/x/oauth2
-RUN go get -u golang.org/x/text/transform
-RUN go get -u golang.org/x/text/unicode/norm
-RUN go get -u github.com/json-iterator/go
-RUN go get -u github.com/LF-Engineering/dev-analytics-libraries/auth0
-RUN go get -u github.com/LF-Engineering/dev-analytics-libraries/elastic
-RUN go get -u github.com/LF-Engineering/dev-analytics-libraries/http
-RUN go get -u github.com/LF-Engineering/dev-analytics-libraries/slack
-RUN go get -u github.com/google/go-github/github
-RUN go get -u github.com/PuerkitoBio/goquery
-RUN go get -u github.com/avast/retry-go
-RUN go get -u github.com/dgrijalva/jwt-go
-RUN go get -u github.com/google/uuid
 WORKDIR /go/src/github.com/LF-Engineering
 RUN git clone https://github.com/LF-Engineering/gitops
 WORKDIR /go/src/github.com/LF-Engineering/gitops
