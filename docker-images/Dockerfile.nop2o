@@ -30,15 +30,17 @@ RUN git pull
 RUN make -f ./Makefile dockerinstall
 FROM alpine
 RUN apk update && apk add bash git ca-certificates openssh-client perl && rm -rf /var/cache/apk/*
-COPY docker-images/.gitconfig /root/.gitconfig
-COPY docker-images/scripts/*.sh /
+COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/docker-images/.gitconfig /root/.gitconfig
+COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/docker-images/scripts/*.sh /
 COPY --from=builder /go/bin/syncdatasources /usr/bin/
 COPY --from=builder /go/bin/dads /usr/bin/
 COPY --from=builder /go/bin/gitops /usr/bin/
-COPY sources/data.zip /data.zip
-COPY sources/detect-removed-commits.sh /usr/bin/
+# NOTE: do we need this line?
+#COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/sources/data.zip /data.zip
+#Note: where can I find this file?
+#COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/sources/detect-removed-commits.sh /usr/bin/
 #COPY sources/sds.yaml /data/sds.txt
-COPY docker-images/.vimrc /root/.vimrc
+COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/docker-images/.vimrc /root/.vimrc
 RUN git clone "https://github.com/AlDanial/cloc.git" --branch "v1.90" --single-branch
 RUN cp /cloc/cloc /usr/bin
 CMD /bin/bash
