@@ -6,10 +6,6 @@ RUN git clone https://github.com/LF-Engineering/gitops
 WORKDIR /go/src/github.com/LF-Engineering/gitops
 RUN CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static'" github.com/LF-Engineering/gitops
 WORKDIR /go/src/github.com/LF-Engineering
-RUN git clone https://github.com/LF-Engineering/gitops
-WORKDIR /go/src/github.com/LF-Engineering/gitops
-RUN CGO_ENABLED=0 go install -ldflags "-s -w -extldflags '-static'" github.com/LF-Engineering/gitops
-WORKDIR /go/src/github.com/LF-Engineering
 RUN git clone https://github.com/LF-Engineering/da-ds
 RUN git clone https://github.com/LF-Engineering/sync-data-sources
 WORKDIR /go/src/github.com/LF-Engineering/da-ds
