@@ -34,5 +34,3 @@ docker-images/base/repos
 /prod.txt
 /test.txt
 /diff.txt
-/go.mod
-/go.sum
