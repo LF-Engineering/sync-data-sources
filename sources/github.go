@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	// "github.com/google/go-github/v33/github" // with go mod enabled
-	"github.com/google/go-github/github" // with go mod disabled
+	"github.com/google/go-github/v38/github" // with go mod enabled
+	// "github.com/google/go-github/github" // with go mod disabled
 	"golang.org/x/oauth2"
 )
 
