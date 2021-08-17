@@ -37,7 +37,7 @@ COPY --from=builder /go/bin/dads /usr/bin/
 COPY --from=builder /go/bin/gitops /usr/bin/
 # NOTE: do we need this line?
 #COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/sources/data.zip /data.zip
-#Note: where can I find this file?
+# NOTE: where can I find this file?
 #COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/sources/detect-removed-commits.sh /usr/bin/
 #COPY sources/sds.yaml /data/sds.txt
 COPY --from=builder /go/src/github.com/LF-Engineering/sync-data-sources/docker-images/.vimrc /root/.vimrc
