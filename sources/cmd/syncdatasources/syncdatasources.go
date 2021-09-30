@@ -3154,7 +3154,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 		dataSource = ary[0]
 	}
 	switch dataSource {
-	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse, lib.RocketChat:
+	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse, lib.RocketChat, lib.Gitlab:
 		endpoints = origins
 	case lib.MeetUp:
 		// FIXME: meetup we don't really have meetup config, the only one we have in SDS is disabled for CNCF/Prometheus 'SF-Prometheus-Meetup-Group'
@@ -3210,6 +3210,7 @@ func figureOutDatasourceFromIndexName(index string) (dataSource string) {
 		lib.BugzillaRest,
 		lib.MeetUp,
 		lib.RocketChat,
+		lib.Gitlab,
 	}
 	sort.SliceStable(known, func(i, j int) bool {
 		return len(known[i]) > len(known[j])
