@@ -60,6 +60,7 @@ var (
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
 		lib.Pipermail:    true,
+		lib.Gitlab:       true,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -137,6 +138,10 @@ var (
 			"DA_GOOGLEGROUPS_NO_INCREMENTAL": "1",
 		},
 		lib.Pipermail: {
+			"DA_PIPERMAIL_HTTP_TIMEOUT":   "60s",
+			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
+		},
+		lib.Gitlab: {
 			"DA_PIPERMAIL_HTTP_TIMEOUT":   "60s",
 			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
 		},
@@ -833,6 +838,61 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 
 					if ctx.Debug > 0 {
 						lib.Printf("Dockerhub Owner: %s, repo: %s\n", dockerhubOwner, repo)
+					}
+
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:              repo,
+							Project:           prj,
+							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
+						},
+					)
+				}
+				if len(repos) == 0 {
+					handleNoData()
+				}
+			case "gitlab_org":
+				gitlabGroupUrl := strings.TrimSpace(rawEndpoint.Name)
+				repos, ok := cache[epType+gitlabGroupUrl]
+				configs := fixture.DataSources[i].Config
+				token := ""
+				for _, config := range configs {
+					if config.Name == "gitlab-token" {
+						token = config.Value
+						break
+					}
+				}
+				if !ok {
+					var err error
+					repos, err = lib.GetGitlabGroupRepos(ctx, gitlabGroupUrl, token)
+					if err != nil {
+						lib.Printf("Error getting gitlab repos list for: %s: error: %+v\n", gitlabGroupUrl, err)
+						continue
+					}
+					cache[epType+gitlabGroupUrl] = repos
+				}
+
+				for _, repo := range repos {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						repo += ":::" + rawEndpoint.Project
+					}
+
+					prj := rawEndpoint.Project
+
+					if ctx.Debug > 0 {
+						lib.Printf("Gitlab URL: %s\n", gitlabGroupUrl)
 					}
 
 					fixture.DataSources[i].Endpoints = append(
@@ -4620,6 +4680,7 @@ func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, proj
 		lib.MeetUp:       {},
 		lib.RocketChat:   {},
 		lib.GoogleGroups: {},
+		lib.Gitlab:       {},
 	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -5132,7 +5193,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 	env["DA_DS"] = ds
 	prefix := "DA_" + strings.ToUpper(ds) + "_"
 	switch ds {
-	case lib.Jira, lib.Git, lib.Gerrit, lib.Confluence:
+	case lib.Jira, lib.Git, lib.Gerrit, lib.Confluence, lib.Gitlab:
 		env[prefix+"URL"] = e[0]
 	case lib.GitHub:
 		env[prefix+"ORG"] = e[0]
