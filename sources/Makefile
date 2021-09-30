@@ -1,4 +1,4 @@
-GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go hash.go task.go github.go es.go redacted.go string.go rocketchat.go gerrit.go slack.go token.go
+GO_LIB_FILES=context.go error.go const.go log.go time.go exec.go threads.go fixture.go hash.go task.go github.go es.go redacted.go string.go rocketchat.go gerrit.go slack.go token.go gitlab.go
 GO_BIN_FILES=cmd/syncdatasources/syncdatasources.go cmd/sds-crontab/sds-crontab.go cmd/gen-regexp/gen-regexp.go
 GO_TEST_FILES=context_test.go time_test.go threads_test.go hash_test.go
 GO_LIBTEST_FILES=test/time.go
