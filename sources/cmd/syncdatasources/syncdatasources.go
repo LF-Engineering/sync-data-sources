@@ -142,8 +142,8 @@ var (
 			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
 		},
 		lib.Gitlab: {
-			"DA_PIPERMAIL_HTTP_TIMEOUT":   "60s",
-			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
+			"DA_GITLAB_HTTP_TIMEOUT":   "60s",
+			"DA_GITLAB_NO_INCREMENTAL": "1",
 		},
 	}
 )
