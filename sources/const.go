@@ -6,6 +6,9 @@ const OK string = "ok"
 // APIToken - constant string
 const APIToken string = "api-token"
 
+// GitlabToken - constant string
+const GitlabToken string = "gitlab-token"
+
 // SSHKey - constant string
 const SSHKey string = "ssh-key"
 

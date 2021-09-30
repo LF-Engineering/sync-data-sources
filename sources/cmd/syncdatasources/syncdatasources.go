@@ -5167,6 +5167,22 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
+	} else if ds == lib.Gitlab {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
+				redactedValue = lib.Redacted
+			}
+			m[name] = struct{}{}
+			if name == lib.GitlabToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
+			}
+		}
 	} else {
 		fail = true
 	}
@@ -5285,6 +5301,8 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		case "-t", "api-token":
 			if ds == lib.GitHub {
 				opt = "tokens"
+			} else if ds == lib.Gitlab {
+				opt = "gitlab-token"
 			} else {
 				opt = "token"
 			}
