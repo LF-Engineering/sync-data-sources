@@ -55,8 +55,8 @@ var (
 		lib.Confluence:   true,
 		lib.RocketChat:   false,
 		lib.DockerHub:    true,
-		lib.Bugzilla:     false,
-		lib.BugzillaRest: false,
+		lib.Bugzilla:     true,
+		lib.BugzillaRest: true,
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
 		lib.Pipermail:    false, // we should enable da-ds
