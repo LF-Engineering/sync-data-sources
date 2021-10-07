@@ -12,7 +12,7 @@ environments:
     env:                                # List of all possible SDS env variables is here: https://github.com/LF-Engineering/sync-data-sources/blob/master/sources/context.go#L12
       SDS_SKIP_P2O: 1                   # Only special tasks like maintaining aliases/views/renames/drops etc
       SDS_SKIP_DATA: 1
-      SDS_SKIP_AFFS: 1
+      # SDS_SKIP_AFFS: 1
       SDS_SKIP_ES_DATA: 1
       SDS_SKIP_ES_LOG: 1
       SDS_SKIP_PROJECT: 1
@@ -35,7 +35,7 @@ environments:
       SDS_TASKS_SKIP_RE: '^sds-(lfn-odl-gerrit|open-mainframe-project|accord|acrn|allseen|alljoyn|act|agl|bitcoin-protocol|cc|CC|cephfoundation|chaoss|ojsf-chassis|chips|cip|clusterduck|cni|caf|ccc|cdf|cord-datacenter|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|dent|desktopwg|easycla|elisa|finops|finos|fossbazaar|frr|gql|internet-security-research-group|interuss|iovisor|janusgraph|kernelci|openkinetic|laminas|lets-encrypt|lf-asia-llc|lfph|lsb|linuxboot|llvmlinux|ltsi|lvfs|mapzen|mojaglobal|newticity|onf|O3DE|o3de|a11y|open-alliance-for-cloud-adoption|opencontainers|open-network-operating-system-onos|osecc|osapa|ova|open-voice-network|ovs|openbel|openbmc|openchain|OEEW|oeew|openfabrics-inc|openhpc|ojsf|openmama|openmessaging|openpowerfoundation|opensds|osquery|patentcommons|quartermaster|rcons|real-time-linux|redteam|rtdb|riscv|risc-v-international|sel4|soda-foundation|sof|tlf|openssf|reactive|tizen|ucf|korg|cncf)-'   # specifying which tasks should be skipped, can be something like '^sds-(foundation1|foundation2|...|foundationN)-'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       # SDS_DATASOURCES_RE: '^github'
-      SDS_SKIP_AFFS: 1
+      # SDS_SKIP_AFFS: 1
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
@@ -55,7 +55,7 @@ environments:
       SDS_TASKS_RE: '^sds-cncf-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       # SDS_DATASOURCES_RE: '^github'
-      SDS_SKIP_AFFS: 1
+      # SDS_SKIP_AFFS: 1
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
@@ -77,7 +77,7 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
       SDS_SKIP_SSAW: 1
-      SDS_SKIP_AFFS: 1
+      # SDS_SKIP_AFFS: 1
   - name: prod-others
     cron: '6 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -94,7 +94,7 @@ environments:
       SDS_TASKS_RE: '^sds-(lfn-odl-gerrit|open-mainframe-project|accord|acrn|allseen|alljoyn|act|agl|bitcoin-protocol|cc|CC|cephfoundation|chaoss|ojsf-chassis|chips|cip|clusterduck|cni|caf|ccc|cdf|cord-datacenter|cord-central-office-re-architected-as-a-datacenter|cregit|datapractices|dent|desktopwg|easycla|elisa|finops|finos|fossbazaar|frr|gql|internet-security-research-group|interuss|iovisor|janusgraph|kernelci|openkinetic|laminas|lets-encrypt|lf-asia-llc|lfph|lsb|linuxboot|llvmlinux|ltsi|lvfs|mapzen|mojaglobal|newticity|onf|O3DE|o3de|a11y|open-alliance-for-cloud-adoption|opencontainers|open-network-operating-system-onos|osecc|osapa|ova|open-voice-network|ovs|openbel|openbmc|openchain|OEEW|oeew|openfabrics-inc|openhpc|ojsf|openmama|openmessaging|openpowerfoundation|opensds|osquery|patentcommons|quartermaster|rcons|real-time-linux|redteam|rtdb|riscv|risc-v-international|sel4|soda-foundation|sof|tlf|openssf|reactive|tizen|ucf)-'
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroups)'
       # SDS_DATASOURCES_RE: '^github'
-      SDS_SKIP_AFFS: 1
+      # SDS_SKIP_AFFS: 1
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
