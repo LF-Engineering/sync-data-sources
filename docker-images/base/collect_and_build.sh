@@ -46,6 +46,7 @@ cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-github-reviews-data.py.diff && cd .. || exit 21
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-repo-name-alias.py.diff && cd .. || exit 25
 cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/elk-removed-gender-source.py.diff && cd .. || exit 26
+cd grimoirelab-elk && git apply --ignore-space-change --ignore-whitespace ../../patch/rocketchat.py.diff && cd .. || exit 26
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/requirements.txt || exit 11
 vim --not-a-term -c "%s/PyMySQL==0.9.3/PyMySQL>=0.9.3/g" -c 'wq!' grimoirelab-elk/setup.py || exit 12
 echo 'All patching OK'

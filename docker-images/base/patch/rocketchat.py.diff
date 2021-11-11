@@ -1,0 +1,13 @@
+diff --git a/grimoire_elk/enriched/rocketchat.py b/grimoire_elk/enriched/rocketchat.py
+index ee200641..e5f00636 100644
+--- a/grimoire_elk/enriched/rocketchat.py
++++ b/grimoire_elk/enriched/rocketchat.py
+@@ -208,6 +208,7 @@ class RocketChatEnrich(Enrich):
+             'avatar': ''
+         }
+         if 'lastMessage' in channel and channel['lastMessage']:
+-            rich_channel['avatar'] = channel['lastMessage']['avatar']
++            rich_channel['avatar'] = channel['lastMessage'].get('avatar', None)
++            
+ 
+         return rich_channel
