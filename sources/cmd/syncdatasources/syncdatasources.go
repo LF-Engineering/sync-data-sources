@@ -394,7 +394,7 @@ func validateFixture(ctx *lib.Ctx, fixture *lib.Fixture, fixtureFile string) {
 }
 
 func partialRun(ctx *lib.Ctx) bool {
-	// We consider TasksRE and TasksSkipRE safe - they only decide run or not run at the final task level
+	// We consider TasksRE, TasksSkipRE and TasksExtraSkipRE safe - they only decide run or not run at the final task level
 	if ctx.FixturesRE != nil || ctx.DatasourcesRE != nil || ctx.ProjectsRE != nil || ctx.EndpointsRE != nil || ctx.FixturesSkipRE != nil || ctx.DatasourcesSkipRE != nil || ctx.ProjectsSkipRE != nil || ctx.EndpointsSkipRE != nil {
 		return true
 	}
@@ -6767,9 +6767,9 @@ func taskFilteredOut(ctx *lib.Ctx, tsk *lib.Task) bool {
 	idxSlug := "sds-" + tsk.FxSlug + "-" + tsk.DsFullSlug
 	idxSlug = strings.Replace(idxSlug, "/", "-", -1)
 	task := idxSlug + ":" + tsk.Endpoint
-	if (ctx.TasksRE != nil && !ctx.TasksRE.MatchString(task)) || (ctx.TasksSkipRE != nil && ctx.TasksSkipRE.MatchString(task)) {
+	if (ctx.TasksRE != nil && !ctx.TasksRE.MatchString(task)) || (ctx.TasksSkipRE != nil && ctx.TasksSkipRE.MatchString(task)) || (ctx.TasksExtraSkipRE != nil && ctx.TasksExtraSkipRE.MatchString(task)) {
 		if ctx.Debug > 0 {
-			lib.Printf("Task %s filtered out due to RE (match,skip) = (%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE)
+			lib.Printf("Task %s filtered out due to RE (match,skip,extraSkip) = (%+v,%+v,%+v)\n", task, ctx.TasksRE, ctx.TasksSkipRE, ctx.TasksExtraSkipRE)
 		}
 		return true
 	}
