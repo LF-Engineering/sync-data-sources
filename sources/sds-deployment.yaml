@@ -20,6 +20,13 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: prod-main
     cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
     command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
@@ -39,6 +46,13 @@ environments:
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: prod-cncf
     cron: '2 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -59,6 +73,13 @@ environments:
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: prod-korg
     #disabled: true
     cron: '4 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
@@ -78,6 +99,13 @@ environments:
       SDS_TASKS_RE: '^sds-korg-'        # the opposite of the main task - we specify which tasks should run in this deployment (instead of specifying which tasks should be skipped as in prod-main deployment)
       SDS_SKIP_SSAW: 1
       # SDS_SKIP_AFFS: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: prod-others
     cron: '6 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -98,6 +126,13 @@ environments:
       # SDS_DYNAMIC_OAUTH: 1
       # SDS_SKIP_CHECK_FREQ: 1
       SDS_SKIP_SSAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: prod-googlegroups
     cron: '11 * * * *'
     command_prefix: '/usr/bin'
@@ -131,6 +166,13 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       #SDS_NO_INDEX_DROP: 1             # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: test-main
     cron: '7 * * * *'
     command_prefix: '/usr/bin'
@@ -148,6 +190,13 @@ environments:
       SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
       # DA_GIT_DROP_RICH: 1
       # DA_GIT_DROP_RAW: 1
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
@@ -162,6 +211,13 @@ environments:
       SDS_DATASOURCES_SKIP_RE: '^(slack|googlegroupsi|pipermail)'
       SDS_SKIP_SSAW: 1
       SDS_SKIP_AFFS: 1                  # let re-enricher handle refreshing identities starting at 8/5/21
+      DA_GIT_ALLOW_FAIL: 1
+      DA_GITHUB_ALLOW_FAIL: 1
+      DA_CONFLUENCE_ALLOW_FAIL: 1
+      DA_GERRIT_ALLOW_FAIL: 1
+      DA_GROUPSIO_ALLOW_FAIL: 1
+      DA_JIRA_ALLOW_FAIL: 1
+      DA_ROCKETCHAT_ALLOW_FAIL: 1
   - name: test-googlegroups
     cron: '11 * * * *'
     command_prefix: '/usr/bin'
