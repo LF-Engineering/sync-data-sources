@@ -60,6 +60,7 @@ var (
 		lib.Jenkins:      true,
 		lib.GoogleGroups: true,
 		lib.Pipermail:    true,
+		lib.Gitlab:       true,
 	}
 	// dadsEnvDefaults - default da-ds settings (can be overwritten in fixture files)
 	dadsEnvDefaults = map[string]map[string]string{
@@ -139,6 +140,10 @@ var (
 		lib.Pipermail: {
 			"DA_PIPERMAIL_HTTP_TIMEOUT":   "60s",
 			"DA_PIPERMAIL_NO_INCREMENTAL": "1",
+		},
+		lib.Gitlab: {
+			"DA_GITLAB_HTTP_TIMEOUT":   "60s",
+			"DA_GITLAB_NO_INCREMENTAL": "1",
 		},
 	}
 )
@@ -833,6 +838,61 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 
 					if ctx.Debug > 0 {
 						lib.Printf("Dockerhub Owner: %s, repo: %s\n", dockerhubOwner, repo)
+					}
+
+					fixture.DataSources[i].Endpoints = append(
+						fixture.DataSources[i].Endpoints,
+						lib.Endpoint{
+							Name:              repo,
+							Project:           prj,
+							ProjectP2O:        p2o,
+							ProjectNoOrigin:   pno,
+							Projects:          rawEndpoint.Projects,
+							Timeout:           tmout,
+							CopyFrom:          rawEndpoint.CopyFrom,
+							AffiliationSource: rawEndpoint.AffiliationSource,
+							PairProgramming:   rawEndpoint.PairProgramming,
+							Groups:            rawEndpoint.Groups[:],
+						},
+					)
+				}
+				if len(repos) == 0 {
+					handleNoData()
+				}
+			case "gitlab_org":
+				gitlabGroupUrl := strings.TrimSpace(rawEndpoint.Name)
+				repos, ok := cache[epType+gitlabGroupUrl]
+				configs := fixture.DataSources[i].Config
+				token := ""
+				for _, config := range configs {
+					if config.Name == "gitlab-token" {
+						token = config.Value
+						break
+					}
+				}
+				if !ok {
+					var err error
+					repos, err = lib.GetGitlabGroupRepos(ctx, gitlabGroupUrl, token)
+					if err != nil {
+						lib.Printf("Error getting gitlab repos list for: %s: error: %+v\n", gitlabGroupUrl, err)
+						continue
+					}
+					cache[epType+gitlabGroupUrl] = repos
+				}
+
+				for _, repo := range repos {
+					included, _ := lib.EndpointIncluded(ctx, &rawEndpoint, repo)
+					if !included {
+						continue
+					}
+					if p2o && rawEndpoint.Project != "" {
+						repo += ":::" + rawEndpoint.Project
+					}
+
+					prj := rawEndpoint.Project
+
+					if ctx.Debug > 0 {
+						lib.Printf("Gitlab URL: %s\n", gitlabGroupUrl)
 					}
 
 					fixture.DataSources[i].Endpoints = append(
@@ -3094,7 +3154,7 @@ func figureOutEndpoints(ctx *lib.Ctx, index, dataSource string) (endpoints, orig
 		dataSource = ary[0]
 	}
 	switch dataSource {
-	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse, lib.RocketChat:
+	case lib.Git, lib.Jira, lib.Bugzilla, lib.BugzillaRest, lib.Jenkins, lib.Gerrit, lib.Pipermail, lib.Confluence, lib.GitHub, lib.Discourse, lib.RocketChat, lib.Gitlab:
 		endpoints = origins
 	case lib.MeetUp:
 		// FIXME: meetup we don't really have meetup config, the only one we have in SDS is disabled for CNCF/Prometheus 'SF-Prometheus-Meetup-Group'
@@ -3150,6 +3210,7 @@ func figureOutDatasourceFromIndexName(index string) (dataSource string) {
 		lib.BugzillaRest,
 		lib.MeetUp,
 		lib.RocketChat,
+		lib.Gitlab,
 	}
 	sort.SliceStable(known, func(i, j int) bool {
 		return len(known[i]) > len(known[j])
@@ -4620,6 +4681,7 @@ func massageEndpoint(endpoint string, ds string, dads bool, idxSlug string, proj
 		lib.MeetUp:       {},
 		lib.RocketChat:   {},
 		lib.GoogleGroups: {},
+		lib.Gitlab:       {},
 	}
 	if ds == lib.GitHub {
 		if strings.Contains(endpoint, "/") {
@@ -5106,6 +5168,22 @@ func massageConfig(ctx *lib.Ctx, config *[]lib.Config, ds, idxSlug string) (c []
 			m[name] = struct{}{}
 			c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
 		}
+	} else if ds == lib.Gitlab {
+		for _, cfg := range *config {
+			name := cfg.Name
+			value := cfg.Value
+			redactedValue := value
+			if lib.IsRedacted(name) {
+				lib.AddRedacted(value, true)
+				redactedValue = lib.Redacted
+			}
+			m[name] = struct{}{}
+			if name == lib.GitlabToken {
+				c = append(c, lib.MultiConfig{Name: "-t", Value: []string{value}, RedactedValue: []string{lib.Redacted}})
+			} else {
+				c = append(c, lib.MultiConfig{Name: name, Value: []string{value}, RedactedValue: []string{redactedValue}})
+			}
+		}
 	} else {
 		fail = true
 	}
@@ -5132,7 +5210,7 @@ func p2oEndpoint2dadsEndpoint(e []string, ds string, dads bool, idxSlug string, 
 	env["DA_DS"] = ds
 	prefix := "DA_" + strings.ToUpper(ds) + "_"
 	switch ds {
-	case lib.Jira, lib.Git, lib.Gerrit, lib.Confluence:
+	case lib.Jira, lib.Git, lib.Gerrit, lib.Confluence, lib.Gitlab:
 		env[prefix+"URL"] = e[0]
 	case lib.GitHub:
 		env[prefix+"ORG"] = e[0]
@@ -5224,6 +5302,8 @@ func p2oConfig2dadsConfig(c []lib.MultiConfig, ds string) (oc []lib.MultiConfig,
 		case "-t", "api-token":
 			if ds == lib.GitHub {
 				opt = "tokens"
+			} else if ds == lib.Gitlab {
+				opt = "gitlab-token"
 			} else {
 				opt = "token"
 			}

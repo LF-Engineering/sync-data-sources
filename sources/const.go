@@ -6,6 +6,9 @@ const OK string = "ok"
 // APIToken - constant string
 const APIToken string = "api-token"
 
+// GitlabToken - constant string
+const GitlabToken string = "gitlab-token"
+
 // SSHKey - constant string
 const SSHKey string = "ssh-key"
 
@@ -160,3 +163,6 @@ const CopyFromDateField = "metadata__enriched_on" // Date when the item was enri
 
 // GoogleGroups data source
 const GoogleGroups string = "googlegroups"
+
+// Gitlab data source
+const Gitlab string = "gitlab"
