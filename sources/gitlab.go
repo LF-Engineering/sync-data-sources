@@ -11,6 +11,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
+// GitlabGroupData - ...
 type GitlabGroupData struct {
 	ID       int             `json:"id"`
 	Name     string          `json:"name"`
@@ -19,10 +20,12 @@ type GitlabGroupData struct {
 	Projects []GitlabProject `json:"projects"`
 }
 
+// GitlabSubGroupData - ...
 type GitlabSubGroupData struct {
 	Groups []GitlabGroupData
 }
 
+// GitlabProject - ...
 type GitlabProject struct {
 	ID   int    `json:"id"`
 	Name string `json:"string"`
@@ -69,8 +72,8 @@ func getProjects(groupID int, token string) error {
 	}
 
 	// Check for sub groups
-	subgroupUrl := fmt.Sprintf("%s/%d/subgroups", "https://gitlab.com/api/v4/groups", groupID)
-	req, err = http.NewRequest(method, os.ExpandEnv(subgroupUrl), nil)
+	subgroupURL := fmt.Sprintf("%s/%d/subgroups", "https://gitlab.com/api/v4/groups", groupID)
+	req, err = http.NewRequest(method, os.ExpandEnv(subgroupURL), nil)
 	if err != nil {
 		Printf("new request error: %+v for %s url: %s", err, method, url)
 		return err
@@ -98,12 +101,11 @@ func getProjects(groupID int, token string) error {
 
 	if len(subGroupdata) == 0 {
 		return nil
-	} else {
-		for _, subgroup := range subGroupdata {
-			err = getProjects(subgroup.ID, token)
-			if err != nil {
-				return err
-			}
+	}
+	for _, subgroup := range subGroupdata {
+		err = getProjects(subgroup.ID, token)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -147,6 +149,7 @@ func getGroupID(groupname, token string) (int, error) {
 	return data.ID, nil
 }
 
+// GetGitlabGroupRepos - ...
 func GetGitlabGroupRepos(ctx *Ctx, groupURL, token string) ([]string, error) {
 	if ctx.Debug >= 0 {
 		Printf("GetGithubRepos(%s)\n", groupURL)

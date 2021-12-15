@@ -860,8 +860,8 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					handleNoData()
 				}
 			case "gitlab_org":
-				gitlabGroupUrl := strings.TrimSpace(rawEndpoint.Name)
-				repos, ok := cache[epType+gitlabGroupUrl]
+				gitlabGroupURL := strings.TrimSpace(rawEndpoint.Name)
+				repos, ok := cache[epType+gitlabGroupURL]
 				configs := fixture.DataSources[i].Config
 				token := ""
 				for _, config := range configs {
@@ -872,12 +872,12 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 				}
 				if !ok {
 					var err error
-					repos, err = lib.GetGitlabGroupRepos(ctx, gitlabGroupUrl, token)
+					repos, err = lib.GetGitlabGroupRepos(ctx, gitlabGroupURL, token)
 					if err != nil {
-						lib.Printf("Error getting gitlab repos list for: %s: error: %+v\n", gitlabGroupUrl, err)
+						lib.Printf("Error getting gitlab repos list for: %s: error: %+v\n", gitlabGroupURL, err)
 						continue
 					}
-					cache[epType+gitlabGroupUrl] = repos
+					cache[epType+gitlabGroupURL] = repos
 				}
 
 				for _, repo := range repos {
@@ -892,7 +892,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					prj := rawEndpoint.Project
 
 					if ctx.Debug > 0 {
-						lib.Printf("Gitlab URL: %s\n", gitlabGroupUrl)
+						lib.Printf("Gitlab URL: %s\n", gitlabGroupURL)
 					}
 
 					fixture.DataSources[i].Endpoints = append(
