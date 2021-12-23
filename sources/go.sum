@@ -33,10 +33,8 @@ cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
 github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03qcyfWMU=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
-github.com/LF-Engineering/dev-analytics-libraries v1.1.20 h1:jDm0J9Cba7wu50Kt4yVEhNAklC9nUGGqsywtiWewXFc=
-github.com/LF-Engineering/dev-analytics-libraries v1.1.20/go.mod h1:O+9mOX1nf6qGKrZne33F6speSzrGj6+Y1tPF6jh/mcw=
-github.com/LF-Engineering/dev-analytics-libraries v1.1.21 h1:M1f+UBV2yCaw1UTQFZW7Dc6Tu8L63g+FdRFYGRjh+p8=
-github.com/LF-Engineering/dev-analytics-libraries v1.1.21/go.mod h1:O+9mOX1nf6qGKrZne33F6speSzrGj6+Y1tPF6jh/mcw=
+github.com/LF-Engineering/dev-analytics-libraries v1.1.28 h1:sjmYNPSY3hXUl2+ouCqn+Xq7AmHkto9/5PsCV/7eYBw=
+github.com/LF-Engineering/dev-analytics-libraries v1.1.28/go.mod h1:O+9mOX1nf6qGKrZne33F6speSzrGj6+Y1tPF6jh/mcw=
 github.com/alcortesm/tgz v0.0.0-20161220082320-9c5fe88206d7/go.mod h1:6zEj6s6u/ghQa61ZWa/C2Aw3RkjiTBOix7dkqa1VLIs=
 github.com/anmitsu/go-shlex v0.0.0-20161002113705-648efa622239/go.mod h1:2FmKhYUyUczH0OGQWaF5ceTx0UBShxjsH6f8oGKYe2c=
 github.com/armon/go-socks5 v0.0.0-20160902184237-e75332964ef5/go.mod h1:wHh0iHkYZB8zMSxRWpUBQtwG5a7fFgvEO+odwuTv2gs=

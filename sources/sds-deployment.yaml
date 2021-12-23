@@ -20,6 +20,7 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       SDS_NO_INDEX_DROP: 1              # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_ENRICH_DS: 1
       DA_GIT_ALLOW_FAIL: 1
       DA_GITHUB_ALLOW_FAIL: 1
       DA_CONFLUENCE_ALLOW_FAIL: 1
@@ -166,6 +167,7 @@ environments:
       SDS_SKIP_SORT_DURATION: 1
       #SDS_NO_INDEX_DROP: 1             # Do not delete any indices, just issue a warning instead
       SDS_SKIP_SSAW: 1
+      SDS_SKIP_ENRICH_DS: 1
       DA_GIT_ALLOW_FAIL: 1
       DA_GITHUB_ALLOW_FAIL: 1
       DA_CONFLUENCE_ALLOW_FAIL: 1
