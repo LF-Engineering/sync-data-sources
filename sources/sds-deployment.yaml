@@ -28,6 +28,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: prod-main
     cron: '*/10 * * * *'                # it means that task will attempt to sync every 10 minutes, but will skip when another SDS instance related to this deployment (prod-main) runs
     command_prefix: '/usr/bin'          # Next few vars are just our EC2 instances specific
@@ -54,6 +55,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: prod-cncf
     cron: '2 8 * * *'                   # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -81,6 +83,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: prod-korg
     #disabled: true
     cron: '4 14 * * *'                  # attempt sync at 8 AM UTC, nothing will happen if the previous sync still runs
@@ -107,6 +110,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: prod-others
     cron: '6 20 * * *'                  # attempt sync at 8 PM UTC, nothing will happen if the previous sync still runs
     command_prefix: '/usr/bin'
@@ -134,6 +138,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: prod-googlegroups
     cron: '11 * * * *'
     command_prefix: '/usr/bin'
@@ -175,6 +180,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: test-main
     cron: '7 * * * *'
     command_prefix: '/usr/bin'
@@ -199,6 +205,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: test-slow
     cron: '*/10 * * * *'
     command_prefix: '/usr/bin'
@@ -220,6 +227,7 @@ environments:
       DA_GROUPSIO_ALLOW_FAIL: 1
       DA_JIRA_ALLOW_FAIL: 1
       DA_ROCKETCHAT_ALLOW_FAIL: 1
+      SKIP_BLANK_ORGS: 1
   - name: test-googlegroups
     cron: '11 * * * *'
     command_prefix: '/usr/bin'
