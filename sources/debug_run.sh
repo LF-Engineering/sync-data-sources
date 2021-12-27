@@ -7,7 +7,7 @@ then
 fi
 # TODO FIXME: when you try to use this to run the actuall commands
 # please almost always use SDS_ONLY_P2O=1 when not running in dry run mode
-export SKIP_BLANK_ORGS=1
+export DA_AFFS_API_FAIL_FATAL=1
 #export SDS_ST=1
 #export SDS_NCPUS=16
 #export SDS_NCPUS_SCALE=4
