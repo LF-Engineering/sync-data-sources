@@ -1,6 +1,6 @@
 module github.com/LF-Engineering/sync-data-sources/sources
 
-go 1.15
+go 1.17
 
 require (
 	github.com/LF-Engineering/dev-analytics-libraries v1.1.28

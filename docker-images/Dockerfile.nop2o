@@ -1,4 +1,4 @@
-FROM golang:1.15 AS builder
+FROM golang:1.17 AS builder
 ARG BRANCH
 RUN apt-get update -y && apt-get upgrade -y && apt-get install -y ca-certificates openssh-client git curl make
 WORKDIR /go/src/github.com/LF-Engineering
