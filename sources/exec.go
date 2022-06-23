@@ -20,6 +20,9 @@ func logCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string) {
 
 // ExecCommand - execute command given by array of strings with eventual environment map
 func ExecCommand(ctx *Ctx, cmdAndArgs []string, env map[string]string, tmout *time.Duration) (string, error) {
+	if os.Getenv("SDS_DEBUG_EXEC") != "" {
+		fmt.Printf("EXEC: ENV=%+v %+v\n", env, cmdAndArgs)
+	}
 	// Execution time
 	dtStart := time.Now()
 
