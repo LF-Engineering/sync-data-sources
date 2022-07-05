@@ -44,6 +44,11 @@ See example configurations files `sources/example/project1.yaml` and other YAMLs
 - Use: `cd sources; make; ./dry_run.sh prod` even if you don't have correct `p2o.py` stack installed.
 
 
+# EC2
+
+Login to EC2 `test` or `prod` instance. SDS runs as a cron job there, use `crontab -e` to stop or change SDS running configuration. Examples on how to run `SDS` manually or in debug mode can be found in `RUN_DEBUG_POD.md`.
+
+
 # Helm
 
 - Go to `helm-charts/sds-helm` and follow instructions from `README.md` file in that derectory. Helm chart contains everything needed to run entire stack.
