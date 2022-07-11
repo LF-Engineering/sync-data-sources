@@ -843,7 +843,7 @@ func postprocessFixture(igctx context.Context, igc []*github.Client, ctx *lib.Ct
 					fixture.DataSources[i].Endpoints = append(
 						fixture.DataSources[i].Endpoints,
 						lib.Endpoint{
-							Name:              repo,
+							Name:              fmt.Sprintf("%s %s", dockerhubOwner, repo),
 							Project:           prj,
 							ProjectP2O:        p2o,
 							ProjectNoOrigin:   pno,
